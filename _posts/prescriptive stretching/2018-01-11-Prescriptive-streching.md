@@ -9,4 +9,4 @@ description:
 
 ### 精准拉伸
 
-原文：[http://dmitrysoshnikov.com/ecmascript/javascript-the-core/](http://dmitrysoshnikov.com/ecmascript/javascript-the-core/)
+原文：[/text/part0000.html ](精准拉伸)
