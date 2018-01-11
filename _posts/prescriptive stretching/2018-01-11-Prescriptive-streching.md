@@ -9,4 +9,4 @@ description:
 
 ### 精准拉伸
 
-原文：[精准拉伸](_posts/prescriptive stretching/text/part0000.html)
+原文：[精准拉伸](_posts/prescriptive\ stretching/text/part0000.html)
