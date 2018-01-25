@@ -1,3 +1,12 @@
+---
+layout: post
+title: 变量对象（Variable object）
+category: Javascript
+tags: Javascript
+keywords: Javascript
+description: 
+---
+
 # 变量对象（Variable object）  
 ## 说明  
 此文译自Dmitry A.Soshnikov 的文章[Variable object](http://dmitrysoshnikov.com/ecmascript/chapter-2-variable-object/)  

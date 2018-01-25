@@ -1,3 +1,12 @@
+---
+layout: post
+title: 执行上下文（Execution Context）  
+category: Javascript
+tags: Javascript
+keywords: Javascript
+description: 
+---
+
 # 执行上下文（Execution Context）  
 ## 说明  
 此文译自Dmitry A.Soshnikov 的文章[Execution Context](http://dmitrysoshnikov.com/ecmascript/chapter-1-execution-contexts/)  
