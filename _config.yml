@@ -17,8 +17,8 @@ recent_num: 20
 github: howieliux
 
 # avatar and Favicon
-avatar: http://howieliux.github.io/assets/img/site-avatar.png
-favicon: http://howieliux.github.io/assets/img/site-avatar.png
+avatar: https://howieliux.github.io/assets/img/site-avatar.jpg
+favicon: https://howieliux.github.io/assets/img/site-avatar.jpg
 
 # disqus config
 disqus:
