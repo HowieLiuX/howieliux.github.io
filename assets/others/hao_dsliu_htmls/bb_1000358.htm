@@ -1,0 +1,10 @@
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=utf8"><title>163 blogs的博客：[原]ipod touch 2 OS3.0 backgrounder 安装</title>
+<style type="text/css">
+a{color: #000000;text-decoration : none;font-size: 10pt;}
+a:hover {color: red;text-decoration : underline;}
+.replyBox{padding:4px;border:1px solid #D8D8D8;}
+</style></head><body><h2>[原]ipod touch 2 OS3.0 backgrounder 安装</h2>
+<p align="right">发布时间：2009-11-1 17:51
+<br>分类名称：Mac</p><br>
+<P>前言。。。也就是废话。。。没事的甭看，直接看下段。哈哈。<BR>&nbsp;&nbsp; 一月前，先是充2.21升级到3.0， 发现一堆鸟东西不能用，所以就赶紧降了回去。昨天发现很多鸟东西都能用了，而且有些只支持3.0，那就升吧。哈哈。第一次升级失败。变砖头了，然后重新升 了一遍成功了。本人穷，没wifi， 就靠PC机的一个叫cyder的软件，来安装deb文件。先是把ipa文件补丁打上，下了一堆IPA东西。测试了下。比较稳定。除了鸟Cydia经常崩溃 一切正常，令人惊喜的是，3.0打开一些程序的时候，放大效果虽然有点卡，但是打开程序的速度明显提升了。<BR><BR>&nbsp;&nbsp;&nbsp; 接着安装backgrounder的时候，我是把它放到autoinstall那个目录底下，所以它怎么安装的我压根不知道，不过重启后，发现有了 图标，（其实它没安装完全），然后发现怎么按home按键都没作用。所以就把deb传到ipod里面。看看咋啦，敲dpkg -i backgrounder 后，发现说因为依赖mobilesubstrate，所以无法安装。下面就是正题，mobilesubstrate 和 backgrounder最新的都加入附件了，mobilesubstrate的版本是：0.9.2977-1，backgrounder 为:svn.r249. <BR><BR>&nbsp;&nbsp;&nbsp; 1. 将mobilesubstrate 和 backgrounder 通过 (91助手或WinSCP或其它方式）都放到/var/root底下<BR>&nbsp;&nbsp;&nbsp; 2. 登陆ipod里面的mobile terminal（没有，去cydia里面安装去，或者去91）<BR>&nbsp;&nbsp;&nbsp; 3. 切换用户：<BR>&nbsp;&nbsp; &nbsp;&nbsp; su - <BR>&nbsp;&nbsp; &nbsp;&nbsp; password: alpine<BR><BR>如果安装了backgrounder，先删除了。（也可以先把mobilesubstrate安装上试试，我也没试过，也许安装上就好了呢。呵呵。）<BR>&nbsp;&nbsp; &nbsp;&nbsp; dpkg -r backgrounder (删除backgrounder）<BR>&nbsp;&nbsp; &nbsp;&nbsp; 安装mobilesubstrate和backgrounder：<BR>&nbsp;&nbsp; &nbsp;&nbsp; dpkg -i mobilesubstrate_0.9.2977-1_iphoneos-arm.deb<BR>&nbsp;&nbsp; &nbsp;&nbsp; dpkg -i backgrounder-svn.r249.deb<BR>&nbsp;&nbsp; &nbsp;&nbsp; 如果安装顺利，每次安装时候提示3，4行，信息，如果有一堆信息出来，那就是又缺少什么依赖文件了。<BR>&nbsp;&nbsp; &nbsp;&nbsp; 安装后重启，由于机子上没有重启的软件，就直接敲命令：<BR>&nbsp;&nbsp; &nbsp;&nbsp; reboot, 重启完了之后，就可以了。<BR><BR>安装mobilesubstrate在3.0中，发现skype又提示什么只能在未破解的机器上才能用，也就是说，这个安装后，skype就不能用了。。。至于如何解决。我也不知道。哈哈。<BR><BR>至于附近在哪儿。 在weiphone：http://weiphone.com/thread-441035-1-1.html，如果你没有注册，先注册吧，不然没法下载的。嘿嘿。谁让百度没有上传附近的功能。。。</P>
+</body></html>

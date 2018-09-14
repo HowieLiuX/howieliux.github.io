@@ -1,0 +1,10 @@
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=utf8"><title>163 blogs的博客：[转]几种典型程序Button处理代码的定位</title>
+<style type="text/css">
+a{color: #000000;text-decoration : none;font-size: 10pt;}
+a:hover {color: red;text-decoration : underline;}
+.replyBox{padding:4px;border:1px solid #D8D8D8;}
+</style></head><body><h2>[转]几种典型程序Button处理代码的定位</h2>
+<p align="right">发布时间：2012-8-8 17:55
+<br>分类名称：Debug_Crack</p><br>
+<font color="#333333"  >标 题:</font><font color="#000000"  > 几种典型程序Button处理代码的定位</font><font color="#666666"  ><br> <font color="#333333"  >作 者:</font> <font color="#000000"  >jingulong</font><br>  <font color="#333333"  >时 间:</font> 2006-01-04,15:33:43<br> <font color="#333333"  >链 接:</font> http://bbs.pediy.com/showthread.php?t=20078<br> </font><br>              首先<br> 1&nbsp;od&nbsp;下运行程序，F12&nbsp;暂停；<br> 2&nbsp;View菜单中选击Windows项，在打开的窗口中可以从Title栏看到目标按钮，从而找到它的Handle(xxxxxxxx)&nbsp;;<br> <br> 对不同平台生成的程序，分别处理：<br> <br> 一、VB,&nbsp;Delphi,&nbsp;CBuilder&nbsp;程序：<br> 3&nbsp;在CallWindowProcA入口下条件断点:&nbsp;[esp+8]==xxxxxxxx&nbsp;&amp;&amp;&nbsp;[esp+0c]==202；<br> 4&nbsp;F9继续程序，点击目标按钮，程序中断；<br> 5&nbsp;Alt+F4，在代码段（.text）上下访问断点；<br> 6&nbsp;F9执行程序，程序中断,<br> &nbsp;&nbsp;&nbsp;1).&nbsp;VB程序中断在下面代码<br> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;PUSH&nbsp;DWORD&nbsp;PTR&nbsp;DS:[EAX+EBX]&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;;&nbsp;yyyyyyy<br> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;上面[EAX+EBX]的值（yyyyyy）就是我们要找的位置。<br> <br> &nbsp;&nbsp;&nbsp;2).&nbsp;Delphi,&nbsp;CBuilder&nbsp;的程序<br> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;程序直接断在我们要找的位置。<br> <br> 借moon一句，这姑妄称作CallWindowProcA条件断点加上code段内存断点法吧。<br> <br> 二、VC程序<br> 又分MFC和Win32两种情况，二者相同之处：<br> 3&nbsp;在IsDialogMessageW入口下条件断点:&nbsp;[[esp+8]]==xxxxxxxx&nbsp;&amp;&amp;&nbsp;[[esp+8]+4]==202<br> 4&nbsp;F9继续程序，点击目标按钮，程序中断；<br> 5&nbsp;Alt+F4，在代码段上下访问断点；<br> 6&nbsp;F9执行程序，程序中断,&nbsp;注意这里虽然中断在code段，但却不是处理Button点击事件的代码处<br> &nbsp;&nbsp;这时：<br> &nbsp;&nbsp;对Win32程序，只需要按几下F7，当回到User32.dll领空后再重复一次第&nbsp;5、6步就可以了；<br> &nbsp;&nbsp;而对于MFC程序，我们不得不多次重复这样的操作：单步回到MFC领空，再第&nbsp;5、6步。好在已经看到大陆啦！<br> <br> 类比，这就叫IsDialogMessageW条件断点加上code段内存断点法了。
+</body></html>

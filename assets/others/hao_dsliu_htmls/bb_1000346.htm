@@ -1,0 +1,22 @@
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=utf8"><title>163 blogs的博客：[转] Javascript 字符串编码解码</title>
+<style type="text/css">
+a{color: #000000;text-decoration : none;font-size: 10pt;}
+a:hover {color: red;text-decoration : underline;}
+.replyBox{padding:4px;border:1px solid #D8D8D8;}
+</style></head><body><h2>[转] Javascript 字符串编码解码</h2>
+<p align="right">发布时间：2010-2-11 15:00
+<br>分类名称：windows</p><br>
+<p>javas<wbr>cript中存在几种对URL字符串进行编码的方法：escape()，encodeURI()，以及encodeURIComponent()。这几种编码所起的作用各不相同。</p>
+<p>escape() 方法： <br>采用ISO 
+Latin字符集对指定的字符串进行编码。<br>所有的空格符、标点符号、特殊字符以及其他非ASCII字符都将被转化成%xx格式的字符编码（xx等于该字符在字符集表里面的编码的16进制数字）。<br>比如，空格符对应的编码是%20。</p>
+<p>不会被此方法编码的字符： @ * / +</p>
+<p>encodeURI() 方法： <br>把URI字符串采用UTF-8编码格式转化成escape格式的字符串。 <br>不会被此方法编码的字符：! @ # 
+$&amp; * ( ) = : / ; ? + '</p>
+<p>encodeURIComponent() 方法： 
+<br>把URI字符串采用UTF-8编码格式转化成escape格式的字符串。<br>与encodeURI()相比，这个方法将对更多的字符进行编码，比如 / 
+等字符。<br>所以如果字符串里面包含了URI的几个部分的话，不能用这个方法来进行编码，否则 / 字符被编码之后URL将显示错误。 
+<br>不会被此方法编码的字符：! * ( ) '</p>
+<p>因此，对于中文字符串来说，<br>如果不希望把字符串编码格式转化成UTF-8格式的（比如原页面和目标页面的charset是一致的时候），<br>只需要使用escape。</p>
+<p>如果你的页面是GB2312或者其他的编码，而接受参数的页面是UTF-8编码的，就要采用encodeURI或者encodeURIComponent。</p>
+<p>另外，encodeURI/encodeURIComponent是在javas<wbr>cript1.5之后引进的，escape则在javas<wbr>cript1.0版本就有。</p>
+</body></html>

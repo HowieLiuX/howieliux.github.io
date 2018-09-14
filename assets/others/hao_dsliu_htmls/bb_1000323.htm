@@ -1,0 +1,266 @@
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=utf8"><title>163 blogs的博客：怎么减少二进制代码体积</title>
+<style type="text/css">
+a{color: #000000;text-decoration : none;font-size: 10pt;}
+a:hover {color: red;text-decoration : underline;}
+.replyBox{padding:4px;border:1px solid #D8D8D8;}
+</style></head><body><h2>怎么减少二进制代码体积</h2>
+<p align="right">发布时间：2010-2-12 11:44
+<br>分类名称：Private</p><br>
+<div>
+
+<p>
+从网上找了一篇文章： <a title="http://www.mvps.org/user32/nocrt.html" target="_blank" rel="nofollow" href="http://www.mvps.org/user32/nocrt.html"   >http://www.mvps.org/user32/nocrt.html</a>，
+还可以从一些地方参考 <a title="http://wiki.wxwidgets.org/Reducing_Executable_Size" target="_blank" rel="nofollow" href="http://wiki.wxwidgets.org/Reducing_Executable_Size"   >http://wiki.wxwidgets.org/Reducing_Executable_Size</a><br>
+ <a title="http://www.hailstorm.net/papers/smallwin32.htm#buffer" target="_blank" rel="nofollow" href="http://www.hailstorm.net/papers/smallwin32.htm#buffer"   >http://www.hailstorm.net/papers/smallwin32.htm#buffer</a><br>
+
+</p>
+
+<p>
+ <strong>Introduction</strong>
+</p>
+
+<p>
+This document describes some methods on how to minimize the size of 
+images - be they dll's or exe's. The methods include elimination of the 
+c-runtime stubs, and compiler &amp; linker settings. The compiler and 
+linker I concentrate on is MSVC 6 - most of the tips apply also to MSVC 
+5. While many of the concepts presented here apply to other development 
+enviroments the actual command line parameters and #pragmas will 
+obviously be different - check your enviroments documentation. 
+</p>
+
+<p>
+<strong>Doing without the C-Runtime</strong>
+</p>
+
+<p>
+The c-runtime is a library of functions that do stuff for you the 
+programmer. These functions are platform independent, and act as an 
+abstraction layer between your program and the operating system. This 
+has some drawbacks: 
+</p>
+
+<p>
+Bugs. While most c-runtimes are well tested, each layer you add to an 
+application introduces the possibility of more bugs  It takes up space. 
+You application must either include the co<wbr>de for the c-runtime functions
+ it uses, or use a c0runtime in a shared dll.  The abstraction layer is 
+not necessairly simpler than the <acronym title="Operating System"   >OS
+ - merely platform independent. Many tasks can be accomplished in less 
+lines of co<wbr>de using raw <acronym title="Operating System"   >OS <acronym title="Application Programming Interface"   >API calls than 
+using the c-runtime functions  Using the c-runtime also hides from you 
+many of the capabilities of the <acronym title="Operating System"   >OS
+ that have the potential to make your program simpler, and drastically 
+increase performance.  If, like me, you find these to be unacceptable 
+tradeoffs, there are a couple of things you must do to eliminate the 
+c-runtime completely from your application
+</p>
+
+<p>
+Stop using c-runtime functions. Some functions you can use (the string, 
+and memory manipulation functions) as they are available in intrinsic 
+form, or the <acronym title="Operating System"   >OS <acronym title="Application Programming Interface"   >API provides direct 
+equilavents. More work might be required to replace other runtime calls,
+ especially where the <acronym title="Operating System"   >OS 
+does not provide an equilavent service.  Implement a couple of runtime 
+functions that the C++ compiler assumes exists. new, delete and 
+_purecall may be necessary for c++ modules. You will need to provide the
+ application with an entrypoint.  Some compiler switches may need to be 
+changed to make the generated object files link properly in a no-crt 
+enviroment.  Change the linker settings to prevent the linker from 
+including the runtime libraries  NB: Note that the c-runtime startup 
+co<wbr>de is responsibile for initializing all global scope objects. Do not 
+use global scope objects that require initialization in a no-runtime 
+application as they will be in an undefined state (or - hopefully - 
+prevent the application from linking successfully).  
+</p>
+<hr>
+
+<p>
+<strong>Functions you can use</strong>
+</p>
+
+<p>
+ The following functions are available in intrinsic form by the 
+compiler. Beware though that the instrinsic forms of these may not be as
+ optimised as the library form.
+</p>
+
+<p>
+memcmp  memcpy  memset  strcmp  strcpy  strlen  strcat  strset 
+</p>
+<hr>
+
+<p>
+<strong>Required Functions</strong> The c++ compiler absolutely requires
+ that you implement __purecall,new and delete. If C++ exception ahndling
+ is enabled more are required that I have no clue how to write. Either 
+don't use C++ exceptions, or find the .obj files that implement these 
+functions and link them into your project.<br>
+
+</p>
+
+<p>
+ A simple implementation of these functions:<br>
+
+</p>
+
+<p>
+ void* __cdecl operator new(unsigned int cb) {
+</p>
+<pre>return HeapAlloc(GetProcessHeap(),0,cb);</pre>
+
+<p>
+}
+</p>
+
+<p>
+void __cdecl operator delete(void* pv) {
+</p>
+<pre><br>  HeapFree(GetProcessHead(),0,pv);</pre>
+
+<p>
+}
+</p>
+
+<p>
+extern “C” int _cdecl _purecall(void) {
+</p>
+<pre>return 0;</pre>
+
+<p>
+}
+</p>
+
+<p>
+ In addition to the C++ functions listed above you will need to provide 
+your application with a new entry point. Typically an application starts
+ at a functions called main, WinMain, or DllMain. These functions are 
+actually called from the c-runtimes real entry point. Here are the 
+prototypes and real names of an applications entry point:
+</p>
+
+<p>
+EXTERN_C int WINAPI mainCRTStartup();
+</p>
+
+<p>
+EXTERN_C int WINAPI WinMainCRTStartup();
+</p>
+
+<p>
+EXTERN_C BOOL WINAPI _DllMainCRTStartup(
+</p>
+<pre>HINSTANCE hInstDll,         // handle to the DLL module<br>DWORD fdwReason,            // reason for calling function<br>LPVOID lpvReserved,         // reserved</pre>
+
+<p>
+);
+</p>
+
+<p>
+Application Termination
+</p>
+
+<p>
+ Normally, when the co<wbr>de path leaves the main( or WinMain() functions, 
+the application exits. This is because the default implementation of the
+ above functions calls ExitProcess. If you do not call ExitProcess then 
+your application will not close untill all threads have exited cleanly.
+</p>
+
+<p>
+Example Implementation<br>
+ As a debugging aid it is usefull to implement the entrypoint function 
+in a manner similar to the c-runtimes.
+</p>
+
+<p>
+EXTERN_C int WINAPI WinMainCRTStartup() {
+</p>
+<pre>HINSTANCE hInstance = GetModuleHandle(NULL);<br>LPSTR lpszCmdLine = GetCommandLine();<br>int r = WinMain(hInstance,NULL,lpszCmdLine,SW_SHOWDEFAULT);<br>ExitProcess(r);<br>return r; // this will never be reached.</pre>
+
+<p>
+}
+</p>
+
+<p>
+<strong>Compiler Switches</strong><br>
+
+</p>
+
+<p>
+The following table describes the compiler switches that should be set 
+to ensure successful compilation using MSVC++ 6<br>
+
+</p>
+
+<p>
+Switch Act<wbr>ion Description <br>
+ <strong>delete /GX</strong><br>
+ This switch enables C++ exception handling which requires a number of 
+functions related to unwinding the stack. <br>
+ <strong>delete /GZ</strong> <br>
+ This switch enables some advanced debugging features. With these 
+features enabled the linker will look for a function called _chkstk. <br>
+ <strong>add /Oi</strong><br>
+ Add this switch to ensure that intrinsic functions are enabled. <br>
+ <strong>add /Zl</strong> <br>
+ Usually the compiler embeds a “defaultlib” refrence to the c-runtime in
+ the .obj file. This switch (do not confuse with the /ZI switch) ensures
+ that defaultlib entries are not written to the generated OBJs. 
+</p>
+
+<p>
+ <strong>Linker Switches</strong><br>
+
+</p>
+
+<p>
+The following switches are optional if the compiler is set correctly. 
+However, if just on<wbr>e badly compiled obj file is in the project then the 
+c-runtimes standard entry point may be invoked. If you suspect this is 
+the case you might want to set on<wbr>e, or both of these switches.
+</p>
+
+<p>
+Switch Act<wbr>ion Description <br>
+ <strong>add /nodefaultlib</strong><br>
+  This switch is not really necessary if you compile with /Zl, as there 
+should be no default libraries to ignore. If however you use a 3rd party
+ library, or any old obj files that do include a defaultlib entry, then 
+the linker will silently ignore your custom entry point, unless you use 
+the following switch <br>
+ <strong>add /entry:function</strong><br>
+ Use this if you wish to use a non-standard name for your entry point. 
+This is a good idea if you are linking to a 3rd party library or object 
+co<wbr>de that contains defaultlib directives, as the linker, if given half a
+ chance, will use the runtime libraries entry point if it can find it. <br>
+ <strong>add /opt:nowin98</strong> The MSVC 6 linker defaults to a 4Kb 
+section padding in PE files as an optimizaton to speed load times on 
+Windows 98. Very small projects will benefit with a file size saving of 
+about 16Kb. <br>
+
+</p>
+
+<p>
+<strong>More MSVC 6 Linker settings</strong><br>
+ Microsofts linkers prior to 6.00 produced PE iamges with file level 
+section alignments of 512 bytes. Link 6.00 aligns sections in a file on 
+4Kb boundries to optimise loading of the image under 98. For 
+compatability reasons 98 must load files with the old alignment (but 
+will do so with a performance hit), and, if you are targetting NT you 
+can use the old 512 byte padding without any performance deficit at all.
+ The linker switch you must add to the link line is: (the second line 
+details how the command might be embedded as a linker option in a .C 
+file.
+</p>
+
+<p>
+// linker options can be embedded directly in .cpp co<wbr>de thus:<br>
+ #if defined(_MSC_VER) &amp;&amp; _MSC_VER &gt;= 1200 <br>
+ #pragma comment(linker, ”/OPT:NOWIN98” )  <br>
+ #endif
+</p>
+
+</div>
+</body></html>

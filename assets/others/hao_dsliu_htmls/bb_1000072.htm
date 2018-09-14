@@ -1,0 +1,243 @@
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=utf8"><title>163 blogs的博客：[原] IRQL APC_LEVEL and APC</title>
+<style type="text/css">
+a{color: #000000;text-decoration : none;font-size: 10pt;}
+a:hover {color: red;text-decoration : underline;}
+.replyBox{padding:4px;border:1px solid #D8D8D8;}
+</style></head><body><h2>[原] IRQL APC_LEVEL and APC</h2>
+<p align="right">发布时间：2013-8-31 19:11
+<br>分类名称：Driver</p><br>
+ 
+<P>这篇文章主要说明俩个问题： </P>
+<P>1. 在APC_LEVEL上，Thread为何不能被suspend。 </P>
+<P>2. 在 APC_LEVEL上，可以使用分页内存的原因。 </P>
+<P>关于线程如何响应APC，要看是何种APC，请参考MSDN文档。我在看微软提供的资料的时候，发现俩个比较难懂的问题，把它们单独拿出来讨论。 </P>
+<P>首先看中断请求级：IRQL（Interrupt Request Levels） </P>
+<DIV>
+<TABLE style="BORDER-COLLAPSE: collapse;"   border="0"  >
+<COLGROUP>
+<COL style="WIDTH: 128px;"   >
+<COL style="WIDTH: 59px;"   >
+<COL style="WIDTH: 60px;"   >
+<COL style="WIDTH: 60px;"   >
+<COL style="WIDTH: 203px;"   >
+<TBODY vAlign="top"  >
+<TR style="HEIGHT: 17px; BACKGROUND: #d9e3ed;"   >
+<TD style="BORDER-TOP: 0.25pt solid; BORDER-RIGHT: 0.25pt solid; BORDER-BOTTOM: 0.25pt solid; PADDING-LEFT: 7px; BORDER-LEFT: 0.25pt solid; PADDING-RIGHT: 7px;"   rowSpan="2"  >
+<P><SPAN style="FONT-SIZE: 9pt; FONT-FAMILY: Arial;"   ><STRONG>IRQL</STRONG></SPAN>&nbsp;</P></TD>
+<TD style="BORDER-TOP: 0.25pt solid; BORDER-RIGHT: 0.25pt solid; BORDER-BOTTOM: 0.25pt solid; PADDING-LEFT: 7px; BORDER-LEFT: medium none; PADDING-RIGHT: 7px;"   colSpan="3"  >
+<P><SPAN style="FONT-SIZE: 9pt; FONT-FAMILY: Arial;"   ><STRONG>IRQL value</STRONG></SPAN></P></TD>
+<TD style="BORDER-TOP: 0.25pt solid; BORDER-RIGHT: 0.25pt solid; BORDER-BOTTOM: 0.25pt solid; PADDING-LEFT: 7px; BORDER-LEFT: medium none; PADDING-RIGHT: 7px;"   rowSpan="2"  >
+<P><SPAN style="FONT-SIZE: 9pt; FONT-FAMILY: Arial;"   ><STRONG>Description</STRONG></SPAN></P></TD></TR>
+<TR style="HEIGHT: 17px;"   >
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.25pt solid; BORDER-BOTTOM: 0.25pt solid; PADDING-LEFT: 7px; BORDER-LEFT: 0.25pt solid; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 9pt; FONT-FAMILY: Arial;"   >x86 </SPAN>&nbsp;</P></TD>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.25pt solid; BORDER-BOTTOM: 0.25pt solid; PADDING-LEFT: 7px; BORDER-LEFT: medium none; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 9pt; FONT-FAMILY: Arial;"   >IA64</SPAN>&nbsp;</P></TD>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.25pt solid; BORDER-BOTTOM: 0.25pt solid; PADDING-LEFT: 7px; BORDER-LEFT: medium none; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 9pt; FONT-FAMILY: Arial;"   >AMD64</SPAN>&nbsp;</P></TD></TR>
+<TR style="HEIGHT: 34px;"   >
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.25pt solid; BORDER-BOTTOM: 0.25pt solid; PADDING-LEFT: 7px; BORDER-LEFT: 0.25pt solid; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 9pt; FONT-FAMILY: Arial;"   >PASSIVE_LEVEL</SPAN>&nbsp;</P></TD>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.25pt solid; BORDER-BOTTOM: 0.25pt solid; PADDING-LEFT: 7px; BORDER-LEFT: medium none; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 9pt; FONT-FAMILY: Arial;"   >0</SPAN>&nbsp;</P></TD>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.25pt solid; BORDER-BOTTOM: 0.25pt solid; PADDING-LEFT: 7px; BORDER-LEFT: medium none; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 9pt; FONT-FAMILY: Arial;"   >0</SPAN>&nbsp;</P></TD>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.25pt solid; BORDER-BOTTOM: 0.25pt solid; PADDING-LEFT: 7px; BORDER-LEFT: medium none; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 9pt; FONT-FAMILY: Arial;"   >0</SPAN>&nbsp;</P></TD>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.25pt solid; BORDER-BOTTOM: 0.25pt solid; PADDING-LEFT: 7px; BORDER-LEFT: medium none; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 9pt; FONT-FAMILY: Arial;"   >User threads and most kernel-mode operations</SPAN></P></TD></TR>
+<TR style="HEIGHT: 34px;"   >
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.25pt solid; BORDER-BOTTOM: 0.25pt solid; PADDING-LEFT: 7px; BORDER-LEFT: 0.25pt solid; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 9pt; FONT-FAMILY: Arial;"   >APC_LEVEL</SPAN>&nbsp;</P></TD>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.25pt solid; BORDER-BOTTOM: 0.25pt solid; PADDING-LEFT: 7px; BORDER-LEFT: medium none; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 9pt; FONT-FAMILY: Arial;"   >1</SPAN>&nbsp;</P></TD>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.25pt solid; BORDER-BOTTOM: 0.25pt solid; PADDING-LEFT: 7px; BORDER-LEFT: medium none; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 9pt; FONT-FAMILY: Arial;"   >1</SPAN>&nbsp;</P></TD>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.25pt solid; BORDER-BOTTOM: 0.25pt solid; PADDING-LEFT: 7px; BORDER-LEFT: medium none; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 9pt; FONT-FAMILY: Arial;"   >1</SPAN>&nbsp;</P></TD>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.25pt solid; BORDER-BOTTOM: 0.25pt solid; PADDING-LEFT: 7px; BORDER-LEFT: medium none; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 9pt; FONT-FAMILY: Arial;"   >Asynchronous procedure calls and page faults</SPAN>&nbsp;</P></TD></TR>
+<TR style="HEIGHT: 34px;"   >
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.25pt solid; BORDER-BOTTOM: 0.25pt solid; PADDING-LEFT: 7px; BORDER-LEFT: 0.25pt solid; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 9pt; FONT-FAMILY: Arial;"   >DISPATCH_LEVEL</SPAN>&nbsp;</P></TD>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.25pt solid; BORDER-BOTTOM: 0.25pt solid; PADDING-LEFT: 7px; BORDER-LEFT: medium none; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 9pt; FONT-FAMILY: Arial;"   >2</SPAN>&nbsp;</P></TD>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.25pt solid; BORDER-BOTTOM: 0.25pt solid; PADDING-LEFT: 7px; BORDER-LEFT: medium none; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 9pt; FONT-FAMILY: Arial;"   >2</SPAN>&nbsp;</P></TD>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.25pt solid; BORDER-BOTTOM: 0.25pt solid; PADDING-LEFT: 7px; BORDER-LEFT: medium none; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 9pt; FONT-FAMILY: Arial;"   >2</SPAN>&nbsp;</P></TD>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.25pt solid; BORDER-BOTTOM: 0.25pt solid; PADDING-LEFT: 7px; BORDER-LEFT: medium none; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 9pt; FONT-FAMILY: Arial;"   >Thread scheduler and deferred procedure calls (DPCs)</SPAN></P></TD></TR>
+<TR style="HEIGHT: 34px;"   >
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.25pt solid; BORDER-BOTTOM: 0.25pt solid; PADDING-LEFT: 7px; BORDER-LEFT: 0.25pt solid; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 9pt; FONT-FAMILY: Arial;"   >CMC_LEVEL</SPAN>&nbsp;</P></TD>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.25pt solid; BORDER-BOTTOM: 0.25pt solid; PADDING-LEFT: 7px; BORDER-LEFT: medium none; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 9pt; FONT-FAMILY: Arial;"   >N/A</SPAN>&nbsp;</P></TD>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.25pt solid; BORDER-BOTTOM: 0.25pt solid; PADDING-LEFT: 7px; BORDER-LEFT: medium none; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 9pt; FONT-FAMILY: Arial;"   >3</SPAN>&nbsp;</P></TD>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.25pt solid; BORDER-BOTTOM: 0.25pt solid; PADDING-LEFT: 7px; BORDER-LEFT: medium none; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 9pt; FONT-FAMILY: Arial;"   >N/A</SPAN>&nbsp;</P></TD>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.25pt solid; BORDER-BOTTOM: 0.25pt solid; PADDING-LEFT: 7px; BORDER-LEFT: medium none; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 9pt; FONT-FAMILY: Arial;"   >Correctable machine-check level (IA64 platforms only)</SPAN></P></TD></TR>
+<TR style="HEIGHT: 34px;"   >
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.25pt solid; BORDER-BOTTOM: 0.25pt solid; PADDING-LEFT: 7px; BORDER-LEFT: 0.25pt solid; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 9pt; FONT-FAMILY: Arial;"   >Device interrupt levels (DIRQL)</SPAN>&nbsp;</P></TD>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.25pt solid; BORDER-BOTTOM: 0.25pt solid; PADDING-LEFT: 7px; BORDER-LEFT: medium none; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 9pt; FONT-FAMILY: Arial;"   >3-26</SPAN></P></TD>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.25pt solid; BORDER-BOTTOM: 0.25pt solid; PADDING-LEFT: 7px; BORDER-LEFT: medium none; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 9pt; FONT-FAMILY: Arial;"   >4-11</SPAN>&nbsp;</P></TD>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.25pt solid; BORDER-BOTTOM: 0.25pt solid; PADDING-LEFT: 7px; BORDER-LEFT: medium none; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 9pt; FONT-FAMILY: Arial;"   >3-11</SPAN>&nbsp;</P></TD>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.25pt solid; BORDER-BOTTOM: 0.25pt solid; PADDING-LEFT: 7px; BORDER-LEFT: medium none; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 9pt; FONT-FAMILY: Arial;"   >Device interrupts</SPAN>&nbsp;</P></TD></TR>
+<TR style="HEIGHT: 34px;"   >
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.25pt solid; BORDER-BOTTOM: 0.25pt solid; PADDING-LEFT: 7px; BORDER-LEFT: 0.25pt solid; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 9pt; FONT-FAMILY: Arial;"   >PC_LEVEL</SPAN>&nbsp;</P></TD>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.25pt solid; BORDER-BOTTOM: 0.25pt solid; PADDING-LEFT: 7px; BORDER-LEFT: medium none; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 9pt; FONT-FAMILY: Arial;"   >N/A</SPAN>&nbsp;</P></TD>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.25pt solid; BORDER-BOTTOM: 0.25pt solid; PADDING-LEFT: 7px; BORDER-LEFT: medium none; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 9pt; FONT-FAMILY: Arial;"   >12</SPAN>&nbsp;</P></TD>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.25pt solid; BORDER-BOTTOM: 0.25pt solid; PADDING-LEFT: 7px; BORDER-LEFT: medium none; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 9pt; FONT-FAMILY: Arial;"   >N/A</SPAN>&nbsp;</P></TD>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.25pt solid; BORDER-BOTTOM: 0.25pt solid; PADDING-LEFT: 7px; BORDER-LEFT: medium none; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 9pt; FONT-FAMILY: Arial;"   >Performance counter (IA64 platforms only)</SPAN></P></TD></TR>
+<TR style="HEIGHT: 34px;"   >
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.25pt solid; BORDER-BOTTOM: 0.25pt solid; PADDING-LEFT: 7px; BORDER-LEFT: 0.25pt solid; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 9pt; FONT-FAMILY: Arial;"   >PROFILE_LEVEL</SPAN>&nbsp;</P></TD>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.25pt solid; BORDER-BOTTOM: 0.25pt solid; PADDING-LEFT: 7px; BORDER-LEFT: medium none; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 9pt; FONT-FAMILY: Arial;"   >27</SPAN>&nbsp;</P></TD>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.25pt solid; BORDER-BOTTOM: 0.25pt solid; PADDING-LEFT: 7px; BORDER-LEFT: medium none; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 9pt; FONT-FAMILY: Arial;"   >15</SPAN>&nbsp;</P></TD>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.25pt solid; BORDER-BOTTOM: 0.25pt solid; PADDING-LEFT: 7px; BORDER-LEFT: medium none; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 9pt; FONT-FAMILY: Arial;"   >15</SPAN>&nbsp;</P></TD>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.25pt solid; BORDER-BOTTOM: 0.25pt solid; PADDING-LEFT: 7px; BORDER-LEFT: medium none; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 9pt; FONT-FAMILY: Arial;"   >Profiling timer for releases earlier than Windows&nbsp;2000</SPAN></P></TD></TR>
+<TR style="HEIGHT: 34px;"   >
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.25pt solid; BORDER-BOTTOM: 0.25pt solid; PADDING-LEFT: 7px; BORDER-LEFT: 0.25pt solid; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 9pt; FONT-FAMILY: Arial;"   >SYNCH_LEVEL</SPAN>&nbsp;</P></TD>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.25pt solid; BORDER-BOTTOM: 0.25pt solid; PADDING-LEFT: 7px; BORDER-LEFT: medium none; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 9pt; FONT-FAMILY: Arial;"   >27</SPAN></P></TD>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.25pt solid; BORDER-BOTTOM: 0.25pt solid; PADDING-LEFT: 7px; BORDER-LEFT: medium none; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 9pt; FONT-FAMILY: Arial;"   >13</SPAN></P></TD>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.25pt solid; BORDER-BOTTOM: 0.25pt solid; PADDING-LEFT: 7px; BORDER-LEFT: medium none; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 9pt; FONT-FAMILY: Arial;"   >13</SPAN></P></TD>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.25pt solid; BORDER-BOTTOM: 0.25pt solid; PADDING-LEFT: 7px; BORDER-LEFT: medium none; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 9pt; FONT-FAMILY: Arial;"   >Synchronization of code and instruction streams across processors</SPAN></P></TD></TR>
+<TR style="HEIGHT: 34px;"   >
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.25pt solid; BORDER-BOTTOM: 0.25pt solid; PADDING-LEFT: 7px; BORDER-LEFT: 0.25pt solid; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 9pt; FONT-FAMILY: Arial;"   >CLOCK_LEVEL</SPAN>&nbsp;</P></TD>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.25pt solid; BORDER-BOTTOM: 0.25pt solid; PADDING-LEFT: 7px; BORDER-LEFT: medium none; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 9pt; FONT-FAMILY: Arial;"   >N/A</SPAN>&nbsp;</P></TD>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.25pt solid; BORDER-BOTTOM: 0.25pt solid; PADDING-LEFT: 7px; BORDER-LEFT: medium none; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 9pt; FONT-FAMILY: Arial;"   >13</SPAN>&nbsp;</P></TD>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.25pt solid; BORDER-BOTTOM: 0.25pt solid; PADDING-LEFT: 7px; BORDER-LEFT: medium none; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 9pt; FONT-FAMILY: Arial;"   >13</SPAN>&nbsp;</P></TD>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.25pt solid; BORDER-BOTTOM: 0.25pt solid; PADDING-LEFT: 7px; BORDER-LEFT: medium none; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 9pt; FONT-FAMILY: Arial;"   >Clock timer</SPAN></P></TD></TR>
+<TR style="HEIGHT: 34px;"   >
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.25pt solid; BORDER-BOTTOM: 0.25pt solid; PADDING-LEFT: 7px; BORDER-LEFT: 0.25pt solid; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 9pt; FONT-FAMILY: Arial;"   >CLOCK2_LEVEL</SPAN>&nbsp;</P></TD>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.25pt solid; BORDER-BOTTOM: 0.25pt solid; PADDING-LEFT: 7px; BORDER-LEFT: medium none; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 9pt; FONT-FAMILY: Arial;"   >28</SPAN>&nbsp;</P></TD>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.25pt solid; BORDER-BOTTOM: 0.25pt solid; PADDING-LEFT: 7px; BORDER-LEFT: medium none; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 9pt; FONT-FAMILY: Arial;"   >N/A</SPAN>&nbsp;</P></TD>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.25pt solid; BORDER-BOTTOM: 0.25pt solid; PADDING-LEFT: 7px; BORDER-LEFT: medium none; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 9pt; FONT-FAMILY: Arial;"   >N/A</SPAN>&nbsp;</P></TD>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.25pt solid; BORDER-BOTTOM: 0.25pt solid; PADDING-LEFT: 7px; BORDER-LEFT: medium none; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 9pt; FONT-FAMILY: Arial;"   >Clock timer for x86 hardware</SPAN></P></TD></TR>
+<TR style="HEIGHT: 34px;"   >
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.25pt solid; BORDER-BOTTOM: 0.25pt solid; PADDING-LEFT: 7px; BORDER-LEFT: 0.25pt solid; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 9pt; FONT-FAMILY: Arial;"   >IPI_LEVEL</SPAN>&nbsp;</P></TD>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.25pt solid; BORDER-BOTTOM: 0.25pt solid; PADDING-LEFT: 7px; BORDER-LEFT: medium none; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 9pt; FONT-FAMILY: Arial;"   >29</SPAN>&nbsp;</P></TD>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.25pt solid; BORDER-BOTTOM: 0.25pt solid; PADDING-LEFT: 7px; BORDER-LEFT: medium none; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 9pt; FONT-FAMILY: Arial;"   >14</SPAN>&nbsp;</P></TD>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.25pt solid; BORDER-BOTTOM: 0.25pt solid; PADDING-LEFT: 7px; BORDER-LEFT: medium none; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 9pt; FONT-FAMILY: Arial;"   >14</SPAN>&nbsp;</P></TD>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.25pt solid; BORDER-BOTTOM: 0.25pt solid; PADDING-LEFT: 7px; BORDER-LEFT: medium none; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 9pt; FONT-FAMILY: Arial;"   >Interprocessor interrupt for enforcing cache consistency</SPAN></P></TD></TR>
+<TR style="HEIGHT: 34px;"   >
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.25pt solid; BORDER-BOTTOM: 0.25pt solid; PADDING-LEFT: 7px; BORDER-LEFT: 0.25pt solid; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 9pt; FONT-FAMILY: Arial;"   >POWER_LEVEL</SPAN>&nbsp;</P></TD>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.25pt solid; BORDER-BOTTOM: 0.25pt solid; PADDING-LEFT: 7px; BORDER-LEFT: medium none; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 9pt; FONT-FAMILY: Arial;"   >30</SPAN>&nbsp;</P></TD>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.25pt solid; BORDER-BOTTOM: 0.25pt solid; PADDING-LEFT: 7px; BORDER-LEFT: medium none; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 9pt; FONT-FAMILY: Arial;"   >15</SPAN>&nbsp;</P></TD>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.25pt solid; BORDER-BOTTOM: 0.25pt solid; PADDING-LEFT: 7px; BORDER-LEFT: medium none; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 9pt; FONT-FAMILY: Arial;"   >14</SPAN>&nbsp;</P></TD>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.25pt solid; BORDER-BOTTOM: 0.25pt solid; PADDING-LEFT: 7px; BORDER-LEFT: medium none; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 9pt; FONT-FAMILY: Arial;"   >Power failure</SPAN>&nbsp;</P></TD></TR>
+<TR style="HEIGHT: 34px;"   >
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.25pt solid; BORDER-BOTTOM: 0.25pt solid; PADDING-LEFT: 7px; BORDER-LEFT: 0.25pt solid; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 9pt; FONT-FAMILY: Arial;"   >HIGH_LEVEL</SPAN>&nbsp;</P></TD>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.25pt solid; BORDER-BOTTOM: 0.25pt solid; PADDING-LEFT: 7px; BORDER-LEFT: medium none; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 9pt; FONT-FAMILY: Arial;"   >31</SPAN></P></TD>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.25pt solid; BORDER-BOTTOM: 0.25pt solid; PADDING-LEFT: 7px; BORDER-LEFT: medium none; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 9pt; FONT-FAMILY: Arial;"   >15</SPAN>&nbsp;</P></TD>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.25pt solid; BORDER-BOTTOM: 0.25pt solid; PADDING-LEFT: 7px; BORDER-LEFT: medium none; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 9pt; FONT-FAMILY: Arial;"   >15</SPAN>&nbsp;</P></TD>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.25pt solid; BORDER-BOTTOM: 0.25pt solid; PADDING-LEFT: 7px; BORDER-LEFT: medium none; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 9pt; FONT-FAMILY: Arial;"   >Machine checks and catastrophic errors; profiling timer for Windows&nbsp;XP and later releases</SPAN></P></TD></TR></TABLE></DIV>
+<P>&nbsp;</P>
+<P>微软说： </P>
+<P>When a processor is running at a given IRQL, interrupts<STRONG> at that IRQL and lower are masked off </STRONG>(blocked) on the processor. </P>
+<P><SPAN style="FONT-SIZE: 10pt; COLOR: black;"   >但其实这句话只适合在DISPATCH_LEVEL到HIGH_LEVEL之间。在APC_LEVEL和PASSIVE_LEVEL级别要特殊对待。而且这两个级别可以被调度器调度，就显得更加复杂。 </SPAN></P>
+<P>所以微软又说： </P>
+<P>IRQL分为： <STRONG>Processor-specific</STRONG> and <STRONG>Thread-specific </STRONG>IRQLs </P>
+<UL>
+<LI>
+<DIV><STRONG>Processor-specific IRQLS： </STRONG></DIV>
+<UL>
+<LI><SPAN style="FONT-SIZE: 10pt; COLOR: black;"   >DISPATCH_LEVEL </SPAN>
+</LI><LI><SPAN style="FONT-SIZE: 10pt; COLOR: black;"   >DIRQL </SPAN>
+</LI><LI><SPAN style="FONT-SIZE: 10pt; COLOR: black;"   >HIGHEST_LEVEL </SPAN></LI></UL></LI></UL>
+<P><SPAN style="FONT-SIZE: 10pt; COLOR: black;"   >规则：When a processor is running at a given IRQL, interrupts<STRONG> at that IRQL and lower are masked off </STRONG>(blocked) on the processor. </SPAN></P>
+<P style="MARGIN-LEFT: 9pt;"   >&nbsp;</P>
+<UL>
+<LI>
+<DIV><SPAN style="FONT-SIZE: 10pt; COLOR: black;"   ><STRONG>Thread-specific IRQLS: </STRONG></SPAN></DIV>
+<UL>
+<LI><SPAN style="FONT-SIZE: 10pt; COLOR: black;"   >PASSIVE_LEVEL </SPAN>
+</LI><LI><SPAN style="FONT-SIZE: 10pt; COLOR: black;"   >IRQL PASSIVE_LEVEL in a critical region. Intermediate level<STRONG>（KeEnterCriticalRegion, KeLeaveCriticalRegion）</STRONG> </SPAN>
+</LI><LI><SPAN style="FONT-SIZE: 10pt; COLOR: black;"   >APC_LEVEL </SPAN></LI></UL></LI></UL>
+<P><SPAN style="FONT-SIZE: 10pt; COLOR: black;"   >在这三个级别上运行的线程，都能被调度器调度（调度器运行在DISPATCH_LEVEL），调度器考虑的只是优先级，优先级高的就能抢占优先级低的线程。所一个运行在APC_LEVEL低优先级的线程，可以被一个运行在PASSIVE_LEVEL优先级高的线程给抢占。所有微软说： </SPAN></P>
+<P><SPAN style="FONT-SIZE: 10pt; COLOR: black;"   >The thread scheduler considers only thread priority, and not IRQL, when preempting a thread. If a thread running at IRQL=APC_LEVEL blocks, the scheduler might select a new thread for the processor that was previously running at PASSIVE_LEVEL. </SPAN></P>
+<P><SPAN style="FONT-SIZE: 10pt; COLOR: black;"   >线程相关的IRQL，可以将线程想象为一个伪CPU，此CPU只有三个LEVEL：PASSIVE_LEVEL，Intermediate level and APC_LEVEL. </SPAN></P>
+<P>&nbsp;</P>
+<P><SPAN style="FONT-SIZE: 10pt;"   ><STRONG>IRQL PASSIVE_LEVEL in a critical region </STRONG></SPAN></P>
+<P><SPAN style="FONT-SIZE: 10pt;"   >Code that is running at PASSIVE_LEVEL in a critical region is effectively running at an intermediate level between PASSIVE_LEVEL and APC_LEVEL. Calls to KeGetCurrentIrql return PASSIVE_LEVEL. Driver code can determine whether it is operating in a critical region by calling the function KeAreApcsDisabled (available in Windows XP and later releases). </SPAN></P>
+<P><SPAN style="FONT-SIZE: 10pt;"   >Driver code that is running above PASSIVE_LEVEL (either at PASSIVE_LEVEL in a critical region or at APC_LEVEL or higher) cannot be suspended. Almost every operation that a driver can perform at PASSIVE_LEVEL can also be performed in a critical region. Two notable exceptions are raising hard errors and opening a file on storage media. </SPAN></P>
+<P>&nbsp;</P>
+<P><SPAN style="FONT-SIZE: 10pt;"   ><STRONG>IRQL APC_LEVEL </STRONG></SPAN></P>
+<P><SPAN style="FONT-SIZE: 10pt;"   >APC_LEVEL is a thread-specific IRQL that is most commonly associated with paging I/O. <STRONG>Applications cannot suspend code that is running at IRQL=APC_LEVEL.</STRONG> The system implements fast mutexes (a type of synchronization mechanism) at APC_LEVEL. The <STRONG>KeAcquireFastMutex</STRONG> routine raises the IRQL to APC_LEVEL, and <STRONG>KeReleaseFastMutex</STRONG> returns the IRQL to its original value. </SPAN></P>
+<P><SPAN style="FONT-SIZE: 10pt;"   >The only difference between a thread that is running at PASSIVE_LEVEL with APCs disabled and a thread that is running at APC_LEVEL is that while running at APC_LEVEL, the thread cannot be interrupted to deliver <STRONG>a special kernel-mode APC</STRONG>. </SPAN></P>
+<P>&nbsp;</P>
+<P><SPAN style="FONT-SIZE: 10pt;"   >Thread 进入APC_LEVEL方式： </SPAN></P>
+<OL>
+<LI><SPAN style="FONT-SIZE: 10pt;"   >Call <STRONG>KeAcquireFastMutex</STRONG> </SPAN>
+</LI><LI><SPAN style="FONT-SIZE: 10pt;"   >Delivery a APC </SPAN>
+</LI><LI><SPAN style="FONT-SIZE: 10pt;"   >KeRaiseIrql （一般不用）等。 </SPAN></LI></OL>
+<P><SPAN style="FONT-SIZE: 10pt;"   >使用Fast Mutex进入APC_LEVEL后，对于其它线程，若要获取此Mutex，则会被设置为等待状态。对于线程自己而言，微软说： </SPAN></P>
+<P><SPAN style="FONT-SIZE: 10pt;"   >Code paths that are protected by a fast mutex run at IRQL=APC_LEVEL, thus <STRONG>disabling delivery of all APCs </STRONG>and <STRONG>preventing the thread from suspension. </STRONG></SPAN></P>
+<P><SPAN style="FONT-SIZE: 10pt;"   ><STRONG>即：阻止响应任何APC，而且线程不能被挂起（suspend），为什么不能被挂起？因为操作系统实现线程挂起的方式，就是Delivery APC，在APC的回调函数里面等待一个信号量（这个是我查阅WRK中找到的答案）。由于运行在APC_LEVEL上，会disabling delivery of all APCs。 </STRONG></SPAN></P>
+<P><SPAN style="FONT-SIZE: 10pt;"   >如果将有一个线程理解为一个伪CPU，此CPU只有三个LEVEL：PASSIVE_LEVEL，Intermediate level and APC_LEVEL. 然后将Delivery APC当做一个中断来处理，使用微软的中断规则来处理：When a processor is running at a given IRQL, interrupts at that IRQL and lower are masked off (blocked) on the processor. 就可以理解为CPU在APC_LEVEL上，屏蔽了所有等于和小于它的中断。 </SPAN></P>
+<P><SPAN style="FONT-SIZE: 10pt;"   >APC有三种：kernel normal apc, special kernel normal apc, and user mode apc。Delivery a APC，此APC并不是会马上运行，要看情况而定，这个情况很复杂，不在本文说明，可以去微软MSDN寻找答案。 </SPAN></P>
+<P>&nbsp;</P>
+<P><SPAN style="FONT-SIZE: 10pt;"   >另外一个问题： </SPAN></P>
+<P>在 APC_LEVEL上，可以使用分页内存。但我查找资料发现，<STRIKE><FONT color="#ff00ff"  >当在分页内存中发生了Page fault，系统会delivery APC，那岂不是此APC也不会得到执行了么？那不就形成死锁，和在DIPATCH_LEVEL一样，形成蓝屏了么？后来，我找到了一个关键点。在APC_LEVEL上，一旦发生Page fault，系统首先是将此线程挂起，此线程将等待一个内核同步对象，虽然线程运行在APC_LEVEL上但是线程被挂起，此时调度器会调度别的线程。当Page fault处理完成后，系统会给此线程delivery a APC，此线程又临时变为可调度状态，调度器就去调用这个APC，这个APC会激活线程等待的那个内核同步对象，但线程等待的那个点并不会马上得到执行，得等到这个APC退出后，因为这个APC是在这个线程中执行的。等到Page fault的Delivery APC退出，线程等待的对象处于激活状态，此线程变为可调度，调度器会在合适的时间，继续调度此线程，由于内存错误得到了解决，所以访问内存没有任何问题。 </FONT></STRIKE></P>
+<P>这段解释是不对的，一旦线程在APC_LEVEL上，而且线程处于等待状态，给它排队APC，这个APC是不会得到执行的。排队APC等于给线程发送一个软中断，是不会得到响应的。在DISPATCH_LEVEL不能使用分页的主要原因在于，一旦有分页错误，它就会等待分页完成，在DISPATCH_LEVEL上，是不能调用KeWaitXXX来等待的。而不是在于排队一个APC，而且一个同步的分页，是不会排队APC的。在IoCompleteRequest函数中有如下代码：</P>
+<P>&nbsp;&nbsp;&nbsp;&nbsp; if (Irp-&gt;Flags &amp; (IRP_PAGING_IO | IRP_CLOSE_OPERATION |IRP_SET_USER_EVENT)) {<BR>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if (Irp-&gt;Flags &amp; (IRP_SYNCHRONOUS_PAGING_IO | IRP_CLOSE_OPERATION |IRP_SET_USER_EVENT)) {<BR>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ULONG flags;</P>
+<P>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; flags = Irp-&gt;Flags &amp; (IRP_SYNCHRONOUS_PAGING_IO|IRP_PAGING_IO);<BR>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; *Irp-&gt;UserIosb = Irp-&gt;IoStatus;<BR>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; (VOID) KeSetEvent( Irp-&gt;UserEvent, PriorityBoost, FALSE );<BR>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if (flags) {<BR>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if (IopIsReserveIrp(Irp)) {<BR>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; IopFreeReserveIrp(PriorityBoost);<BR>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; } else {<BR>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; IoFreeIrp( Irp );<BR>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }<BR>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }<BR>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; } else {<BR>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; thread = Irp-&gt;Tail.Overlay.Thread;<BR>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; KeInitializeApc( &amp;Irp-&gt;Tail.Apc,<BR>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &amp;thread-&gt;Tcb,<BR>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Irp-&gt;ApcEnvironment,<BR>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; IopCompletePageWrite,<BR>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; (PKRUNDOWN_ROUTINE) NULL,<BR>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; (PKNORMAL_ROUTINE) NULL,<BR>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; KernelMode,<BR>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; (PVOID) NULL );<BR>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; (VOID) KeInsertQueueApc( &amp;Irp-&gt;Tail.Apc,<BR>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; (PVOID) NULL,<BR>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; (PVOID) NULL,<BR>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; PriorityBoost );<BR>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }<BR>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; return;<BR>&nbsp;&nbsp;&nbsp; }</P>
+<P>如果线程运行在DISPATCH_LEVEL，显而易见，单核CPU中调度器无法执行（多核CPU中可以执行在另外一个核中）。但主要的原因是发送的APC相当于一个APC_LEVEL的中断，它是得不到执行的。所以在DISPATCH_LEVEL上，会崩溃。而且在DISPATCH_LEVEL上，不能等待一个timer不为0的内核对象。</P><BR>
+<DIV>最后，理解个名词。</DIV>
+<DIV>suspend ： 系统通过一个APC，将线程等待在一个信号量上。 此时线程就变成的 wait state。但wait state可以被线程自己调用WaitForSingleObject，Ke<SPAN style="FONT-SIZE: 14px; LINE-HEIGHT: 22px;"   >WaitForSingleObject等这种函数来达到这目的。但最终的目的，都是暂时中止此线程的执行。</SPAN></DIV>
+<DIV><BR></DIV>
+<DIV>preempt 和 interrupt：</DIV>
+<DIV>preempt：针对于调度器，调度器停止一个低优先级的线程，选择一个高优先级的线程运行。线程上下文被切换了，就叫抢占。</DIV>
+<DIV>interrupt：是一个线程被临时打断，在此线程上下文中去调用一个中断级别更高的中断程序。</DIV>
+<DIV><BR></DIV>
+<DIV>参考文档：</DIV>
+<DIV>微软两篇文档：</DIV>
+<DIV>《<SPAN style="FONT-SIZE: 14px; LINE-HEIGHT: 22px;"   >Locks, Deadlocks, and Synchronization</SPAN><SPAN style="FONT-SIZE: 14px; LINE-HEIGHT: 22px;"   >》</SPAN></DIV>
+<DIV><SPAN style="FONT-SIZE: 14px; LINE-HEIGHT: 22px;"   >《</SPAN><SPAN style="FONT-SIZE: 14px; LINE-HEIGHT: 22px;"   >Scheduling, Thread Context, and&nbsp;IRQL</SPAN><SPAN style="FONT-SIZE: 14px; LINE-HEIGHT: 22px;"   >》</SPAN></DIV>
+</body></html>

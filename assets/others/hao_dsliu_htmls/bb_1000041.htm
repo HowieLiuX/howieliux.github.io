@@ -1,0 +1,90 @@
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=utf8"><title>163 blogs的博客：[原] How Windows Installs Devices</title>
+<style type="text/css">
+a{color: #000000;text-decoration : none;font-size: 10pt;}
+a:hover {color: red;text-decoration : underline;}
+.replyBox{padding:4px;border:1px solid #D8D8D8;}
+</style></head><body><h2>[原] How Windows Installs Devices</h2>
+<p align="right">发布时间：2014-6-11 14:52
+<br>分类名称：Driver</p><br>
+<ol><li><strong>The New Device is Identified                    （第一步：识别设备，获取设备标识（ID））
+</strong></li><li><strong>A Driver for the Device is Selected          （第二步：选择最优驱动安装包）
+</strong></li><li><strong>The Driver for the Device is Installed      （第三部：安装驱动）
+</strong></li></ol><h1>Step 1: The New Device is Identified
+</h1><p>当一个设备插入到计算机总线后，总线驱动检测到设备插入，然后给设备分配一串<strong>硬件ID</strong>（<strong>hardware identifier (ID)</strong>）。<br>例如，插入一个USB Key插入到电脑后，分配的硬件ID为：
+</p><p>USB\VID_096E&amp;PID_0807&amp;REV_0100<br>USB\VID_096E&amp;PID_0807
+</p><p>Windows就靠此ID来寻找最优的那个驱动安装包。
+</p><p>硬件ID的格式如下：
+</p><ul><li>A bus-specific prefix, such as PCI\ or USB\.  
+</li><li>Vendor-specific identifiers for the device, such as a vendor, model, and revision identifier. The format of these identifiers within the hardware ID is also specific to the bus driver.
+</li></ul><p><strong>Hardware ID</strong><br>A hardware ID is a <strong>vendor-defined identification string</strong> that Windows uses to match a device to an INF file. In most cases, <strong>a device has associated with it a list of hardware IDs.</strong> (However, there are exceptions ? see Identifiers for 1394 Devices). When an enumerator reports a list of hardware IDs for a device, the hardware IDs should be listed in order of <strong>decreasing suitability</strong>.<br>通过MSND中的解释可以了解到：硬件ID是一组ID值，如上面例子中的两列字符串。
+</p><p><strong>Device ID</strong><br>A device ID is a string reported by a device's enumerator. A device has only one device ID. A device ID has the same format as a hardware ID.<br><strong>设备ID</strong>不是一组ID值，只有一个唯一ID值，他唯一标识了此类设备，设备ID和硬件ID的格式一样，硬件ID中最能严格定义此类设备的ID值就为设备ID。如上面两条ID值中，第一条能更加准确的定义此类设备，所以第一条也叫设备ID。
+</p><p><strong>Compatible ID<br></strong>A compatible ID is a vendor-defined identification string that Windows uses to match a device to an INF file. A device can have associated with it <strong>a list of compatible IDs</strong>. The compatible IDs should be listed in order of <strong>decreasing suitability</strong>. If Windows cannot locate an INF file that matches one of a device's hardware IDs, it uses compatible IDs to locate an INF file. Compatible IDs have the same format as hardware IDs. However, compatible IDs are typically more generic than hardware IDs.<strong>
+</strong></p><p>关于设备ID，硬件ID，兼容ID等概念，可以参考MSDN：<a rel="nofollow" href="http://msdn.microsoft.com/en-us/library/windows/hardware/ff541224(v=vs.85).aspx;"   >http://msdn.microsoft.com/EN-US/library/windows/hardware/ff541224(v=vs.85).aspx</a>，或者《竹林蹊径：深入浅出Windows驱动开发》中的第十二章。这里不需要深入了解。
+</p><p>在设备管理器中，可以浏览硬件ID：
+</p><p><img title="[原] How Windows Installs Devices - Howie - Dspace"   src="pic/img1.ph.126.net_1bRprKxOkcEO6fh86MTgag==_6599275386982916815.jpg"   alt=""   /><br>可以看到，硬件ID不只一个，它是一组ID，其中，最严格定义了该类设备的ID也被称作设备ID。如上图中，第一个条USB\VID_096E&amp;PID_0807&amp;REV_100为设备ID。
+</p><h1>Step 2: A Driver for the Device is Selected
+</h1><p>第一步得到硬件IDs，Windows开始搜索驱动安装包。这节解决几个问题：
+</p><ol><li>搜索的对比规则是什么？
+</li><li>搜索顺序是怎样的？
+</li><li>搜索结果有多个驱动匹配，如何选择最优？
+</li></ol><h2>搜索对比规则
+</h2><p>每个驱动安装包中，都有一个INF文件，此文件记录了厂商定义的设备信息等内容。以某个厂商的智能卡私有驱动为例，其INF片段如下：
+</p><p>[Manufacturer]<br>%MFGNAME1%=DeviceListMfg1,NTamd64
+</p><p>[DeviceListMfg1.NTamd64]<br>%USB\VID_08E6&amp;PID_3437.DeviceDesc%      =DriverInstall64, USB\VID_08E6&amp;PID_3437 ;       <br>%USB\VID_08E6&amp;PID_3438.DeviceDesc%      =DriverInstall64, USB\VID_08E6&amp;PID_3438 ;       <br>%USB\VID_08E6&amp;PID_3480.DeviceDesc%      =DriverInstall64, USB\VID_08E6&amp;PID_3480 ;       <br>%USB\VID_08E6&amp;PID_34EC.DeviceDesc%      =DriverInstall64, USB\VID_08E6&amp;PID_34EC ;       
+</p><p>可以看到[DeviceListMfg1.NTamd64]中，定义了每个产品的VID，PID信息，诸如：USB\VID_08E6&amp;PID_3437，就是厂商自己定义的硬件ID，Windows搜索INF这个区域，对比第一步得到的硬件IDs和INF中的硬件ID，如果能精确匹配，那说明此驱动包符合安装条件。
+</p><p>我们接着分析微软的通用智能卡驱动是如何实现的，我们知道，微软不可能知道我们的设备的硬件ID信息，也就说，在INF中，不能将全世界厂商的硬件ID全部记录在INF文件中。所以，微软引入了<strong>兼容ID</strong>（<strong>compatible ID</strong>）。兼容ID和硬件ID的格式一样，但它更加通用，能囊括一大类设备。它被厂商定义在INF文件中。如果Windows没有找到对应的硬件ID，它会去比对INF中的兼容ID，找到对应的驱动安装包。
+</p><p>以微软XP的CCID驱动为例，usbccid.inf中的片段：
+</p><p>[Manufacturer]<br>%CCID%=CCID,NTamd64
+</p><p>[CCID.NTamd64]<br>%USBCCID.DeviceDesc% = USBCCID.Install,USB\Class_0B&amp;SubClass_00
+</p><p>此处的USB\Class_0B&amp;SubClass_00，就是兼容ID，在设备管理器中也能显示兼容ID：
+</p><p><img title="[原] How Windows Installs Devices - Howie - Dspace"   src="pic/img0.ph.126.net_0EHp3SZ_VpV_c_Bh1BLrmA==_6599329263052676001.jpg"   alt=""   />
+</p><h2>驱动包的搜索顺序
+</h2><p>Windows搜索INF文件的位置，是按照一定规则来执行的，不同的操作系统，搜索顺序会有所不同：
+</p><div><table style="border-collapse:collapse;"   border="0"   ><colgroup><col style="width:122px;"   /><col style="width:227px;"   /><col style="width:208px;"   /><col style="width:161px;"   /><tbody valign="top"   ><tr style="background: #5b9bd5;"   ><td style="padding-left: 7px; border-left:  solid white 0.5pt; border-bottom:  solid white 0.5pt; border-right:  none; padding-right: 7px; border-top:  solid white 0.5pt;"   ><p style="text-align: center;"   ><span style="color:white;"   >Search phase</span></p></td><td style="padding-left: 7px; border-left:  none; border-bottom:  solid white 0.5pt; border-right:  none; padding-right: 7px; border-top:  solid white 0.5pt;"   ><p style="text-align: center;"   ><span style="color:white;"   >Windows Server 2003, Windows XP, and Windows 2000</span></p></td><td style="padding-left: 7px; border-left:  none; border-bottom:  solid white 0.5pt; border-right:  none; padding-right: 7px; border-top:  solid white 0.5pt;"   ><p style="text-align: center;"   ><span style="color:white;"   >Windows Vista and <br>Windows Server 2008</span></p></td><td style="padding-left: 7px; border-left:  none; border-bottom:  solid white 0.5pt; border-right:  solid white 0.5pt; padding-right: 7px; border-top:  solid white 0.5pt;"   ><p style="text-align: center;"   ><span style="color:white;"   >Windows 7 and later versions of Windows</span></p></td></tr><tr><td style=" border-left:  solid white 0.5pt; border-bottom:  solid white 0.5pt; padding-left: 7px; border-right:  solid white 0.5pt;background: #5b9bd5; padding-right: 7px; border-top:  none;"   ><p><span style="color:white;"   ><strong>Without user interaction</strong></span></p></td><td style=" border-left:  none; border-bottom:  solid white 0.5pt; padding-left: 7px; border-right:  solid white 0.5pt;background: #bdd6ee; padding-right: 7px; border-top:  none;"   ><p>DevicePath</p></td><td style=" border-left:  none; border-bottom:  solid white 0.5pt; padding-left: 7px; border-right:  solid white 0.5pt;background: #bdd6ee; padding-right: 7px; border-top:  none;"   ><p><a rel="nofollow"  >Driver store</a></p></td><td style=" border-left:  none; border-bottom:  solid white 0.5pt; padding-left: 7px; border-right:  solid white 0.5pt;background: #bdd6ee; padding-right: 7px; border-top:  none;"   ><p>Windows Update
+</p><p><a rel="nofollow"  >Driver store</a>
+</p><p>DevicePath</p></td></tr><tr><td style=" border-left:  solid white 0.5pt; border-bottom:  solid white 0.5pt; padding-left: 7px; border-right:  solid white 0.5pt;background: #5b9bd5; padding-right: 7px; border-top:  none;"   ><p><span style="color:white;"   ><strong>With user interaction</strong></span></p></td><td style=" border-left:  none; border-bottom:  solid white 0.5pt; padding-left: 7px; border-right:  solid white 0.5pt;background: #deeaf6; padding-right: 7px; border-top:  none;"   ><p>Prompt for distribution media
+</p><p>Windows Update</p></td><td style=" border-left:  none; border-bottom:  solid white 0.5pt; padding-left: 7px; border-right:  solid white 0.5pt;background: #deeaf6; padding-right: 7px; border-top:  none;"   ><p>DevicePath
+</p><p>Windows Update
+</p><p>Prompt for distribution media</p></td><td style=" border-left:  none; border-bottom:  solid white 0.5pt; padding-left: 7px; border-right:  solid white 0.5pt;background: #deeaf6; padding-right: 7px; border-top:  none;"   ><p>Not applicable</p></td></tr></table></div><p><strong><br>DevicePath</strong>对应的路径存储在注册里：<br><strong>HKEY_LOCAL_MACHINE\Software\Microsoft\Windows\CurrentVersion下，定义了DevicePath字符串键值。通常，对应的目录为 Windows\inf。</strong>
+</p><p><strong>Driver store</strong>在Vista以后，对应的路径为：<strong>Windows\System32\DriverStore\FileRepository。</strong>Vista以前的系统，路径为：Windows\Driver Cache。从Vista以后的系统，系统开始重用Driver Store，如果找到一个匹配的驱动包，第一步就是先把这个安装包拷贝到Driver Store中，然后安装过程在Driver Store中进行。
+</p><p>下面举例说明：
+</p><p>当前系统如果为Vista，当一个用户插入一个智能卡到USB hub中时：
+</p><ol><li>USB 总线驱动为智能卡创建一串硬件IDs，Windows首先会搜索Driver store（<strong>Windows\System32\DriverStore\FileRepository</strong>）中的INF文件。
+</li><li><div>如果未找到合适的驱动包，Windows启动 <strong>添加新硬件向导</strong>，在向导里，用户可以选择从Windows Update搜索（联机搜索），也可以自己指定INF安装路径。
+</div><p><img title="[原] How Windows Installs Devices - Howie - Dspace"   src="pic/img1.ph.126.net_45LE5lZmqNvifQRReOs7uQ==_6608866426910563870.jpg"   alt=""   />
+</p><p>
+&nbsp;</p><p><img title="[原] How Windows Installs Devices - Howie - Dspace"   src="pic/img1.ph.126.net_gupBZOJgGtdntGsIdMoG6Q==_6608418925679035225.jpg"   alt=""   /><br>选择联机搜索，Windows搜索顺序如下：
+</p><ol><li>DevicePath（<strong>Windows\inf</strong>）
+</li><li>Windows Update
+</li><li><div>如果搜索不到，提示用户插入光盘、软盘，或者指定驱动包位置
+</div><p><img title="[原] How Windows Installs Devices - Howie - Dspace"   src="pic/img1.ph.126.net_Px7mPpXs9GjV1HbJTpD7hw==_6608942293212882484.jpg"   alt=""   />
+<img title="[原] How Windows Installs Devices - Howie - Dspace"   src="pic/img2.ph.126.net_I7qVk2yIK-cEfUmdauxlrA==_6608626733375710682.jpg"   alt=""   />
+</p></li></ol></li><li>如果驱动包找到，Windows将驱动包运输（Staging）到Driver Store（<strong>Windows\System32\DriverStore\FileRepository</strong>）中。
+</li></ol><p>当前系统如果为Win7，当一个用户插入一个智能卡到USB hub中时：
+</p><ol><li>USB 总线驱动为智能卡创建一串硬件ID，Windows首先会搜索Windows Update，如果找到，将驱动运输到Driver store（<strong>Windows\System32\DriverStore\FileRepository</strong>）中。
+</li><li>如果未找到合适的驱动包，Windows继续搜索Driver store（<strong>Windows\System32\DriverStore\FileRepository</strong>）和<strong>DevicePath（Windows\Inf）.</strong>
+</li><li>如果找到了安装，如果未找到，安装失败。
+</li></ol><p>Win7不会自动运行安装向导来让用户选择驱动包，但这个向导仍然存在，在设备管理器中，选择未识别的设备，右键，选择更新驱动，同样能够达到安装的目的。
+</p><h2>选择最优驱动包
+</h2><p>搜索完成后，可能会有多个驱动包匹配成功，如不同版本号的驱动都匹配成功了。如何进一步筛选，选出最优驱动包？
+</p><ol><li>如果Windows只找到一个驱动包，那好说，直接安装。
+</li><li><div>如果Windows找到不只一个驱动包，Windows为每个驱动包的匹配度进行打分，打分最低的那个，就是最优的那个。
+</div><p>如何给驱动打分，有一套规则，规则比较复杂，打分在vista之前和vista之后会有所不同，可以参考MSDN：<a rel="nofollow" href="http://msdn.microsoft.com/en-us/library/ff686700(v=vs.85,d=hv.2).aspx;"   >http://msdn.microsoft.com/EN-US/library/ff686700(v=VS.85,d=hv.2).aspx</a>
+</p><p>这里大致说明一下，影响分值有几个因素：
+</p></li></ol><ul style="margin-left: 39pt;"   ><li>驱动是如何被签名（微软签名？第三方签名？未签名？等）
+</li><li>驱动ID是如何匹配的（根据硬件ID？根据兼容ID？等）
+</li><li>… …
+</li></ul><ol><li><div>如果打分最低的有多个（就是倒数并列第一的概念），Windows使用如下规则，进一步筛选：
+</div><ol><li>是否已被签名
+</li><li>通过INF的Version节中的DriverVer字段值判断哪儿个版本最新，就选哪个。
+</li></ol></li></ol><p>下面摘自《竹林蹊径：深入浅出Windows驱动开发》一个解释片段：
+</p><p><img title="[原] How Windows Installs Devices - Howie - Dspace"   src="pic/img0.ph.126.net_kKI6viPrYlM5Tl5XHZyPOw==_6598127496844352388.jpg"   alt=""   />
+</p><p><img title="[原] How Windows Installs Devices - Howie - Dspace"   src="pic/img2.ph.126.net_CxNJi27jVcYlXObL72ItRg==_6597739369239801548.jpg"   alt=""   />
+</p><h1>Step 3: The Driver for the Device is Installed
+</h1><p>选择好了驱动，就开始安装驱动了，安装驱动的步骤如下：
+</p><ol><li>通过INF文件中的CopyFiles指令，拷贝二进制文件（驱动和其他文件）到指定目录
+</li><li>如果INF 中有DDInstall.Coinstallers段，注册device-specific co-installer。co-installer是一个DLL库，是为了辅助设备驱动安装的一个库，它主要做一些在INF文件中无法描述的操作。例如，添加一些额外的信息到注册表，读取注册表的一些关键信息用以执行不同的操作，安装完成显示完成页面等。关于Co-installer更多的信息，可以参考MSDN：<a rel="nofollow" href="http://msdn.microsoft.com/en-us/library/windows/hardware/ff554011(v=vs.85).aspx;"   >http://msdn.microsoft.com/EN-US/library/windows/hardware/ff554011(v=vs.85).aspx</a>
+</li><li>读取INF中的Class 和 ClassGuid字段，将设备进行归类（软件方式归类，如将一个插入的鼠标归类为Mouse，将所有的智能卡设备归类为SmartCard）。如果此Class是一个系统中不存在的设备类型，厂商需要提供 类安装库（class installer），来安装设备类。这也是一个DLL，而且类安装过程中，也可以有class co-installers辅助安装库，具体信息参考MSDN：<a rel="nofollow" href="http://msdn.microsoft.com/en-us/library/windows/hardware/ff554009(v=vs.85).aspx;"   >http://msdn.microsoft.com/EN-US/library/windows/hardware/ff554009(v=vs.85).aspx</a>
+</li><li>当所有的驱动和co-installders都被注册，Windows将控制权交给Plug and Play (PnP) manager，它负责加载和驱动设备。
+</li><li>PNP管理器首选调用驱动入口函数：DriverEntry，接着调用AddDevice，……，发送IRP_MN_START_DEVICE给驱动设备对象。驱动开始工作。</li></ol>
+</body></html>

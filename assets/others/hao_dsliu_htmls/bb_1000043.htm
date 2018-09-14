@@ -1,0 +1,358 @@
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=utf8"><title>163 blogs的博客：[原] WinDBG 使用笔记</title>
+<style type="text/css">
+a{color: #000000;text-decoration : none;font-size: 10pt;}
+a:hover {color: red;text-decoration : underline;}
+.replyBox{padding:4px;border:1px solid #D8D8D8;}
+</style></head><body><h2>[原] WinDBG 使用笔记</h2>
+<p align="right">发布时间：2014-6-4 10:25
+<br>分类名称：Debug_Crack</p><br>
+<h2>Workspace
+</h2><ol><li><div style="text-align: justify;"   >Default Workspace (implicit)
+</div><ol><li><div style="text-align: justify;"   >Base Workspace, 会话尚未建立，处于赋闲状态，会使用。
+</div></li><li><div style="text-align: justify;"   >Default Kernel-mode Workspace，开始内核调试，但尚未和目标建立连接时。
+</div></li><li><div style="text-align: justify;"   >Remote Default Workspace，通过调试服务器(DbgSrv/KdSrv)进行远程调试时。
+</div></li><li><div style="text-align: justify;"   >Processor-specific Workspace，和处理器相关联。
+</div></li><li><div style="text-align: justify;"   >Default User-mode Workspace，调试一个已经运行的进程时。
+</div></li><li><div style="text-align: justify;"   >WinDBG自动根据文件路径和文件名称为其建立一个默认工作空间，若此空间已经存在，则使用。
+</div></li></ol></li><li><div style="text-align: justify;"   >Named Workspace (explicit) 手动保存
+</div></li></ol><p>
+&nbsp;</p><p>Workspace保存的信息：
+</p><ul><li><div style="text-align: justify;"   >调试会话状态（断点，打开的源文件，用户定义的别名等）。
+</div></li><li><div style="text-align: justify;"   >调试器设置（符号文件路径，可执行映像文件路径，源文件路径等）。
+</div></li><li><div style="text-align: justify;"   >WinDBG图形界面布局信息
+</div></li></ul><p>
+&nbsp;</p><p>WorkSpace默认保存位置：
+</p><p>HKEY_CURRENT_USER\Software\Microsoft\Windbg\Workspaces
+</p><p>下面有对应的四个子键：User, Kernel, Dump, Explicit
+</p><p>
+&nbsp;</p><p>使用Themes可以加载4种经过定制的工作空间。（.reg, .wew）.
+</p><p>
+&nbsp;</p><p>心得：
+</p><p>Windbg工作空间的配置是一个叠加和继承的关系。使用正常方式启动Windbg后，对其空间所有的修改，会在HKEY_CURRENT_USER\Software\Microsoft\Windbg\Workspaces下创建一个Default（REG_BINARY）类型的键值，里面记录了工作空间（Base Workspace）的所有配置。当调试一个系统时，会在Workspace下创建一个kernel子键，子键下创建一个Default（REG_BINARY），它会继承Workspaces键下面的Default（REG_BINARY）键值，然后后续的所有的空间修改，都是针对Kernel的。当调试一个user mode程序时，Workspace下创建一个user子键，子键下创建一个以程序全路径为名称的（REG_BINARY）键值，它会继承Workspaces键下面的Default（REG_BINARY）键值，然后后续的所有的空间修改，都是针对此程序的。
+</p><h2>命令
+</h2><h3>标准命令
+</h3><p>WinDBG内置命令，大多数为一到二个字符，第一个字符不区分大小写，第二个字符可能区分。
+</p><p>控制调试目标执行：g, t, p, wt
+</p><p>寄存器：r, rdmsr/wrmsr, rm
+</p><p>IO: ib/iw/id 和 ob/ow/od
+</p><p>内存：d, e, s
+</p><p>栈: k
+</p><p>断点：bp, ba, bl, bc/bd/be
+</p><p>汇编：a, u
+</p><p>功能：~, |, ?, dg, $, sx, sq, so, ss, version, vertarget, x, ls, ld, ln, lm, q, qq, qd … …
+</p><p>
+&nbsp;</p><h3>元命令
+</h3><p>WinDBG内置命令，补充标准命令，以(.)开始。大部分都是控制编译器的一些配置，例如
+</p><p>符号、源文件的选择，加载，修改等。
+</p><p>重新开始调试，放弃调试，附件调试，分离调试等。
+</p><h3>扩展命令
+</h3><p>在外部加载的扩展模块（DLL）中，以(!)开始。
+</p><p>![扩展模块名.]&lt;扩展命令名&gt;[参数]
+</p><p>使用元命令：.load, .loadby可以手动加载。当使用![扩展模块名.]&lt;扩展命令名&gt;[参数]执行命令时，如果指定的扩展模块没有被加载，WinDBG会自动加载。
+</p><p>.chain列出全部模块，.unlode, unloadall 卸载指定模块和全部模块
+</p><h2>命令行窗口
+</h2><p>[||system_index:]process_index:thread_index&gt;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;用户态调试
+</p><p>[||system_index:][processor_index:]kd&gt;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;双机内核调试
+</p><p>[||system_index:][processor_index:]lkd&gt;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;本地内核调试
+</p><p>*BUSY*&nbsp;&nbsp;&nbsp;&nbsp;忙碌状态
+</p><p>NoTarget&nbsp;&nbsp;&nbsp;&nbsp;.abondon所有的调试目标后
+</p><p>Input&gt;
+</p><p>
+&nbsp;</p><p>控制进程和线程 (User Mode)
+</p><p>||&lt;system_index&gt; s&nbsp;&nbsp;&nbsp;&nbsp;切换当前系统
+</p><p>|&lt;process_index&gt; s&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;切换当前进程
+</p><p>~&lt;thread_index&gt; s&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;切换当前线程（仅在当前子系统中）
+</p><h2>执行命令
+</h2><ol><li><div style="text-align: justify;"   >一行多条命令，用（；）隔开。
+</div></li><li><div style="text-align: justify;"   >直接回车，执行上次执行的命令。
+</div></li><li><div style="text-align: justify;"   >上下键，可以浏览敲过的命令。
+</div></li><li><div style="text-align: justify;"   >有的命令区分大小写，有的不区分。
+</div></li><li><div style="text-align: justify;"   >元命令以（.）开始，扩展命令以（!）开始。
+</div></li><li><div style="text-align: justify;"   >Ctrl+break中断，如果是KD、CDB，使用Ctrl+C。
+</div></li><li><div style="text-align: justify;"   >Ctrl+Alt+V可以启动WinDBG详细输出，再次按，则关闭。
+</div></li><li><div style="text-align: justify;"   >Ctrl+Alt+D 让WinDBG显示与内核调试引擎之间的数据通信，再按停止。
+</div></li><li><div style="text-align: justify;"   >.hh 帮助。
+</div></li></ol><h2>语法
+</h2><h3>MASM Numbers and Operators
+</h3><p><strong>进制（Radix）
+</strong></p><p><strong>n (Set Number Base)</strong>  set the default radix to 16, 10, or 8. All unprefixed numbers are then interpreted in this base. <strong>0x</strong> prefix (hexadecimal)
+</p><p><strong>0n</strong> prefix (decimal)
+</p><p><strong>0t</strong> prefix (octal)
+</p><p><strong>0y</strong> prefix (binary).
+</p><p>You can also specify hexadecimal numbers by adding an <strong>h</strong> after the number.
+</p><p>For example, "0x4AB3", "0X4aB3", "4AB3h", "4ab3h", and "4aB3H" have the same meaning.
+</p><p>
+&nbsp;</p><p><strong>符号（Symbol）
+</strong></p><p>任何数字类型的符号都被视为地址在Masm中。address of a global variable, local variable, function, segment, module, or any other recognized label
+</p><p>
+&nbsp;</p><p>When you perform arithmetic computations, the MASM expr<wbr>ession evaluator treats all numbers and symbols as ULONG64 types.
+</p><p>
+&nbsp;</p><p>MASM中，指定源文件行：
+</p><p>`[[Module!]Filename][:LineNumber(十进制)]` （两端是重音号），如：
+</p><p>Bp `d4dtest!drtest.cpp:196`
+</p><p>
+&nbsp;</p><p>注释：*, $$. *后面的所有内容都是注释；而$$后面的内容截止到分号为止。这两个注释符号前面都要加分号。
+</p><p>
+&nbsp;</p><p><strong>伪寄存器
+</strong></p><p>$ip, $peb, $teb, $frame, $thread, … …
+</p><p>在伪寄存器前加入@，标识是个寄存器，会更快执行。
+</p><h3>C++ Numbers and Operators
+</h3><p>Numbers in <strong>C++ expressions are interpreted as decimal numbers</strong>, unless you specify them in another manner. To specify a hexadecimal integer, add <strong>0x</strong> before the number. To specify an octal integer, add <strong>0 (zero)</strong> before the number.
+</p><p>
+&nbsp;</p><p>The default debugger radix does not affect how you enter C++ expressions. You cannot directly enter a binary number (except by nesting a MASM expr<wbr>ession within the C++ expr<wbr>ession).
+</p><p>
+&nbsp;</p><p>You can use the <strong>L</strong>, <strong>U</strong>, and <strong>I64</strong> suffixes with integer values.
+</p><h3>Evaluating Expressions
+</h3><p>MASM expressions and C++ expressions
+</p><p>
+&nbsp;</p><p>Default if MASM.
+</p><p><strong>When Each Syntax is Used
+</strong></p><p>You can select the default expr<wbr>ession evaluator in on<wbr>e of the following ways:
+</p><ul><li><div style="text-align: justify;"   >Use the _NT_EXPR_EV<wbr>AL environment variable before the debugger is started.
+</div></li><li><div style="text-align: justify;"   >Use the <strong>-ee</strong> {<strong>masm</strong>|<strong>c++</strong>} command-line option when the debugger is started.
+</div></li><li><div style="text-align: justify;"   >Use the <strong>.expr (Choose Expr<wbr>ession Evaluator)</strong> command to display or change the expr<wbr>ession evaluator after the debugger is running.
+</div></li></ul><p>
+&nbsp;</p><p>.expr 可以设置和查看默认表达式设置。
+</p><p>显示指定表达式：@@masm(…)  @@c++(…)
+</p><p>
+&nbsp;</p><p>? Expr<wbr>ession&nbsp;&nbsp;&nbsp;&nbsp;评估表达式(evaluates and displays the value of an expr<wbr>ession)
+</p><p>?? (Evaluate C++ Expr<wbr>ession) 专门评估C++表达式
+</p><p>? @@c++(reinterpret_cast&lt;int&gt; (0xffffffee))
+</p><p>
+&nbsp;</p><p>.formats (Show Number Formats)
+</p><h3>Address and Address Range Syntax
+</h3><p>通常所说的Address指的是Virtual Address，除非特别指出。
+</p><p>用户层，调试器使用当前进程的Page directory 解析地址。
+</p><p>内核层，调试器使用当前的Process context（或user-mode address context）解析地址。
+</p><p>
+&nbsp;</p><p>You can specify an address range by <strong>a pair of addresses</strong> or by <strong>an address and object count.</strong>
+</p><p><strong>a pair of addresses：&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</strong>0x00001000  0x00001007
+</p><p><strong>an address and object count：&nbsp;&nbsp;&nbsp;&nbsp;</strong>0x00001000  L8
+</p><p>
+&nbsp;</p><p>L Size，大小限制为256MB
+</p><p>L? Size 无大小限制
+</p><p>L- Size 负数，向上显示。
+</p><h2>进程、线程和系统限定符
+</h2><p><strong>Thread Syntax
+</strong></p><p>Many debugger commands have thread identifiers as their parameters. A tilde ( ~ ) appears before the thread identifier. 
+</p><p>
+&nbsp;</p><div><table style="border-collapse:collapse;"   border="0"   ><colgroup><col style="width:141px;"   /><col style="width:508px;"   /><tbody valign="top"   ><tr style="background: #a5a5a5;"   ><td style="padding-left: 7px; border-left:  solid #a5a5a5 0.5pt; border-bottom:  solid #a5a5a5 0.5pt; border-right:  none; padding-right: 7px; border-top:  solid #a5a5a5 0.5pt;"   ><p><span style=" font-size:10pt;color:white;"   ><strong>Thread identifier</strong></span></p></td><td style="padding-left: 7px; border-left:  none; border-bottom:  solid #a5a5a5 0.5pt; border-right:  solid #a5a5a5 0.5pt; padding-right: 7px; border-top:  solid #a5a5a5 0.5pt;"   ><p><span style=" font-size:10pt;color:white;"   ><strong>Description</strong></span></p></td></tr><tr style="background: #ededed;"   ><td style="padding-left: 7px; border-left:  solid #c9c9c9 0.5pt; border-bottom:  solid #c9c9c9 0.5pt; border-right:  solid #c9c9c9 0.5pt; padding-right: 7px; border-top:  none;"   ><p><span style="font-size:10pt;"   ><strong>~.</strong></span></p></td><td style="padding-left: 7px; border-left:  none; border-bottom:  solid #c9c9c9 0.5pt; border-right:  solid #c9c9c9 0.5pt; padding-right: 7px; border-top:  none;"   ><p><span style="font-size:10pt;"   >The current thread.</span></p></td></tr><tr><td style="padding-left: 7px; border-left:  solid #c9c9c9 0.5pt; border-bottom:  solid #c9c9c9 0.5pt; border-right:  solid #c9c9c9 0.5pt; padding-right: 7px; border-top:  none;"   ><p><span style="font-size:10pt;"   ><strong>~#</strong></span></p></td><td style="padding-left: 7px; border-left:  none; border-bottom:  solid #c9c9c9 0.5pt; border-right:  solid #c9c9c9 0.5pt; padding-right: 7px; border-top:  none;"   ><p><span style="font-size:10pt;"   >The thread that caused the current exception or debug event.</span></p></td></tr><tr style="background: #ededed;"   ><td style="padding-left: 7px; border-left:  solid #c9c9c9 0.5pt; border-bottom:  solid #c9c9c9 0.5pt; border-right:  solid #c9c9c9 0.5pt; padding-right: 7px; border-top:  none;"   ><p><span style="font-size:10pt;"   ><strong>~*</strong></span></p></td><td style="padding-left: 7px; border-left:  none; border-bottom:  solid #c9c9c9 0.5pt; border-right:  solid #c9c9c9 0.5pt; padding-right: 7px; border-top:  none;"   ><p><span style="font-size:10pt;"   >All threads in the process.</span></p></td></tr><tr><td style="padding-left: 7px; border-left:  solid #c9c9c9 0.5pt; border-bottom:  solid #c9c9c9 0.5pt; border-right:  solid #c9c9c9 0.5pt; padding-right: 7px; border-top:  none;"   ><p><span style="font-size:10pt;"   ><strong>~<em>Number</em></strong></span></p></td><td style="padding-left: 7px; border-left:  none; border-bottom:  solid #c9c9c9 0.5pt; border-right:  solid #c9c9c9 0.5pt; padding-right: 7px; border-top:  none;"   ><p><span style="font-size:10pt;"   >The thread whose index is <em>Number</em>. </span></p></td></tr><tr style="background: #ededed;"   ><td style="padding-left: 7px; border-left:  solid #c9c9c9 0.5pt; border-bottom:  solid #c9c9c9 0.5pt; border-right:  solid #c9c9c9 0.5pt; padding-right: 7px; border-top:  none;"   ><p><span style="font-size:10pt;"   ><strong>~~[<em>TID</em>]</strong></span></p></td><td style="padding-left: 7px; border-left:  none; border-bottom:  solid #c9c9c9 0.5pt; border-right:  solid #c9c9c9 0.5pt; padding-right: 7px; border-top:  none;"   ><p><span style="font-size:10pt;"   >The thread whose thread ID is <em>TID</em>. (The brackets are required And you cannot add a space between the second tilde and the opening bracket.)</span></p></td></tr><tr><td style="padding-left: 7px; border-left:  solid #c9c9c9 0.5pt; border-bottom:  solid #c9c9c9 0.5pt; border-right:  solid #c9c9c9 0.5pt; padding-right: 7px; border-top:  none;"   ><p><span style="font-size:10pt;"   ><strong>~[<em>Expr<wbr>ession</em>]</strong></span></p></td><td style="padding-left: 7px; border-left:  none; border-bottom:  solid #c9c9c9 0.5pt; border-right:  solid #c9c9c9 0.5pt; padding-right: 7px; border-top:  none;"   ><p><span style="font-size:10pt;"   >The thread whose thread ID is the integer to which the numerical <em>Expr<wbr>ession</em> resolves.</span></p></td></tr></table></div><p>
+&nbsp;</p><p>Many debugger commands have process identifiers as their parameters. A vertical bar ( | ) appears before the process identifier.
+</p><div><table style="border-collapse:collapse;"   border="0"   ><colgroup><col style="width:141px;"   /><col style="width:508px;"   /><tbody valign="top"   ><tr style="background: #a5a5a5;"   ><td style="padding-left: 7px; border-left:  solid #a5a5a5 0.5pt; border-bottom:  solid #a5a5a5 0.5pt; border-right:  none; padding-right: 7px; border-top:  solid #a5a5a5 0.5pt;"   ><p><span style=" font-size:10pt;color:white;"   ><strong>Process identifier</strong></span></p></td><td style="padding-left: 7px; border-left:  none; border-bottom:  solid #a5a5a5 0.5pt; border-right:  solid #a5a5a5 0.5pt; padding-right: 7px; border-top:  solid #a5a5a5 0.5pt;"   ><p><span style=" font-size:10pt;color:white;"   ><strong>Description</strong></span></p></td></tr><tr style="background: #ededed;"   ><td style="padding-left: 7px; border-left:  solid #c9c9c9 0.5pt; border-bottom:  solid #c9c9c9 0.5pt; border-right:  solid #c9c9c9 0.5pt; padding-right: 7px; border-top:  none;"   ><p><span style="font-size:10pt;"   ><strong>|.</strong></span></p></td><td style="padding-left: 7px; border-left:  none; border-bottom:  solid #c9c9c9 0.5pt; border-right:  solid #c9c9c9 0.5pt; padding-right: 7px; border-top:  none;"   ><p><span style="font-size:10pt;"   >The current process.</span></p></td></tr><tr><td style="padding-left: 7px; border-left:  solid #c9c9c9 0.5pt; border-bottom:  solid #c9c9c9 0.5pt; border-right:  solid #c9c9c9 0.5pt; padding-right: 7px; border-top:  none;"   ><p><span style="font-size:10pt;"   ><strong>|#</strong></span></p></td><td style="padding-left: 7px; border-left:  none; border-bottom:  solid #c9c9c9 0.5pt; border-right:  solid #c9c9c9 0.5pt; padding-right: 7px; border-top:  none;"   ><p><span style="font-size:10pt;"   >The process that caused the current exception or debug event.</span></p></td></tr><tr style="background: #ededed;"   ><td style="padding-left: 7px; border-left:  solid #c9c9c9 0.5pt; border-bottom:  solid #c9c9c9 0.5pt; border-right:  solid #c9c9c9 0.5pt; padding-right: 7px; border-top:  none;"   ><p><span style="font-size:10pt;"   ><strong>|*</strong></span></p></td><td style="padding-left: 7px; border-left:  none; border-bottom:  solid #c9c9c9 0.5pt; border-right:  solid #c9c9c9 0.5pt; padding-right: 7px; border-top:  none;"   ><p><span style="font-size:10pt;"   >All processes.</span></p></td></tr><tr><td style="padding-left: 7px; border-left:  solid #c9c9c9 0.5pt; border-bottom:  solid #c9c9c9 0.5pt; border-right:  solid #c9c9c9 0.5pt; padding-right: 7px; border-top:  none;"   ><p><span style="font-size:10pt;"   ><strong>|Number</strong></span></p></td><td style="padding-left: 7px; border-left:  none; border-bottom:  solid #c9c9c9 0.5pt; border-right:  solid #c9c9c9 0.5pt; padding-right: 7px; border-top:  none;"   ><p><span style="font-size:10pt;"   >The process whose ordinal is Number. </span></p></td></tr><tr style="background: #ededed;"   ><td style="padding-left: 7px; border-left:  solid #c9c9c9 0.5pt; border-bottom:  solid #c9c9c9 0.5pt; border-right:  solid #c9c9c9 0.5pt; padding-right: 7px; border-top:  none;"   ><p><span style="font-size:10pt;"   ><strong>|~[PID]</strong></span></p></td><td style="padding-left: 7px; border-left:  none; border-bottom:  solid #c9c9c9 0.5pt; border-right:  solid #c9c9c9 0.5pt; padding-right: 7px; border-top:  none;"   ><p><span style="font-size:10pt;"   >The process whose process ID is PID. (The brackets are required and you cannot add a space between the tilde (~) and the opening bracket.)</span></p></td></tr><tr><td style="padding-left: 7px; border-left:  solid #c9c9c9 0.5pt; border-bottom:  solid #c9c9c9 0.5pt; border-right:  solid #c9c9c9 0.5pt; padding-right: 7px; border-top:  none;"   ><p><span style="font-size:10pt;"   ><strong>|[Expr<wbr>ession]</strong></span></p></td><td style="padding-left: 7px; border-left:  none; border-bottom:  solid #c9c9c9 0.5pt; border-right:  solid #c9c9c9 0.5pt; padding-right: 7px; border-top:  none;"   ><p><span style="font-size:10pt;"   >The process whose process ID is the integer to which the numerical Expr<wbr>ession resolves.</span></p></td></tr></table></div><p>
+&nbsp;</p><p>Many debugger commands have process identifiers as their parameters.
+</p><p>Two vertical bars ( || ) appear before the system identifier. 
+</p><div><table style="border-collapse:collapse;"   border="0"   ><colgroup><col style="width:141px;"   /><col style="width:510px;"   /><tbody valign="top"   ><tr style="background: #a5a5a5;"   ><td style="padding-left: 7px; border-left:  solid #a5a5a5 0.5pt; border-bottom:  solid #a5a5a5 0.5pt; border-right:  none; padding-right: 7px; border-top:  solid #a5a5a5 0.5pt;"   ><p><span style=" font-size:10pt;color:white;"   ><strong>System identifier</strong></span></p></td><td style="padding-left: 7px; border-left:  none; border-bottom:  solid #a5a5a5 0.5pt; border-right:  solid #a5a5a5 0.5pt; padding-right: 7px; border-top:  solid #a5a5a5 0.5pt;"   ><p><span style=" font-size:10pt;color:white;"   ><strong>Description</strong></span></p></td></tr><tr style="background: #ededed;"   ><td style="padding-left: 7px; border-left:  solid #c9c9c9 0.5pt; border-bottom:  solid #c9c9c9 0.5pt; border-right:  solid #c9c9c9 0.5pt; padding-right: 7px; border-top:  none;"   ><p><span style="font-size:10pt;"   ><strong>||.</strong></span></p></td><td style="padding-left: 7px; border-left:  none; border-bottom:  solid #c9c9c9 0.5pt; border-right:  solid #c9c9c9 0.5pt; padding-right: 7px; border-top:  none;"   ><p><span style="font-size:10pt;"   >The current system</span></p></td></tr><tr><td style="padding-left: 7px; border-left:  solid #c9c9c9 0.5pt; border-bottom:  solid #c9c9c9 0.5pt; border-right:  solid #c9c9c9 0.5pt; padding-right: 7px; border-top:  none;"   ><p><span style="font-size:10pt;"   ><strong>||#</strong></span></p></td><td style="padding-left: 7px; border-left:  none; border-bottom:  solid #c9c9c9 0.5pt; border-right:  solid #c9c9c9 0.5pt; padding-right: 7px; border-top:  none;"   ><p><span style="font-size:10pt;"   >The system that caused the current exception or debug event.</span></p></td></tr><tr style="background: #ededed;"   ><td style="padding-left: 7px; border-left:  solid #c9c9c9 0.5pt; border-bottom:  solid #c9c9c9 0.5pt; border-right:  solid #c9c9c9 0.5pt; padding-right: 7px; border-top:  none;"   ><p><span style="font-size:10pt;"   ><strong>||*</strong></span></p></td><td style="padding-left: 7px; border-left:  none; border-bottom:  solid #c9c9c9 0.5pt; border-right:  solid #c9c9c9 0.5pt; padding-right: 7px; border-top:  none;"   ><p><span style="font-size:10pt;"   >All systems.</span></p></td></tr><tr><td style="padding-left: 7px; border-left:  solid #c9c9c9 0.5pt; border-bottom:  solid #c9c9c9 0.5pt; border-right:  solid #c9c9c9 0.5pt; padding-right: 7px; border-top:  none;"   ><p><span style="font-size:10pt;"   ><strong>||<em>ddd</em></strong></span></p></td><td style="padding-left: 7px; border-left:  none; border-bottom:  solid #c9c9c9 0.5pt; border-right:  solid #c9c9c9 0.5pt; padding-right: 7px; border-top:  none;"   ><p><span style="font-size:10pt;"   >The system whose ordinal is <em>ddd</em>. </span></p></td></tr></table></div><p>
+&nbsp;</p><p>切换线程（user mode）：~Thread s
+</p><p>切换进程（user mode）：|Process s
+</p><p>切换系统（user mode）：||System s
+</p><p>切换CPU（kernel mode）：~Processor s 在kernel mode ~ 不用来表示thread，用来表示一个processor。
+</p><p>在Kernel Mode中，有切换上下文的概念，见下文。
+</p><h2>上下文（Context）
+</h2><p>此处的切换上下文是在kernel mode方式下切换，用户模式下的切换非此方式。
+</p><p>切换上下文钱，先禁用缓存功能：.cache forcedecodeuser 或 .cache forcedecodeptes
+</p><p>会话上下文&nbsp;&nbsp;&nbsp;&nbsp;!session&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;（Kernel Mode）
+</p><p>进程上下文  .process&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;（Kernel Mode）
+</p><p>寄存器上下文 .thread&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;（Kernel Mode）配合!process使用。
+</p><p>局部变量上下文 .frame&nbsp;&nbsp;&nbsp;&nbsp;（Kernel/user Mode）
+</p><h2>别名
+</h2><ol><li><div style="text-align: justify;"   >User-named Alias&nbsp;&nbsp;&nbsp;&nbsp;用户指定
+</div></li><li><div style="text-align: justify;"   >Fixed-named Alias&nbsp;&nbsp;&nbsp;&nbsp;$u0~$u9
+</div><ol><li><div style="text-align: justify;"   >Automatic Alias&nbsp;&nbsp;&nbsp;&nbsp;$ntnsym, $ntwsym, $ntsym
+</div></li></ol></li></ol><p>
+&nbsp;</p><p>用户指定别名：
+</p><p>as alias command, 如：
+</p><p>as v version
+</p><p>al 列出所有别名，ad删除别名
+</p><p>
+&nbsp;</p><p>使用固定别名：
+</p><p>r $.u&lt;0~9&gt;=&lt;别名实体&gt;,如：
+</p><p>r $.u9=nt!KiServiceTable
+</p><p>
+&nbsp;</p><p>用户别名如果和其他命令连在一起，需要使用${Alias}这种方式。固定的别名则不需要括号。
+</p><h2>循环和条件
+</h2><p>z循环
+</p><p>Command ; z( Expr<wbr>ession )
+</p><p>!for_each_XXXX
+</p><p>j &lt;条件表达式&gt; [command1];[command2]
+</p><p>j &lt;条件表达式&gt; ['command1'];['command2']
+</p><p>
+&nbsp;</p><p>.if .else .elseif
+</p><p>~0r; ~0k 显示0号线程的寄存器和栈回溯，可简写为：
+</p><p>~0e r; k; e表示为0线程的执行后面的所有commands。
+</p><h2>记录到文件
+</h2><p>.logopen  .logclose  .logfile
+</p><h2>建立调试会话
+</h2><p><strong>Attach to a process
+</strong></p><ol><li><div style="text-align: justify;"   >(F6),  –p PID,  -pn Name(Process),  .attach
+</div></li><li><div style="text-align: justify;"   >设置WinDBG为JIT调试器（WinDBG.exe -I）
+</div></li></ol><p>
+&nbsp;</p><p><strong>创建并调试新进程
+</strong></p><ol><li><div style="text-align: justify;"   >(Ctrl+E),  windbg.exe path,  .create
+</div></li><li><div style="text-align: justify;"   >HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options 
+</div><p>下，新建 appname.exe/Debugger（RGE_SZ）full path
+</p></li></ol><p>
+&nbsp;</p><p><strong>非侵入式调试
+</strong></p><p>不能收到任何调试事件，只能看，不能控制。
+</p><p>Noninvasive,  -pv,  .attach –v
+</p><p>
+&nbsp;</p><p><strong>终止调试
+</strong></p><p>Stop Debug(menu),  q命令
+</p><p>
+&nbsp;</p><p><strong>分离调试目标(XP以上版本)
+</strong></p><p>Detach debuggee(menu),  .detach
+</p><p><strong>抛弃被调试的进程
+</strong></p><p>.abandon和.detach的区别：
+</p><p>.detach 修改进程属性，使其脱离调试状态成为一个普通进程。
+</p><p>.abandon 被调试进程仍然处于挂起状态，只是和调试器相互脱离（调试器处于No target），被调试进程并没有恢复调试前的状态。使用 windbg –pe –p PID ，可以再次附加被abandon的进程。
+</p><p>
+&nbsp;</p><p><strong>杀死调试进程</strong>：.kill
+</p><p><strong>重新开始调试</strong>：Restart(Ctrl+Shift+F5)(Menu),  .restart
+</p><h2>观察模块信息
+</h2><p>lm, !lmi, Debug-&gt;Modules(menu)
+</p><h2>检测符号
+</h2><p>X [options] module!symbol
+</p><p>x /v module!symbol 显示符号类型（local,global,parameter,function,unknown）
+</p><h2>搜索符号（最近的）
+</h2><p>ln
+</p><h2>控制流程
+</h2><h3>异常
+</h3><p>gh 强制返回已经处理异常（Handled）
+</p><p>gn强制返回未处理异常（Not Handled）
+</p><h3>继续运行
+</h3><p>g[a] [= StartAddress] [BreakAddress ... [; BreakCommands]]
+</p><p>gu (Go Up)
+</p><p>gc (Go from Conditional Breakpoint)
+</p><h3>单步
+</h3><p>模式：源码和汇编。使用指令 l+/-t来切换
+</p><p><strong>t</strong> [<strong>r</strong>] [= StartAddress] [Count] [<strong>"</strong>Command<strong>"</strong>]&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Step Into
+</p><p><strong>p</strong>[r] [= <em>StartAddress</em>] [<em>Count</em>] ["<em>Command</em>"]<strong>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</strong>Step Over
+</p><p><strong>pa</strong> [<strong>r</strong>] [= StartAddress] StopAddress [<strong>"</strong>Command<strong>"</strong>]&nbsp;&nbsp;&nbsp;&nbsp;Step to Address
+</p><p><strong>ta</strong> [<strong>r</strong>] [= StartAddress] StopAddress [<strong>"</strong>Command<strong>"</strong>]&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Trace to Address
+</p><p><strong>pc</strong> [<strong>r</strong>] [= StartAddress] [Count]&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Step to Next Call
+</p><p><strong>tc</strong> [<strong>r</strong>] [= StartAddress] [Count]&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Trace to Next Call
+</p><p><strong>pt</strong> [<strong>r</strong>] [= StartAddress] [Count] [<strong>"</strong>Command<strong>"</strong>]&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Step to Next Return
+</p><p><strong>tt</strong> [<strong>r</strong>] [= StartAddress] [Count]&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Trace to Next Return
+</p><p><strong>th</strong> [<strong>r</strong>] [= StartAddress] [Count]&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Trace to Next Branching Instruction
+</p><p><strong>ph</strong> [<strong>r</strong>] [= StartAddress] [Count]&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Step to Next Branching Instruction
+</p><p><strong>wt</strong> [WatchOptions] [= StartAddress] [EndAddress]&nbsp;&nbsp;&nbsp;&nbsp;Trace and Watch Da<wbr>ta
+</p><p><strong>tb</strong> [<strong>r</strong>] [= StartAddress] [Count]&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Trace to Next Branch(x86 kernel / x64 user and kernel)
+</p><h3>断点
+</h3><p><strong>软件断点（INT 3 0xcc）
+</strong></p><p><strong>bp</strong>[ID] [Options] [Address [Passes]] ["CommandString"] 
+</p><p><strong>bu</strong>[ID] [Options] [Address [Passes]] ["CommandString"] 
+</p><p><strong>bm</strong> [Options] SymbolPattern [Passes] ["CommandString"]
+</p><p>
+&nbsp;</p><p><strong>硬件断点 （DR0-DR7）
+</strong></p><p><strong>ba</strong>[ID] [erwi] Size [Options] [Address [Passes]] ["CommandString"]
+</p><p>
+&nbsp;</p><p><strong>条件断点</strong>，在CommandString中加入条件判断：
+</p><p>" j (condition) 'OptionalCommand'; 'gc' "  或  " .if (condition) { OptionalCommand} .else {gc} "
+</p><p>bl&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Breakpoint List
+</p><p>bc&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Breakpoint Clear
+</p><p>be&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Breakpoint Enable
+</p><p>bd&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Breakpoint Disable
+</p><h2>控制线程
+</h2><p>~<em>Thread</em> n&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Suspend Thread
+</p><p>~<em>Thread</em> m&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Resume Thread
+</p><p>~<em>Thread</em> f&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Freeze Thread
+</p><p>~<em>Thread</em> u&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Unfreeze Thread
+</p><p>~<em>Thread</em><strong>
+</strong>s&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Set Current Thread
+</p><p>~Thread g&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</p><h2>观察栈
+</h2><p>函数的调用由下至上。
+</p><p>User-mode&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[~Thread] k[b|p|P|v] [c] [n] [f] [L] [M] [FrameCount]
+</p><p>Kernel-mode&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Processor] k[b|p|P|v] [c] [n] [f] [L] [M] [FrameCount]
+</p><p style="margin-left: 20pt;"   >kb&nbsp;&nbsp;&nbsp;&nbsp;显示前三个参数信息[ebp+0x08], [ebp+0x0C], [ebp+0x10]，如果使用其他调用协议，或者FPO，这三个信息并不正确。
+</p><p>kp&nbsp;&nbsp;&nbsp;&nbsp;如果是私有PDB，此命令会根据PDB中的信息，显示函数的参数声明。
+</p><p>kP&nbsp;&nbsp;&nbsp;&nbsp;同kp，只是参数信息的显示会每个参数换一行
+</p><p>kv&nbsp;&nbsp;&nbsp;&nbsp;在kb的基础上显示FPO（栈指针省略）
+</p><p>
+&nbsp;</p><p>n&nbsp;&nbsp;&nbsp;&nbsp;显示栈序号，从0开始。
+</p><p>f&nbsp;&nbsp;&nbsp;&nbsp;显示相邻栈的距离，byte为单位，可以用来判断栈溢出。
+</p><p>L&nbsp;&nbsp;&nbsp;&nbsp;不显示调试源码信息
+</p><h2>观察栈变量
+</h2><p>dv /i /t /V
+</p><p>epb+8&nbsp;&nbsp;&nbsp;&nbsp;第一个参数
+</p><p>ebp+c&nbsp;&nbsp;&nbsp;&nbsp;第二个参数
+</p><p>ebp+10&nbsp;&nbsp;&nbsp;&nbsp;第三个参数
+</p><p>ebp+14&nbsp;&nbsp;&nbsp;&nbsp;第四个参数
+</p><p>ebp+18&nbsp;&nbsp;&nbsp;&nbsp;第五个参数
+</p><p>… …
+</p><p>ebp-4&nbsp;&nbsp;&nbsp;&nbsp;VC7 and higher：Cookie
+</p><p>ebp-8&nbsp;&nbsp;&nbsp;&nbsp;VC7 and higher：0xCCCCCCCC
+</p><p>ebp-C&nbsp;&nbsp;&nbsp;&nbsp;第一个变量
+</p><p>… …
+</p><h2>分析内存
+</h2><h3>显示内存区域
+</h3><p>d{a|b|c|d|D|f|p|q|u|w|W} [Options] [Range]
+</p><p>dy{b|d} [Options] [Range] 
+</p><p>d [Options] [Range]
+</p><p>
+&nbsp;</p><p><strong>字符串
+</strong></p><p>da&nbsp;&nbsp;&nbsp;&nbsp;ASCII characters
+</p><p>du&nbsp;&nbsp;&nbsp;&nbsp;UNICODE characters
+</p><p>ds&nbsp;&nbsp;&nbsp;&nbsp;ANSI_STRING
+</p><p>dS&nbsp;&nbsp;&nbsp;&nbsp;UNICODE_STRING
+</p><p>
+&nbsp;</p><p><strong>字节，字，双字，四字，双精，单精
+</strong></p><p>db&nbsp;&nbsp;&nbsp;&nbsp;Byte values and ASCII characters.
+</p><p>
+&nbsp;</p><p>dw&nbsp;&nbsp;&nbsp;&nbsp;Word values (2 bytes).
+</p><p>dW&nbsp;&nbsp;&nbsp;&nbsp;Word values (2 bytes) and ASCII characters.
+</p><p>
+&nbsp;</p><p>dd&nbsp;&nbsp;&nbsp;&nbsp;Double-word values (4 bytes).
+</p><p>dc&nbsp;&nbsp;&nbsp;&nbsp;Double-word values (4 bytes) and ASCII characters.
+</p><p>
+&nbsp;</p><p>dD&nbsp;&nbsp;&nbsp;&nbsp;Double-precision floating-point numbers (8 bytes).
+</p><p>df&nbsp;&nbsp;&nbsp;&nbsp;Single-precision floating-point numbers (4 bytes).
+</p><p>
+&nbsp;</p><p>dq&nbsp;&nbsp;&nbsp;&nbsp;Quad-word values (8 bytes).
+</p><p>dp&nbsp;&nbsp;&nbsp;&nbsp;Pointer-sized values. Depending 32-bit or 64-bit.
+</p><p>
+&nbsp;</p><p>dyb&nbsp;&nbsp;&nbsp;&nbsp;Binary values and byte values.
+</p><p>dyd&nbsp;&nbsp;&nbsp;&nbsp;Binary values and double-word values (4 bytes).
+</p><h3>显示数据类型
+</h3><p>dt [-DisplayOpts] [-SearchOpts] <strong>[module!]Name</strong> [[-SearchOpts] Field] [Address] [-l List] 
+</p><p>dt [-DisplayOpts] Address [-l List] 
+</p><p>dt –h
+</p><p>
+&nbsp;</p><p>dt –b [module!]Name&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Display blocks recursively.
+</p><p>dt –r[depth] [module!]Name&nbsp;&nbsp;&nbsp;&nbsp;Recursively dumps the subtype fields. This recursion will stop after <em>depth</em> levels. 1-9
+</p><p>dt [module!]Name –ny member
+</p><h3>搜索内存
+</h3><p><strong>搜索字符串
+</strong></p><p>s -[[Flags]]sa Range &nbsp;&nbsp;&nbsp;&nbsp;ASCII字符串
+</p><p>s -[[Flags]]su Range&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;UNICODE字符串
+</p><p>
+&nbsp;</p><p>例子
+</p><p>s –[l5]sa poi(nt!PsInitialSystemProcess) l200&nbsp;&nbsp;&nbsp;&nbsp;
+</p><p>搜索nt!PsInitialSystemProcess开始512（0x200）字节范围内长度不小于5的ASCII字符串；
+</p><p>
+&nbsp;</p><p><strong>搜索相同类型的对象（c++ class object）
+</strong></p><p>s -[[Flags]]v Range Object 
+</p><p>
+&nbsp;</p><p>例子
+</p><p>s-v <strong>0x12fc30 l100 </strong>0x12fe4c
+</p><p>
+&nbsp;</p><p><strong>搜索某一内存模式
+</strong></p><p>s [-[[Flags]Type]] Range Pattern 
+</p><p>Type 指定搜索内容的数据类型（宽度）。b（字节），w（字），d（双字），q（四字），a（ASCII），u（Unicode），如果不指定，b为默认。
+</p><p>
+&nbsp;</p><p>例子
+</p><p>s-w 0x400000 l2a000 41 64 76 44 62 67
+</p><p>0041b954&nbsp;&nbsp;&nbsp;&nbsp;0041 0064 0076 0044 0062 0067 0000 0000&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;A.d.v.D.b.g…..
+</p><p>
+&nbsp;</p><p>s-u 0x400000 l2a000 'A' 'd' 'v' 'D' 'b' 'g'
+</p><p>0041b954&nbsp;&nbsp;&nbsp;&nbsp;0041 0064 0076 0044 0062 0067 0000 0000&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;A.d.v.D.b.g…..
+</p><p>
+&nbsp;</p><p>s-u 0x400000 l2a000 "AdvDbg"
+</p><p>0041b954&nbsp;&nbsp;&nbsp;&nbsp;0041 0064 0076 0044 0062 0067 0000 0000&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;A.d.v.D.b.g…..
+</p><p>
+&nbsp;</p><p>当前进程的所有模块中搜索：
+</p><p>!for_each_module s-a @#Base @#End "Debugger"
+</p><h3>修改内存
+</h3><p>e{b|d|D|f|p|q|w} Address [Values] 
+</p><p>e{a|u|za|zu} Address "String" 
+</p><p>e Address [Values]</p>
+</body></html>

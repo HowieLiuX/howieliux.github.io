@@ -1,0 +1,12 @@
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=utf8"><title>163 blogs的博客：[转] 何时需要将工程设置的Entry Point手动改为wWinMainCRTStartup？</title>
+<style type="text/css">
+a{color: #000000;text-decoration : none;font-size: 10pt;}
+a:hover {color: red;text-decoration : underline;}
+.replyBox{padding:4px;border:1px solid #D8D8D8;}
+</style></head><body><h2>[转] 何时需要将工程设置的Entry Point手动改为wWinMainCRTStartup？</h2>
+<p align="right">发布时间：2010-2-11 15:18
+<br>分类名称：windows</p><br>
+<font face="Times New Roman">VC工程设置满足以下几个条件时，需要将链接器选项中的“Entry 
+Point”</font>手动改为wWinMainCRTStartup：<br>1.VC版本在6.0及以下，因为VC6.0以上版本会自动修改<font face="Times New Roman">“Entry 
+Point”内容，无需手动修改；<br>2.工程使用了MFC类库(动态或静态链接到MFC)<br>3.</font><font face="Times New Roman">工程使用了UNICODE字符集<br>4.工程是应用程序类型(.exe)，不是CONSOLE(控制台)或DLL(动态链接库)</font>
+</body></html>

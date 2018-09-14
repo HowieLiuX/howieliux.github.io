@@ -1,0 +1,59 @@
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=utf8"><title>163 blogs的博客：Create IRP</title>
+<style type="text/css">
+a{color: #000000;text-decoration : none;font-size: 10pt;}
+a:hover {color: red;text-decoration : underline;}
+.replyBox{padding:4px;border:1px solid #D8D8D8;}
+</style></head><body><h2>Create IRP</h2>
+<p align="right">发布时间：2014-5-14 19:44
+<br>分类名称：Driver</p><br>
+<p><strong>IoBuildAsynchronousFsdRequest</strong>
+</p><p>builds an IRP on whose completion you don't plan to wait. This function and the next are appropriate for building only certain types of IRP.
+</p><p><strong>IoBuildSynchronousFsdRequest</strong>
+</p><p>builds an IRP on whose completion you do plan to wait.
+</p><p><strong>IoBuildDeviceIoControlRequest</strong>
+</p><p>builds a synchronous IRP_MJ_DE?VICE_CONTROL or IRP_MJ_INTERNAL_DEVICE_CONTROL request.
+</p><p><strong>IoAllocateIrp</strong>
+</p><p>builds an asynchronous IRP of any type.
+</p><p>
+&nbsp;</p><p><span style="font-size:14pt;"   ><strong>Synchronous IRPs
+</strong></span></p><p><strong><em>IoBuildSynchronousFsdRequest</em></strong> and<strong>
+<em>IoBuildDeviceIoControlRequest</em>
+</strong>create a so-called <strong><em>synchronous</em> IRP</strong>.<br>The I/O Manager considers that a<strong> synchronous IRP belongs to the thread in whose context you create the IRP</strong>. This ownership concept has several consequences:
+</p><ul><li>If the owning thread terminates, the I/O Manager automatically cancels any pending synchronous IRPs that belong to that thread.
+</li><li>Because the creating thread owns a synchronous IRP, you shouldn't create one in an arbitrary thread—you most emphatically do not want the I/O Manager to cancel the IRP because this thread happens to terminate.
+</li><li>Following a call to IoCompleteRequest, the I/O Manager automatically cleans up a synchronous IRP and signals an event that you must provide.
+</li><li>You must take care that the event object still exists at the time the I/O Manager signals it.
+</li></ul><p>You must call these two functions <strong>at PASSIVE_LEVEL only</strong>. In particular, you must not be at APC_LEVEL (say, as a result of acquiring a fast mutex) because the I/O Manager won't then be able to <strong>deliver the special kernel asynchronous procedure call (APC)</strong> that does all the completion processing. In other words, you mustn't do this:
+</p><p>PIRP Irp = IoBuildSynchronousFsdRequest(...);<br>ExAcquireFastMutex(...);<br>NTSTATUS status = IoCallDriver(...);<br>if (status == STATUS_PENDING)<br>    KeWaitForSingleObject(...);  // &lt;== don't do this<br>ExReleaseFastMutex(...);
+</p><p><strong><em>KeWaitForSingleObject</em></strong> call will deadlock.
+</p><p>If you need to synchronize IRPs sent to another driver, consider the following alternatives:
+</p><ul><li>Use a <strong>regular kernel mutex instead of an executive fast mutex</strong>. The regular mutex leaves you at <strong>PASSIVE_LEVEL </strong>and doesn't inhibit special kernel APCs.
+</li><li>Use <strong>KeEnterCriticalRegion</strong> to inhibit all but special kernel APCs, and then use ExAcquireFastMutexUnsafe to acquire the mutex. This technique won't work in the original release of Windows 98 because KeEnterCriticalRegion wasn't supported there. It will work on all later WDM platforms.
+</li><li>Use an asynchronous IRP. Signal an event in the completion routine. Refer to IRP-handling scenario 8 at the end of this chapter for a code sample.
+</li></ul><div><table style="border-collapse:collapse;"   border="0"   ><colgroup><col style="width:225px;"   /><col style="width:328px;"   /><tbody valign="top"   ><tr style="background: #000066;"   ><td style=" padding-bottom: 5px;padding-top: 5px; padding-left: 5px; padding-right: 5px;"   ><p><span style=" font-size:10pt;color:white; font-family:Segoe UI;"   ><strong><em>Support Function</em></strong></span></p></td><td style=" padding-bottom: 5px;padding-top: 5px; padding-left: 5px; padding-right: 5px;"   ><p><span style=" font-size:10pt;color:white; font-family:Segoe UI;"   ><strong><em>Types of IRP You Can Create</em></strong></span></p></td></tr><tr style="background: #eeeeee;"   ><td style=" padding-bottom: 5px;padding-top: 5px; padding-left: 5px; padding-right: 5px;"   ><p><span style=" font-size:10pt;font-family:Segoe UI;"   ><em>IoBuildSynchronousFsdRequest</em>
+</span></p></td><td style=" padding-bottom: 5px;padding-top: 5px; padding-left: 5px; padding-right: 5px;"   ><p><span style=" font-size:10pt;font-family:Segoe UI;"   ><em>IRP_MJ_READ</em>
+</span></p><p><span style=" font-size:10pt;font-family:Segoe UI;"   ><em>IRP_MJ_WRITE</em>
+</span></p><p><span style=" font-size:10pt;font-family:Segoe UI;"   ><em>IRP_MJ_FLUSH_BUFFERS</em>
+</span></p><p><span style=" font-size:10pt;font-family:Segoe UI;"   ><em>IRP_MJ_SHUTDOWN</em>
+</span></p><p><span style=" font-size:10pt;font-family:Segoe UI;"   ><em>IRP_MJ_PNP</em>
+</span></p><p><span style=" font-size:10pt;font-family:Segoe UI;"   ><em>IRP_MJ_POWER</em> (but only for <em>IRP_MN_POWER_SEQUENCE</em>)</span></p></td></tr><tr style="background: #eeeeee;"   ><td style=" padding-bottom: 5px;padding-top: 5px; padding-left: 5px; padding-right: 5px;"   ><p><span style=" font-size:10pt;font-family:Segoe UI;"   ><em>IoBuildDeviceIoControlRequest</em>
+</span></p></td><td style=" padding-bottom: 5px;padding-top: 5px; padding-left: 5px; padding-right: 5px;"   ><p><span style=" font-size:10pt;font-family:Segoe UI;"   ><em>IRP_MJ_DEVICE_CONTROL</em>
+</span></p><p><span style=" font-size:10pt;font-family:Segoe UI;"   ><em>IRP_MJ_INTERNAL_DEVICE_CONTROL</em>
+</span></p></td></tr></table></div><p>
+&nbsp;</p><p><span style="font-size:14pt;"   ><strong>Asynchronous IRPs
+</strong></span></p><p><strong><em>IoBuildAsynchronousFsdRequest</em></strong> and <em><strong>IoAllocateIrp</strong>
+</em>create an <strong><em>asynchronous</em> IRP.</strong> Asynchronous IRPs don't belong to the creating thread, and the I/O Manager <strong>doesn't schedule an APC</strong> and <strong>doesn't clean up when the IRP completes</strong>. Consequently:
+</p><ul><li>When a thread terminates, the I/O Manager doesn't try to cancel any asynchronous IRPs that you happen to have created in that thread.
+</li><li>It's OK to create asynchronous IRPs in an <strong>arbitrary</strong> or <strong>nonarbitrary</strong> thread.
+</li><li>Because the I/O Manager doesn't do any cleanup when the IRP completes, you must provide a completion routine that will release buffers and call IoFreeIrp to release the memory used by the IRP.
+</li><li>Because the I/O Manager doesn't automatically cancel asynchronous IRPs, you might have to provide code to do that when you no longer want the operation to occur.
+</li><li>Because you don't wait for an asynchronous IRP to complete, you can create and send one at IRQL &lt;= DISPATCH_LEVEL (assuming, that is, that the driver to which you send the IRP can handle the IRP at elevated IRQL—you must check the specifications for that driver!). Furthermore, it's OK to create and send an asynchronous IRP while owning a fast mutex.
+</li></ul><div><table style="border-collapse:collapse;"   border="0"   ><colgroup><col style="width:234px;"   /><col style="width:342px;"   /><tbody valign="top"   ><tr style="background: #000066;"   ><td style=" padding-bottom: 5px;padding-top: 5px; padding-left: 5px; padding-right: 5px;"   ><p><span style=" font-size:10pt;color:white; font-family:Segoe UI;"   ><strong><em>Support Function</em></strong></span></p></td><td style=" padding-bottom: 5px;padding-top: 5px; padding-left: 5px; padding-right: 5px;"   ><p><span style=" font-size:10pt;color:white; font-family:Segoe UI;"   ><strong><em>Types of IRP You Can Create</em></strong></span></p></td></tr><tr style="background: #eeeeee;"   ><td style=" padding-bottom: 5px;padding-top: 5px; padding-left: 5px; padding-right: 5px;"   ><p><span style=" font-size:10pt;font-family:Segoe UI;"   ><em>IoBuildAsynchronousFsdRequest</em>
+</span></p></td><td style=" padding-bottom: 5px;padding-top: 5px; padding-left: 5px; padding-right: 5px;"   ><p><span style=" font-size:10pt;font-family:Segoe UI;"   ><em>IRP_MJ_READ</em>
+</span></p><p><span style=" font-size:10pt;font-family:Segoe UI;"   ><em>IRP_MJ_WRITE</em>
+</span></p><p><span style=" font-size:10pt;font-family:Segoe UI;"   ><em>IRP_MJ_FLUSH_BUFFERS</em>
+</span></p><p><span style=" font-size:10pt;font-family:Segoe UI;"   ><em>IRP_MJ_SHUTDOWN</em>
+</span></p><p><span style=" font-size:10pt;font-family:Segoe UI;"   ><em>IRP_MJ_PNP</em>
+</span></p><p><span style=" font-size:10pt;font-family:Segoe UI;"   ><em>IRP_MJ_POWER</em> (but only for <em>IRP_MN_POWER_SEQUENCE</em>)</span></p></td></tr><tr style="background: #eeeeee;"   ><td style=" padding-bottom: 5px;padding-top: 5px; padding-left: 5px; padding-right: 5px;"   ><p><span style=" font-size:10pt;font-family:Segoe UI;"   ><em>IoAllocateIrp</em>
+</span></p></td><td style=" padding-bottom: 5px;padding-top: 5px; padding-left: 5px; padding-right: 5px;"   ><p><span style=" font-size:10pt;font-family:Segoe UI;"   >Any (but you must initialize the <em>MajorFunction</em> field of the first stack location)</span></p></td></tr></table></div>
+</body></html>

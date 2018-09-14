@@ -1,0 +1,10 @@
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=utf8"><title>163 blogs的博客：ubuntu开机直接进入控制台</title>
+<style type="text/css">
+a{color: #000000;text-decoration : none;font-size: 10pt;}
+a:hover {color: red;text-decoration : underline;}
+.replyBox{padding:4px;border:1px solid #D8D8D8;}
+</style></head><body><h2>ubuntu开机直接进入控制台</h2>
+<p align="right">发布时间：2011-8-16 15:00
+<br>分类名称：Linux</p><br>
+<p>Ubuntu启动进入控制台 —— 以文字模式启动Ubuntu<br>----------------------------------<br>如果想Ubuntu在每次启动到command prompt，可以输入以下指令:<br>$echo "false" | sudo tee /etc/X11/default-display-manager<br>或者直接打开文件/etc/X11/default-display-manager删除文件中已有内容然后输入false<br>------------------<br>当下次开机时，就会以指令模式启动，如果想变会启动x window，可以输入:<br>$echo "/usr/sbin/gdm" | sudo tee /etc/X11/default-display-manager<br>如果不是用 gdm作为，以上指令需要根据你的环境作出更改，例如 kdm 或 xdm。<br>tee - read from standard input and write to standard output and files <br>－－－－－－－－－－－－－－－－－－－－<br>在控制台下想进入x-window，可以在root用户下输入：<br>gdm</p>
+</body></html>

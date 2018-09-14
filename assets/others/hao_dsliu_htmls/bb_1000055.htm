@@ -1,0 +1,261 @@
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=utf8"><title>163 blogs的博客：IRP Structure</title>
+<style type="text/css">
+a{color: #000000;text-decoration : none;font-size: 10pt;}
+a:hover {color: red;text-decoration : underline;}
+.replyBox{padding:4px;border:1px solid #D8D8D8;}
+</style></head><body><h2>IRP Structure</h2>
+<p align="right">发布时间：2014-5-9 19:11
+<br>分类名称：Driver</p><br>
+<p>typedef struct DECLSPEC_ALIGN(MEMORY_ALLOCATION_ALIGNMENT) _IRP {
+</p><p>    CSHORT Type;&nbsp;&nbsp;&nbsp;&nbsp;// 一般为IO_TYPE_IRP（0x00000006）
+</p><p>    USHORT Size;&nbsp;&nbsp;&nbsp;&nbsp;// IRP + 和其对应的I/0堆栈的总大小，分配IRP的时候，它们就是一起在堆上分配的空间，所以IRP下面就是I/O堆栈
+</p><p>
+&nbsp;</p><p>    //
+</p><p>    // Define the common fields used to control the IRP.
+</p><p>    //
+</p><p>
+&nbsp;</p><p>    //
+</p><p>    // Define a pointer to the Memory Descriptor List (MDL) for this I/O
+</p><p>    // request.  This field is only used if the I/O is "direct I/O".
+</p><p>    //
+</p><p>
+&nbsp;</p><p>    PMDL MdlAddress;
+</p><p>
+&nbsp;</p><p>    //
+</p><p>    // Flags word - used to remember various flags.
+</p><p>    //
+</p><p>
+&nbsp;</p><p>    ULONG Flags;
+</p><p>
+&nbsp;</p><p>    //
+</p><p>    // The following union is used for one of three purposes:
+</p><p>    //
+</p><p>    //    1. This IRP is an associated IRP.  The field is a pointer to a master
+</p><p>    //       IRP.
+</p><p>    //
+</p><p>    //    2. This is the master IRP.  The field is the count of the number of
+</p><p>    //       IRPs which must complete (associated IRPs) before the master can
+</p><p>    //       complete.
+</p><p>    //
+</p><p>    //    3. This operation is being buffered and the field is the address of
+</p><p>    //       the system space buffer.
+</p><p>    //
+</p><p>
+&nbsp;</p><p>    union {
+</p><p>        struct _IRP *MasterIrp;
+</p><p>        __volatile LONG IrpCount;
+</p><p>        PVOID SystemBuffer;
+</p><p>    } AssociatedIrp;
+</p><p>
+&nbsp;</p><p>    //
+</p><p>    // Thread list entry - allows queueing the IRP to the thread pending I/O
+</p><p>    // request packet list.
+</p><p>    //
+</p><p>
+&nbsp;</p><p>    LIST_ENTRY ThreadListEntry;
+</p><p>
+&nbsp;</p><p>    //
+</p><p>    // I/O status - final status of operation.
+</p><p>    //
+</p><p>
+&nbsp;</p><p>    IO_STATUS_BLOCK IoStatus;
+</p><p>
+&nbsp;</p><p>    //
+</p><p>    // Requestor mode - mode of the original requestor of this operation.
+</p><p>    //
+</p><p>
+&nbsp;</p><p>    KPROCESSOR_MODE RequestorMode;
+</p><p>
+&nbsp;</p><p>    //
+</p><p>    // Pending returned - TRUE if pending was initially returned as the
+</p><p>    // status for this packet.
+</p><p>    //
+</p><p>
+&nbsp;</p><p>    // 在IoComplateRequest函数中，有一句：Irp-&gt;PendingReturned = stackPointer-&gt;Control &amp; SL_PENDING_RETURNED;
+</p><p>    // 在回弹完成函数时，如果stackPointer-&gt;Control（IoMarkIrpPending可设置)有SL_PENDING_RETURNED，会将其保存到Irp-&gt;PendingReturned
+</p><p>    // 在完成函数中判断Irp-&gt;PendingReturned，继续调用IoMarkIrpPending，向上传递。
+</p><p>    BOOLEAN PendingReturned;&nbsp;&nbsp;&nbsp;&nbsp;
+</p><p>
+&nbsp;</p><p>    //
+</p><p>    // Stack state information.
+</p><p>    //
+</p><p>
+&nbsp;</p><p>    CHAR StackCount;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;// 和 Device-&gt;StackSize 大小一样
+</p><p>    CHAR CurrentLocation;&nbsp;&nbsp;&nbsp;&nbsp;// 当前Location，初始值为StackCount大小加1，用来和StackCount+1对比，是否到达最上层
+</p><p>
+&nbsp;</p><p>    //
+</p><p>    // Cancel - packet has been canceled.
+</p><p>    //
+</p><p>    // 当IRP被取消时，会被设置为FALSE。如在，IoCancelIrp中被设置为TRUE。
+</p><p>    BOOLEAN Cancel;
+</p><p>
+&nbsp;</p><p>    //
+</p><p>    // Cancel Irql - Irql at which the cancel spinlock was acquired.
+</p><p>    //
+</p><p>    // IoAcquireCancelSpinLock得到锁后的IRQL
+</p><p>    KIRQL CancelIrql;
+</p><p>
+&nbsp;</p><p>    //
+</p><p>    // ApcEnvironment - Used to save the APC environment at the time that the
+</p><p>    // packet was initialized.
+</p><p>    //
+</p><p>
+&nbsp;</p><p>    CCHAR ApcEnvironment;
+</p><p>
+&nbsp;</p><p>    //
+</p><p>    // Allocation control flags.
+</p><p>    //
+</p><p>
+&nbsp;</p><p>    UCHAR AllocationFlags;
+</p><p>
+&nbsp;</p><p>    //
+</p><p>    // User parameters.
+</p><p>    //
+</p><p>
+&nbsp;</p><p>    PIO_STATUS_BLOCK UserIosb;
+</p><p>    PKEVENT UserEvent;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;// 保存用户层传递的Evnet（如ReadFile异步调用时）
+</p><p>    union {
+</p><p>        struct {
+</p><p>            union {
+</p><p>                PIO_APC_ROUTINE UserApcRoutine;&nbsp;&nbsp;&nbsp;&nbsp;// 用户层传递的，APC 异步调用函数
+</p><p>                PVOID IssuingProcess;
+</p><p>            };
+</p><p>            PVOID UserApcContext;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;// APC 参数
+</p><p>        } AsynchronousParameters;&nbsp;&nbsp;&nbsp;&nbsp;// APC异步调用参数
+</p><p>        LARGE_INTEGER AllocationSize;
+</p><p>    } Overlay;&nbsp;&nbsp;&nbsp;&nbsp;//通过名字可以和用户层对应起来，都是Overlay。
+</p><p>
+&nbsp;</p><p>    //
+</p><p>    // CancelRoutine - Used to contain the address of a cancel routine supplied
+</p><p>    // by a device driver when the IRP is in a cancelable state.
+</p><p>    //
+</p><p>    // IRP取消的时候会被调用
+</p><p>    __volatile PDRIVER_CANCEL CancelRoutine;
+</p><p>
+&nbsp;</p><p>    //
+</p><p>    // Note that the UserBuffer parameter is outside of the stack so that I/O
+</p><p>    // completion can copy data back into the user's address space without
+</p><p>    // having to know exactly which service was being invoked.  The length
+</p><p>    // of the copy is stored in the second half of the I/O status block. If
+</p><p>    // the UserBuffer field is NULL, then no copy is performed.
+</p><p>    //
+</p><p>
+&nbsp;</p><p>    PVOID UserBuffer;
+</p><p>
+&nbsp;</p><p>    //
+</p><p>    // Kernel structures
+</p><p>    //
+</p><p>    // The following section contains kernel structures which the IRP needs
+</p><p>    // in order to place various work information in kernel controller system
+</p><p>    // queues.  Because the size and alignment cannot be controlled, they are
+</p><p>    // placed here at the end so they just hang off and do not affect the
+</p><p>    // alignment of other fields in the IRP.
+</p><p>    //
+</p><p>
+&nbsp;</p><p>    union {
+</p><p>
+&nbsp;</p><p>        struct {
+</p><p>
+&nbsp;</p><p>            union {
+</p><p>
+&nbsp;</p><p>                //
+</p><p>                // DeviceQueueEntry - The device queue entry field is used to
+</p><p>                // queue the IRP to the device driver device queue.
+</p><p>                //
+</p><p>                // KeInsertDeviceQueue( &amp;DeviceObject-&gt;DeviceQueue, &amp;Irp-&gt;Tail.Overlay.DeviceQueueEntry );
+</p><p>                // 将IRP和DeviceObject连接起来，使用在StartIO串行方式中。
+</p><p>                KDEVICE_QUEUE_ENTRY DeviceQueueEntry;
+</p><p>
+&nbsp;</p><p>                struct {
+</p><p>
+&nbsp;</p><p>                    //
+</p><p>                    // The following are available to the driver to use in
+</p><p>                    // whatever manner is desired, while the driver owns the
+</p><p>                    // packet.
+</p><p>                    //
+</p><p>
+&nbsp;</p><p>                    PVOID DriverContext[4];
+</p><p>
+&nbsp;</p><p>                } ;
+</p><p>
+&nbsp;</p><p>            } ;
+</p><p>
+&nbsp;</p><p>            //
+</p><p>            // Thread - pointer to caller's Thread Control Block.
+</p><p>            //
+</p><p>            // PsGetCurrentThread
+</p><p>            PETHREAD Thread;
+</p><p>
+&nbsp;</p><p>            //
+</p><p>            // Auxiliary buffer - pointer to any auxiliary buffer that is
+</p><p>            // required to pass information to a driver that is not contained
+</p><p>            // in a normal buffer.
+</p><p>            //
+</p><p>
+&nbsp;</p><p>            PCHAR AuxiliaryBuffer;
+</p><p>
+&nbsp;</p><p>            //
+</p><p>            // The following unnamed structure must be exactly identical
+</p><p>            // to the unnamed structure used in the minipacket header used
+</p><p>            // for completion queue entries.
+</p><p>            //
+</p><p>
+&nbsp;</p><p>            struct {
+</p><p>
+&nbsp;</p><p>                //
+</p><p>                // List entry - used to queue the packet to completion queue, among
+</p><p>                // others.
+</p><p>                //
+</p><p>
+&nbsp;</p><p>                LIST_ENTRY ListEntry;
+</p><p>
+&nbsp;</p><p>                union {
+</p><p>
+&nbsp;</p><p>                    //
+</p><p>                    // Current stack location - contains a pointer to the current
+</p><p>                    // IO_STACK_LOCATION structure in the IRP stack.  This field
+</p><p>                    // should never be directly accessed by drivers.  They should
+</p><p>                    // use the standard functions.
+</p><p>                    //
+</p><p>
+&nbsp;</p><p>                    struct _IO_STACK_LOCATION *CurrentStackLocation;
+</p><p>
+&nbsp;</p><p>                    //
+</p><p>                    // Minipacket type.
+</p><p>                    //
+</p><p>
+&nbsp;</p><p>                    ULONG PacketType;
+</p><p>                };
+</p><p>            };
+</p><p>
+&nbsp;</p><p>            //
+</p><p>            // Original file object - pointer to the original file object
+</p><p>            // that was used to open the file.  This field is owned by the
+</p><p>            // I/O system and should not be used by any other drivers.
+</p><p>            //
+</p><p>
+&nbsp;</p><p>            PFILE_OBJECT OriginalFileObject;
+</p><p>
+&nbsp;</p><p>        } Overlay;
+</p><p>
+&nbsp;</p><p>        //
+</p><p>        // APC - This APC control block is used for the special kernel APC as
+</p><p>        // well as for the caller's APC, if one was specified in the original
+</p><p>        // argument list.  If so, then the APC is reused for the normal APC for
+</p><p>        // whatever mode the caller was in and the "special" routine that is
+</p><p>        // invoked before the APC gets control simply deallocates the IRP.
+</p><p>        //
+</p><p>
+&nbsp;</p><p>        KAPC Apc;
+</p><p>
+&nbsp;</p><p>        //
+</p><p>        // CompletionKey - This is the key that is used to distinguish
+</p><p>        // individual I/O operations initiated on a single file handle.
+</p><p>        //
+</p><p>
+&nbsp;</p><p>        PVOID CompletionKey;
+</p><p>
+&nbsp;</p><p>    } Tail;
+</p><p>
+&nbsp;</p><p>} IRP;</p>
+</body></html>

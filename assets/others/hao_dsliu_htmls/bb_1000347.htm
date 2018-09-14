@@ -1,0 +1,10 @@
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=utf8"><title>163 blogs的博客：[转] 将ActiveX控件标记为脚本安全</title>
+<style type="text/css">
+a{color: #000000;text-decoration : none;font-size: 10pt;}
+a:hover {color: red;text-decoration : underline;}
+.replyBox{padding:4px;border:1px solid #D8D8D8;}
+</style></head><body><h2>[转] 将ActiveX控件标记为脚本安全</h2>
+<p align="right">发布时间：2010-2-11 14:29
+<br>分类名称：windows</p><br>
+为什么要标记这些安全性   <br>如果ActiveX控件不标记为脚本安全的话，在访问含有这个控件的页面时会弹出“该页上的ActiveX控件与页上的其它部分进行交互可能不安全，是否允许进行交互？”。要想不弹出这个警告，就得把你的ActiveX控件标记为脚本安全和初始化安全。   <br><br>在Windows7下面作的测试表明，只需要在控件的CLSID下新建一个名为Implemented   Categories的项，并添加两个子项。<font size="2"  ><br></font>具体可以参见这篇文章：<a target="_blank" rel="nofollow" href="http://support.microsoft.com/?scid=kb%3Ben-us%3B161873&amp;x=11&amp;y=9"  ><font size="2"  >How to mark MFC ActiveX controls as Safe for   Scripting and Initialization</font></a><br>有关脚本安全的详细说明在这里：<a target="_blank" rel="nofollow" href="http://msdn.microsoft.com/en-us/library/ms974305.aspx"  ><font size="2"  color="#0000ff"  >Signing and Marking ActiveX   Controls</font></a><br><br>如果是WinCE平台，只要实现IObjectSafety接口即可，在ATL工程中可以直接使用向导完成。
+</body></html>

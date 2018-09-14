@@ -1,0 +1,10 @@
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=utf8"><title>163 blogs的博客：(转)如何杀掉进程---介绍微软一个罕为人知的无敌命令</title>
+<style type="text/css">
+a{color: #000000;text-decoration : none;font-size: 10pt;}
+a:hover {color: red;text-decoration : underline;}
+.replyBox{padding:4px;border:1px solid #D8D8D8;}
+</style></head><body><h2>(转)如何杀掉进程---介绍微软一个罕为人知的无敌命令</h2>
+<p align="right">发布时间：2010-2-11 15:58
+<br>分类名称：windows</p><br>
+<p>转自：<a rel="nofollow" href="http://thunderplayonline.blogspot.com/2009/02/blog-post_66.html"  >http://thunderplayonline.blogspot.com/2009/02/blog-post_66.html</a></p>  <p>问:怎么才能关掉一个用任务管理器关不了的进程？我前段时间发现我的机子里多了一个进程，只要开机就在，我用任务管理器却怎么关也关不了。</p>  <p>答1:杀进程很容易，随便找个工具都行。比如IceSword。关键是找到这个进程的启动方式，不然下次重启它又出来了。顺便教大家一招狠的。其实用Windows自带的工具就能杀大部分进程：</p>  <p>c:\&gt;ntsd -c q -p PID</p>  <p>只有System、SMSS.EXE和CSRSS.EXE不能杀。前两个是纯内核态的，最后那个是Win32子系统，ntsd本身需要它。ntsd   从2000开始就是系统自带的用户态调试工具。被调试器附着(attach)的进程会随调试器一起退出，所以可以用来在命令行下终止进程。使用ntsd自   动就获得了debug权限，从而能杀掉大部分的进程。ntsd会新开一个调试窗口，本来在纯命令行下无法控制，但如果只是简单的命令，比如退出(q)，用   -c参数从命令行传递就行了。NtsdNtsd 按照惯例也向软件开发人员提供。只有系统开发人员使用此命令。有关详细信息，请参阅 NTSD   中所附的帮助文件。用法:开个cmd.exe窗口，输入：</p>  <p>ntsd -c q -p PID</p>  <p>把最后那个PID，改成你要终止的进程的ID。如果你不知道进程的ID，任务管理器－&gt;进程选项卡－&gt;查看－&gt;选择列－&gt;勾上"ID（进程标识符）"，然后就能看见了。</p>  <p>答2：xp下还有两个好东东tasklist和tskill。tasklist能列出所有的进程，和相应的信息。tskill能查杀进程，语法很简单：tskill   程序名！！</p>  <p>　（其实很简单^O^,但是希望能对那些为木马而困扰的朋友有用～）</p>
+</body></html>

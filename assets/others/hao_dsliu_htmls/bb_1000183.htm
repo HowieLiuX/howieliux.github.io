@@ -1,0 +1,10 @@
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=utf8"><title>163 blogs的博客：【原】跟踪纯虚函数调用的错误</title>
+<style type="text/css">
+a{color: #000000;text-decoration : none;font-size: 10pt;}
+a:hover {color: red;text-decoration : underline;}
+.replyBox{padding:4px;border:1px solid #D8D8D8;}
+</style></head><body><h2>【原】跟踪纯虚函数调用的错误</h2>
+<p align="right">发布时间：2011-11-28 15:14
+<br>分类名称：C++</p><br>
+如何能快速定位呢？ 最近看其它文章的时候，突发奇想。 VC中，纯虚函数在虚表中对应的是一个叫做_purecall的函数，此函数会弹出一个错误框。所以，我们可以debug调试的时候，打开purevirt.c文件，在此函数中设置一个断点，当调用的纯虚函数的时候，就会断下来，然后看看堆栈，是不是知道哪儿出问题啦？呵呵。
+</body></html>

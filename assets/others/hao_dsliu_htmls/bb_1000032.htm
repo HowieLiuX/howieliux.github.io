@@ -1,0 +1,217 @@
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=utf8"><title>163 blogs的博客：内存泄露检测之使用CRT的Debug技术</title>
+<style type="text/css">
+a{color: #000000;text-decoration : none;font-size: 10pt;}
+a:hover {color: red;text-decoration : underline;}
+.replyBox{padding:4px;border:1px solid #D8D8D8;}
+</style></head><body><h2>内存泄露检测之使用CRT的Debug技术</h2>
+<p align="right">发布时间：2014-12-2 10:33
+<br>分类名称：Debug_Crack</p><br>
+<h2>使用Debug版本的CRT
+</h2><p>CRT：C Run-Time Libraries，平时我们使用Visual Studio编译的程序，都会链接CRT运行库，不然，我们的程序是无法运行的，它主要做一些程序运行前的初始化工作。例如全局变量，就是CRT库帮助我们在进入main之前提前初始化的，当然它做的不只这一点工作。
+</p><p>首先，使用CRT 提供的Debug技术，你得链接到Debug版本的CRT，CRT也是以Lib/DLL库方式提供的，如libcmtd.lib（Debug CRT多线程静态库）,msvcrtd.lib（Debug CRT多线程动态库，有对应dll）等，具体这些库的区别和信息，请参考MSND：《CRT Library Features》<br><a rel="nofollow" href="http://msdn.microsoft.com/EN-US/library/abx4dbyh(v=VS.120,d=hv.2).aspx"   ><span style="font-family:宋体;"   >http://msdn.microsoft.com/EN-US/library/abx4dbyh(v=VS.120,d=hv.2).aspx</span></a>
+</p><p>这几个库在Visual Studio中，并不用在Link选项中进行显示指定，Visual Studio会自动链接CRT库，你需要做的是更改Visual Studio的一些编译选项：
+</p><ul><li><div style="text-align: justify;"   >编译选项：_DEBUG宏定义
+</div></li><li><div style="text-align: justify;"   >连接选项：/DEBUG，Debug CRT库：/MDd, /MTd, or /LDd.
+</div></li></ul><p>幸运的是，如果你的工程是Debug版本，这些选项你基本不需要调整，Visual Studio都帮你做了。
+</p><p>CRT库的大部分Debug技术都包含在一个头文件中：<strong>CRTDBG.h</strong>。在你安装Visual Studio，有选项让你安装CRT的一些源码，这些源码可以帮你你进行调试，所以最好都安装上，不然Visual Studio会是不是的弹出个框让你寻找源码的路径。
+</p><h2>基本原理
+</h2><p>内存泄露主要指的是我们分配的堆内存没有被释放，随着程序的运行，可能会积少成多，导致系统可用内存降低，甚至造成系统瘫痪。一般分配堆内存的C++方式有：
+</p><ol><li><div style="text-align: justify;"   >malloc
+</div></li><li><div style="text-align: justify;"   >new
+</div><p>当然，如果说更深一层，new最终调用的是malloc，而malloc调用的则是Windows API堆分配函数（如：HeapAlloc）来进行分配堆内存的。但平常我们并不直接调用很底层的函数。
+</p><p>Debug版本的 CRT定义了一套调试版本的内存分配函数（如_malloc_dbg)。当你包含了CRTDBG.h后，如果当前是Debug工程，十有八九会有_DEBUG宏，这时，malloc函数会被被映射为_malloc_dbg。
+</p><p>当如果是Release版本，它什么都不做。这样以来，如果是Debug版本，我们调用的malloc或者new，其实最终调用的都是_malloc_dbg。而_malloc_dbg会分配更多的内存，用来存储调试信息，用来跟踪内存分配和释放是否对应。
+</p><p>现在，我们可以暂时想象CRT是如何跟踪内存泄露的：调用_malloc_dbg，它将分配一个内存地址，将地址存储到一个列表中，当调用free的时候，肯定还是传入该地址，然后从列表中移除。当程序结束的时候，如果没有内存泄露，这个列表就应该为空，如果不为空，那么就出现了内存泄露，CRT库就将这些地址打印到调试窗口中，编译程序员进行排查。当然这个过程要比我说的复杂很多，但原理都差不多。
+</p><p>当然，这一切的前提，都是你得直接或者间接的调用malloc，不然一切都是空谈。
+</p><p></p><h2>CRT 堆调试技术
+</h2><p>CRT的堆调试技术不仅仅用来检测内存泄露，它还可以检测缓冲区是否溢出。当我们在Debug版本中调用malloc时候，其调用的是_malloc_dbg，其分配的内存，要大于我们指定的大小，分配的多余内存用来记录一些调试信息。例如，在内存的开始出，存储着一个结构体：
+</p><p>typedef struct _CrtMemBlockHeader
+</p><p>{
+</p><p>// Pointer to the block allocated just before this on<wbr>e:
+</p><p>    struct _CrtMemBlockHeader *pBlockHeaderNext;
+</p><p>// Pointer to the block allocated just after this on<wbr>e:
+</p><p>    struct _CrtMemBlockHeader *pBlockHeaderPrev;
+</p><p>    char *szFileName;    // File name
+</p><p>    int nLine;           // Line number
+</p><p>    size_t nDataSize;    // Size of user block
+</p><p>    int nBlockUse;       // Type of block
+</p><p>    long lRequest;       // Allocation number
+</p><p>// Buffer just before (lower than) the user's memory:
+</p><p>    unsigned char gap[nNoMansLandSize];
+</p><p>} _CrtMemBlockHeader;
+</p><p>
+&nbsp;</p><p>/* In an actual memory block in the debug heap,
+</p><p> * this structure is followed by:
+</p><p> *   unsigned char da<wbr>ta[nDataSize];
+</p><p> *   unsigned char anotherGap[nNoMansLandSize];
+</p><p> */
+</p><p>
+&nbsp;</p><p>Debug CRT分配的内存布局大概为：[_CrtMemBlockHeader头]  [真正的内存]  [anotherGap[nNoMansLandSize]]
+</p><p>真正的内存前后被unsigned char gap[nNoMansLandSize](_CrtMemBlockHeader最后一项)和unsigned char anotherGap[nNoMansLandSize]包围。nNoMansLandSize 的值一般为4，他们俩一般被一个通用的字节填充：0xFD。作用是让CRT检测，这块真正的内存有没有在被写入的时候发生溢出。如果溢出了，0xFD就会被覆盖，CRT就能检测出溢出地点，弹出Assert警告框提示程序员来排查错误。但如果你刚好写的字节刚好是0xFD，那就没辙了。等你编译成Release版本，这些前缀后缀都不存在，溢出了只能自己哼哧了。它还会将真正的内存填充为0xCD。当你释放一块内存后，填充这块内存为0xDD。所以，我们调试的时候时候，发现很多0xFD，0xCD等。当分配一块内存后，初始状态为header + 0xFD 0xFD 0xFD 0xFD + 0xCD 0xCD 0xCD 0xCD.... + 0xFD 0xFD 0xFD 0xFD。 
+</p><p>MSDN定义这三种填充符号如下：
+</p></li></ol><ul><li><div style="text-align: justify;"   ><strong>NoMansLand (0xFD) </strong><br>The "NoMansLand" buffers on either side of the memory used by an application are currently filled with 0xFD.
+</div></li><li><div style="text-align: justify;"   ><strong>Freed blocks (0xDD) </strong><br>The freed blocks kept unused in the debug heap's linked list when the _CRTDBG_DELAY_FREE_MEM_DF flag is set are currently filled with 0xDD.
+</div></li><li><div style="text-align: justify;"   ><strong>New objects (0xCD) </strong><br>New objects are filled with 0xCD when they are allocated.
+</div></li></ul><p>但如果是Release，这些填充操作都不会执行，所以，就会导致一些Release和Debug运行情况不太一样的情况发生。例如，我们中间件的PIN码，在Release版本中，会被扫描出的情况。
+</p><p>
+&nbsp;</p><p>
+&nbsp;</p><h2>Debug CRT 内存类型
+</h2><p>Debug CRT 将内存分为五个类型。要对分配的堆指定类型，你可以直接调用_malloc_dbg来指定。
+</p><p>void *_malloc_dbg(
+</p><p>   size_t size,
+</p><p>   int blockType, // 类型
+</p><p>   const char *filename,
+</p><p>   int linenumber 
+</p><p>);
+</p><p>注意，这五个类型是在Debug模式中，如果Release模式中，不存在不同类型的说法。其实上面介绍的_CrtMemBlockHeader结构体的nBlockUse成员就是保存这这块内存的类型。
+</p><ul><li><div style="text-align: justify;"   ><strong>_NORMAL_BLOCK</strong><br>A call to <strong>malloc </strong>or <strong>calloc </strong>creates a <strong>Normal block</strong>. If you intend to use Normal blocks on<wbr>ly, and have no need for Client blocks, you may want to define <strong>_CRTDBG_MAP_ALLOC</strong>, which causes all heap allocation calls to be mapped to their debug equivalents in Debug builds. This will allow file name and line number information about each allocation call to be stored in the corresponding block header.平常，我们的Debug版本，分配的都是Normal Block。
+</div></li><li><div style="text-align: justify;"   ><strong>_CRT_BLOCK</strong><br>The memory blocks allocated internally by many run-time library functions are marked as CRT blocks so they can be handled separately. As a result, leak detection and other operations need not be affected by them. An allocation must never allocate, reallocate, or free any block of CRT type.这个是CRT自身分配的内存堆，我们不应该指定这种类型，除非有特殊需求。
+</div></li><li><div style="text-align: justify;"   ><strong>_CLIENT_BLOCK</strong><br>An application can keep special track of a given group of allocations for debugging purposes by allocating them as this type of memory block, using explicit calls to the debug heap functions. <strong>MFC, for example, allocates all CObjects as Client blocks;</strong> other applications might keep different memory objects in Client blocks. Subtypes of Client blocks can also be specified for greater tracking granularity. To specify subtypes of Client blocks, shift the number left by 16 bits and OR it with _CLIENT_BLOCK. For example:<br><strong>#define MYSUBTYPE 4<br>freedbg(pbData, _CLIENT_BLOCK|(MYSUBTYPE&lt;&lt;16));<br></strong>看看MFC是如何new CObject类型的：<strong><br>#define _AFX_CLIENT_BLOCK (_CLIENT_BLOCK|(0xc0&lt;&lt;16))<br>void* PASCAL<br>CObject::operator new(size_t nSize, LPCSTR lpszFileName, int nLine)<br>{<br>&nbsp;&nbsp;&nbsp;&nbsp;return ::operator new(nSize, _AFX_CLIENT_BLOCK, lpszFileName, nLine);<br>}</strong><br>A client-supplied hook function for dumping the objects stored in Client blocks can be installed using <strong>_CrtSetDumpClient</strong>, and will then be called whenever a Client block is dumped by a debug function. Also, <strong>_CrtDoForAllClientObjects</strong> can be used to call a given function supplied by the application for every Client block in the debug heap. 可以看到CLIENT BLOCK的用途在于分类，调试一些错误信息，你可以对此类堆设置钩子函数，来分析和跟踪一些你需要的东西。
+</div></li><li><div style="text-align: justify;"   >_FREE_BLOCK<br>Normally, blocks that are freed are removed from the list. To check that freed memory is not still being written to or to simulate low memory conditions, you can choose to keep freed blocks on the linked list, marked as Free and filled with a known byte value (currently 0xDD).如果你要检查被释放的内存没有被重新写入或者模拟低内存等一些情况，你可以调用一些设置函数，让被释放的内存不从维护的链表中移除，仅仅是标记为释放，并且使用0xDD清除里面的数据。
+</div></li><li><div style="text-align: justify;"   >_IGNORE_BLOCK<br>It is possible to turn off the debug heap operations for a period of time. During this time, memory blocks are kept on the list, but are marked as Ignore blocks.
+</div></li></ul><p>要确定目前分配堆的类型，调用函数<strong>_CrtReportBlockType </strong>结合俩个宏_<strong>BLOCK_TYPE</strong>，<strong>_BLOCK_SUBTYPE：
+</strong></p><p><strong>#define _BLOCK_TYPE(block)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(block &amp; 0xFFFF)
+</strong></p><p><strong>#define _BLOCK_SUBTYPE(block)&nbsp;&nbsp;&nbsp;&nbsp;(block &gt;&gt; 16 &amp; 0xFFFF)
+</strong></p><h2>配置Debug CRT堆
+</h2><p>Debug CRT 定义了一个全局变量_crtDbgFlag：
+</p><p>extern "C" int _crtDbgFlag = _CRTDBG_ALLOC_MEM_DF | _CRTDBG_CHECK_DEFAULT_DF;
+</p><p>用它来保存调试开关。
+</p><p>通过函数<strong>_CrtSetDbgFlag</strong>来进行设置，其开关有：
+</p><div><table style="border-collapse:collapse;"   border="0"   ><colgroup><col style="width:231px;"   /><col style="width:48px;"   /><col style="width:435px;"   /><tbody valign="top"   ><tr style="background: black;"   ><td vAlign="middle"   style="padding-left: 1px; padding-right: 1px; border-top:  solid black 1.0pt; border-left:  solid black 1.0pt; border-bottom:  solid black 1.0pt; border-right:  dotted 0.0pt;"   ><p><span style="color:white;"   >Bit field</span></p></td><td vAlign="middle"   style="padding-left: 1px; padding-right: 1px; border-top:  solid black 1.0pt; border-left:  none; border-bottom:  solid black 1.0pt; border-right:  dotted 0.0pt;"   ><p><span style="color:white;"   >Default</span></p></td><td vAlign="middle"   style="padding-left: 1px; padding-right: 1px; border-top:  solid black 1.0pt; border-left:  none; border-bottom:  solid black 1.0pt; border-right:  solid black 1.0pt;"   ><p><span style="color:white;"   >Description</span></p></td></tr><tr style="background: white;"   ><td vAlign="middle"   style="padding-left: 1px; padding-right: 1px; border-top:  none; border-left:  solid black 1.0pt; border-bottom:  solid black 1.0pt; border-right:  dotted 0.0pt;"   ><p><span style="color:black;"   >_CRTDBG_ALLOC_MEM_DF</span></p></td><td vAlign="middle"   style="padding-left: 1px; padding-right: 1px; border-top:  none; border-left:  none; border-bottom:  solid black 1.0pt; border-right:  dotted 0.0pt;"   ><p><span style="color:black;"   >ON</span></p></td><td vAlign="middle"   style="padding-left: 1px; padding-right: 1px; border-top:  none; border-left:  none; border-bottom:  solid black 1.0pt; border-right:  solid black 1.0pt;"   ><p><span style="color:black;"   >ON: Enable debug heap allocations and use of memory block type identifiers, such as _CLIENT_BLOCK. 
+</span></p><p><span style="color:black;"   >OFF: Add new allocations to heap's linked list, but set block type to _IGNORE_BLOCK.但我看其实现的代码，并没有加入链表中，只是初始化了头部结构体的链表为NULL，就退出了。但无论它在不在链表中，结果都是些内存无法进行跟踪和验证。而创建一个</span>_IGNORE_BLOCK类型的堆内存，的确在链表中，只是类型为_IGNORE_BLOCK。<span style="color:black;"   >
+</span></p><p><span style="color:black;"   >Can also be combined with any of the heap-frequency check macros.</span></p></td></tr><tr style="background: white;"   ><td vAlign="middle"   style="padding-left: 1px; padding-right: 1px; border-top:  none; border-left:  solid black 1.0pt; border-bottom:  solid black 1.0pt; border-right:  dotted 0.0pt;"   ><p><span style="color:black;"   >_CRTDBG_CHECK_ALWAYS_DF</span></p></td><td vAlign="middle"   style="padding-left: 1px; padding-right: 1px; border-top:  none; border-left:  none; border-bottom:  solid black 1.0pt; border-right:  dotted 0.0pt;"   ><p><span style="color:black;"   >OFF</span></p></td><td vAlign="middle"   style="padding-left: 1px; padding-right: 1px; border-top:  none; border-left:  none; border-bottom:  solid black 1.0pt; border-right:  solid black 1.0pt;"   ><p><span style="color:black;"   >ON: Call _CrtCheckMemory at every allocation and deallocation request. OFF: _CrtCheckMemory must be called explicitly.
+</span></p><p><span style="color:black;"   >Heap-frequency check macros have no effect when this flag is set.</span></p></td></tr><tr style="background: white;"   ><td vAlign="middle"   style="padding-left: 1px; padding-right: 1px; border-top:  none; border-left:  solid black 1.0pt; border-bottom:  solid black 1.0pt; border-right:  dotted 0.0pt;"   ><p><span style="color:black;"   >_CRTDBG_CHECK_CRT_DF</span></p></td><td vAlign="middle"   style="padding-left: 1px; padding-right: 1px; border-top:  none; border-left:  none; border-bottom:  solid black 1.0pt; border-right:  dotted 0.0pt;"   ><p><span style="color:black;"   >OFF</span></p></td><td vAlign="middle"   style="padding-left: 1px; padding-right: 1px; border-top:  none; border-left:  none; border-bottom:  solid black 1.0pt; border-right:  solid black 1.0pt;"   ><p><span style="color:black;"   >ON: Include _CRT_BLOCK types in leak detection and memory state difference operations. 
+</span></p><p><span style="color:black;"   >OFF: Memory used internally by the run-time library is ignored by these operations.
+</span></p><p><span style="color:black;"   >Can also be combined with any of the heap-frequency check macros.</span></p></td></tr><tr style="background: white;"   ><td vAlign="middle"   style="padding-left: 1px; padding-right: 1px; border-top:  none; border-left:  solid black 1.0pt; border-bottom:  solid black 1.0pt; border-right:  dotted 0.0pt;"   ><p><span style="color:black;"   >_CRTDBG_DELAY_FREE_MEM_DF</span></p></td><td vAlign="middle"   style="padding-left: 1px; padding-right: 1px; border-top:  none; border-left:  none; border-bottom:  solid black 1.0pt; border-right:  dotted 0.0pt;"   ><p><span style="color:black;"   >OFF</span></p></td><td vAlign="middle"   style="padding-left: 1px; padding-right: 1px; border-top:  none; border-left:  none; border-bottom:  solid black 1.0pt; border-right:  solid black 1.0pt;"   ><p><span style="color:black;"   >ON: Keep freed memory blocks in the heap's linked list, assign them the _FREE_BLOCK type, and fill them with the byte value 0xDD. 
+</span></p><p><span style="color:black;"   >OFF: Do not keep freed blocks in the heap's linked list.
+</span></p><p><span style="color:black;"   >Can also be combined with any of the heap-frequency check macros.</span></p></td></tr><tr style="background: white;"   ><td vAlign="middle"   style="padding-left: 1px; padding-right: 1px; border-top:  none; border-left:  solid black 1.0pt; border-bottom:  solid black 1.0pt; border-right:  dotted 0.0pt;"   ><p><span style="color:black;"   >_CRTDBG_LEAK_CHECK_DF</span></p></td><td vAlign="middle"   style="padding-left: 1px; padding-right: 1px; border-top:  none; border-left:  none; border-bottom:  solid black 1.0pt; border-right:  dotted 0.0pt;"   ><p><span style="color:black;"   >OFF</span></p></td><td vAlign="middle"   style="padding-left: 1px; padding-right: 1px; border-top:  none; border-left:  none; border-bottom:  solid black 1.0pt; border-right:  solid black 1.0pt;"   ><p><span style="color:black;"   >ON: Perform automatic leak checking at program exit through a call to _CrtDumpMemoryLeaks and generate an error report if the application failed to free all the memory it allocated. 
+</span></p><p><span style="color:black;"   >OFF: Do not automatically perform leak checking at program exit.
+</span></p><p><span style="color:black;"   >Can also be combined with any of the heap-frequency check macros.</span></p></td></tr></table></div><p>如果要进行检测内存泄露或者缓存区溢出，<span style="color:black;"   >_CRTDBG_ALLOC_MEM_DF始终是比不可以少的。
+</span></p><p><span style="color:black;"   >调用_CrtCheckMemory可以随时进行缓冲区溢出检测。如果有标记：_CRTDBG_CHECK_ALWAYS_DF，在每次我们调用malloc或者new时候，都进行检测，这样会拖慢程序的运行，但可以尽早的发现错误。
+</span></p><p><span style="color:black;"   >调用_CrtDumpMemoryLeaks可以随时检测内存泄露，但一般是程序退出前才检测。设置标记：_CRTDBG_LEAK_CHECK_DF，可以让程序结束前，自动调用_CrtDumpMemoryLeaks，来检测和打印没有被释放的内存。
+</span></p><p><span style="color:black;"   >_CrtSetDbgFlag 使用方法：
+</span></p><p>// Get current flag
+</p><p>int tmpFlag = _CrtSetDbgFlag( _CRTDBG_REPORT_FLAG );
+</p><p>
+&nbsp;</p><p>// Turn on leak-checking bit.
+</p><p>tmpFlag |= _CRTDBG_LEAK_CHECK_DF;
+</p><p>
+&nbsp;</p><p>// Turn off CRT block checking bit.
+</p><p>tmpFlag &amp;= ~_CRTDBG_CHECK_CRT_DF;
+</p><p>
+&nbsp;</p><p>// Set flag to the new value.
+</p><p>_CrtSetDbgFlag( tmpFlag );
+</p><h2>Debug CRT 报告信息
+</h2><p>Debug CRT可以随时照快照，快照的结构体定义如下：
+</p><p>typedef struct _CrtMemState
+</p><p>{
+</p><p>    // Pointer to the most recently allocated block:
+</p><p>    struct _CrtMemBlockHeader * pBlockHeader;
+</p><p>    // A counter for each of the 5 types of block:
+</p><p>    size_t lCounts[_MAX_BLOCKS];
+</p><p>    // Total bytes allocated in each block type:
+</p><p>    size_t lSizes[_MAX_BLOCKS];
+</p><p>    // The most bytes allocated at a time up to now:
+</p><p>    size_t lHighWaterCount;
+</p><p>    // The total bytes allocated at present:
+</p><p>    size_t lTotalCount;
+</p><p>} _CrtMemState;
+</p><p>
+&nbsp;</p><p>相关函数：
+</p><div><table style="border-collapse:collapse;"   border="0"   ><colgroup><col style="width:190px;"   /><col style="width:524px;"   /><tbody valign="top"   ><tr style="background: black;"   ><td vAlign="middle"   style="padding-left: 1px; padding-right: 1px; border-top:  solid black 1.0pt; border-left:  solid black 1.0pt; border-bottom:  solid black 1.0pt; border-right:  dotted 0.0pt;"   ><p><span style="color:white;"   >Function</span></p></td><td vAlign="middle"   style="padding-left: 1px; padding-right: 1px; border-top:  solid black 1.0pt; border-left:  none; border-bottom:  solid black 1.0pt; border-right:  solid black 1.0pt;"   ><p><span style="color:white;"   >Description</span></p></td></tr><tr style="background: white;"   ><td vAlign="middle"   style="padding-left: 1px; padding-right: 1px; border-top:  none; border-left:  solid black 1.0pt; border-bottom:  solid black 1.0pt; border-right:  dotted 0.0pt;"   ><p><span style="color:black;"   >_CrtMemCheckpoint</span></p></td><td vAlign="middle"   style="padding-left: 1px; padding-right: 1px; border-top:  none; border-left:  none; border-bottom:  solid black 1.0pt; border-right:  solid black 1.0pt;"   ><p><span style="color:black;"   >Saves a snapshot of the heap in a _CrtMemState structure supplied by the application.</span></p></td></tr><tr style="background: white;"   ><td vAlign="middle"   style="padding-left: 1px; padding-right: 1px; border-top:  none; border-left:  solid black 1.0pt; border-bottom:  solid black 1.0pt; border-right:  dotted 0.0pt;"   ><p><span style="color:black;"   >_CrtMemDifference</span></p></td><td vAlign="middle"   style="padding-left: 1px; padding-right: 1px; border-top:  none; border-left:  none; border-bottom:  solid black 1.0pt; border-right:  solid black 1.0pt;"   ><p><span style="color:black;"   >Compares two memory state structures, saves the difference between them in a third state structure, and returns TRUE if the two states are different.</span></p></td></tr><tr style="background: white;"   ><td vAlign="middle"   style="padding-left: 1px; padding-right: 1px; border-top:  none; border-left:  solid black 1.0pt; border-bottom:  solid black 1.0pt; border-right:  dotted 0.0pt;"   ><p><span style="color:black;"   >_CrtMemDumpStatistics</span></p></td><td vAlign="middle"   style="padding-left: 1px; padding-right: 1px; border-top:  none; border-left:  none; border-bottom:  solid black 1.0pt; border-right:  solid black 1.0pt;"   ><p><span style="color:black;"   >Dumps a given _CrtMemState structure. The structure may contain a snapshot of the state of the debug heap at a given moment or the difference between two snapshots.</span></p></td></tr><tr style="background: white;"   ><td vAlign="middle"   style="padding-left: 1px; padding-right: 1px; border-top:  none; border-left:  solid black 1.0pt; border-bottom:  solid black 1.0pt; border-right:  dotted 0.0pt;"   ><p><span style="color:black;"   >_CrtMemDumpAllObjectsSince</span></p></td><td vAlign="middle"   style="padding-left: 1px; padding-right: 1px; border-top:  none; border-left:  none; border-bottom:  solid black 1.0pt; border-right:  solid black 1.0pt;"   ><p><span style="color:black;"   >Dumps information about all objects allocated since a given snapshot was taken of the heap or from the start of execution. Every time it dumps a _CLIENT_BLOCK block, it calls a hook function supplied by the application, if on<wbr>e has been installed using _CrtSetDumpClient.</span></p></td></tr><tr style="background: white;"   ><td vAlign="middle"   style="padding-left: 1px; padding-right: 1px; border-top:  none; border-left:  solid black 1.0pt; border-bottom:  solid black 1.0pt; border-right:  dotted 0.0pt;"   ><p><span style="color:black;"   >_CrtDumpMemoryLeaks</span></p></td><td vAlign="middle"   style="padding-left: 1px; padding-right: 1px; border-top:  none; border-left:  none; border-bottom:  solid black 1.0pt; border-right:  solid black 1.0pt;"   ><p><span style="color:black;"   >Determines whether any memory leaks occurred since the start of program execution and, if so, dumps all allocated objects. Every time _CrtDumpMemoryLeaks dumps a _CLIENT_BLOCK block, it calls a hook function supplied by the application, if on<wbr>e has been installed using _CrtSetDumpClient.</span></p></td></tr></table></div><p>例如，我们要检测一个片段是否存在内存泄露，可以在片段的头尾调用<span style="color:black;"   >_CrtMemCheckpoint</span><span style="color:black;"   >，然后调用_CrtMemDifference来对比俩个快照结果，如果结果不同，调用_CrtMemDumpStatistics打印结果：
+</span></p><p><span style="color:black;"   >_CrtMemCheckpoint( &amp;s1 );
+</span></p><p><span style="color:black;"   >// memory allocations take place here
+</span></p><p><span style="color:black;"   >_CrtMemCheckpoint( &amp;s2 );
+</span></p><p>&nbsp;
+&nbsp;</p><p><span style="color:black;"   >if ( _CrtMemDifference( &amp;s3, &amp;s1, &amp;s2) )
+</span></p><p><span style="color:black;"   >&nbsp;&nbsp;&nbsp;_CrtMemDumpStatistics( &amp;s3 );
+</span></p><p>
+&nbsp;</p><p>其它具体函数的使用细节，参见MSDN。
+</p><h2>定位泄露的位置
+</h2><h3>开启CRT内存检测功能
+</h3><p>简单的定义宏和包含头文件，就能开启：
+</p><p>#define _CRTDBG_MAP_ALLOC
+</p><p>#include &lt;stdlib.h&gt;
+</p><p>#include &lt;crtdbg.h&gt;
+</p><p>只在Debug版本中有效（定义了_DEBUG，链接到Debug CRT库）。Rlease版本使用正常的malloc和free。第一行的宏定义，如果不定义，也能探测内存泄露，但你可能需要花大力气去寻找泄露的位置。如果定义了，在VC的调试输出窗口中会有文件行信息输出，双击就能定位到具体位置。（当然不是所有的，只是目前你自己掌控的代码里能够定位到）。你要探测的每个CPP中，都应该包含该头文件，最好就放在预编译头文件中。没有包含的，就没法探测，因为你的malloc函数未被替换。
+</p><p>打开检查功能后，并不是说，在调试接受后就能查看到泄露信息。下面的函数是用来打印泄露信息的：
+</p><p>_CrtDumpMemoryLeaks();
+</p><p>在你的程序即将退出的时候，调用此函数，就能打印内存泄露信息。但我们的代码可能很复杂，有多个结束点。怎么做呢？如果你看过上面的内容，应该不难找到办法：
+</p><p>_CrtSetDbgFlag ( _CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF );
+</p><p>这样，在程序退出的时候，CRT库会自动调用_CrtDumpMemoryLeaks();函数来打印调试信息。
+</p><p>_CrtDumpMemoryLeaks()默认是向调试窗口打印信息，你还可以改变_CrtDumpMemoryLeaks()打印的泄露信息的位置：_CrtSetReportMode，当然，这个函数不只有这一个功能，具体功能参加MSDN。
+</p><p>下面看一下定义了_CRTDBG_MAP_ALLOC和没有定义_CRTDBG_MAP_ALLOC的日志信息的区别：
+</p><p>未定义_CRTDBG_MAP_ALLOC：
+</p><p>Detected memory leaks!
+</p><p>Dumping objects -&gt;
+</p><p>{18} normal block at 0x00780E80, 64 bytes long.
+</p><p> Da<wbr>ta: &lt;                &gt; CD CD CD CD CD CD CD CD CD CD CD CD CD CD CD CD
+</p><p>Object dump complete.
+</p><p>
+&nbsp;</p><p>定义了_CRTDBG_MAP_ALLOC：
+</p><p>Detected memory leaks!
+</p><p>Dumping objects -&gt;
+</p><p>C:\PROGRAM FILES\VISUAL STUDIO\MyProjects\leaktest\leaktest.cpp(20) : {18} 
+</p><p>normal block at 0x00780E80, 64 bytes long.
+</p><p> Da<wbr>ta: &lt;                &gt; CD CD CD CD CD CD CD CD CD CD CD CD CD CD CD CD
+</p><p>Object dump complete.
+</p><p>可以看到，缺少源码的行号信息。共同的部分有：
+</p><ul><li><div style="text-align: justify;"   >唯一的数字标识{18}（在定位泄露很有用）
+</div></li><li><div style="text-align: justify;"   >堆类型：normal block
+</div></li><li><div style="text-align: justify;"   >内存泄露的起始位置：0x00780E80
+</div></li><li><div style="text-align: justify;"   >内存泄露的大小：64bytes
+</div></li><li><div style="text-align: justify;"   >内存泄露的前16字节的16进制输出
+</div></li></ul><h3>关于new
+</h3><p>以上所有的技术针对的都是针对于malloc，我也说了new最终调用的也是malloc，那new应该也会有效。的确，new的确起了作用，但你会发现，你基本上无法定位你是在哪里调用的new，因为没有源码行号显示，原因是new可能经过了几层调用，才调用到了malloc，而且是在CRT库中调用的malloc，打印的地址，也是CRT的地址，显然这是不对的。CRT虽然是C Rumtime library，但他照顾了C++一些特性，例如new。Debug CRT重载了new，实现了Debug版本的new。所以，我们要多做一些工作，让其正确工作：
+</p><p>#ifdef _DEBUG   
+</p><p>#ifndef DBG_NEW      
+</p><p style="margin-left: 21pt;"   >#define DBG_NEW new ( _NORMAL_BLOCK , __FILE__ , __LINE__ )      
+</p><p style="margin-left: 21pt;"   >#define new DBG_NEW   
+</p><p>#endif
+</p><p>#endif  // _DEBUG
+</p><p>这样，当你new玩没有释放，就会打印出对应的行号，定位就方便很多。
+</p><h3>MFC new
+</h3><p>MFC自身在CRT的基础上，又完善了内存泄露的功能。所以，使用MFC，无需包含上述的头文件。你仅仅需要在你的cpp中包含预编译头（包含了一堆mfc的头文件），然后重定义new：
+</p><p>#ifdef _DEBUG
+</p><p>#define new DEBUG_NEW
+</p><p>#endif
+</p><p>就可以了。
+</p><h3>定位没有源码行号的内存泄露
+</h3><p>以OpenSSL为例，你会或多或少发现一些内存泄露（当然这些泄露大多数是因为我们我们正确调用造成的）。但你无法定位确切的行号，因为它是作为一个动态或者静态库链接的。而且，使用对分配的内存，每次运行，分配的地址都可能不一样，也无法设置内存断点。那么如何来定位这些泄露呢？这里我只说CRT方式的检测，以后的文章中，会有更高级的方式，现在不做讨论。
+</p><p>上面的打印信息里可以找到一个数字标识，这个标识基本上是固定的。只要你运行的顺序没有变化，基本上每次都是固定的。你可以使用这个数字来进行设置断点。
+</p><p>CRT库中有一个全局变量：_crtBreakAlloc，在debug版本的malloc实现中有一句：
+</p><p>if (_crtBreakAlloc != -1L &amp;&amp; lRequest == _crtBreakAlloc)<br>&nbsp;&nbsp;&nbsp;&nbsp;_CrtDbgBreak();
+</p><p>lRequest 对应的就是上面的那个number号，也就说，只要全局变量_crtBreakAlloc和这个数字标识相等，那么就调用_CrtDbgBreak(); 他的代码为：__asm { int 3 }；int 3就是一个断点，调试器就会断下来，然后我们在CallStack窗口中，进行回溯，就都找到分配内存的地方。
+</p><p>_crtBreakAlloc的值可以在调试时动态修改，将该值房子Watch窗口中，就能修改该值。也能在代码中进行指定，指定的函数为：_CrtSetBreakAlloc(18);，或者_crtBreakAlloc=18;
+</p><h3>局部内存泄露
+</h3><p>上面已经提到，使用快照的方式来进行局部内存泄露定位，这里再进行详细说明：
+</p><p>给当前执行点做快照：
+</p><p>_CrtMemState s1;
+</p><p>_CrtMemCheckpoint( &amp;s1 );
+</p><p>
+&nbsp;</p><p>打印快照信息：
+</p><p>_CrtMemDumpStatistics( &amp;s1 );
+</p><p>
+&nbsp;</p><p>0 bytes in 0 Free Blocks.
+</p><p>0 bytes in 0 Normal Blocks.
+</p><p>3071 bytes in 16 CRT Blocks.
+</p><p>0 bytes in 0 Ignore Blocks.
+</p><p>0 bytes in 0 Client Blocks.
+</p><p>Largest number used: 3071 bytes.
+</p><p>Total allocations: 3764 bytes.
+</p><p>
+&nbsp;</p><p>局部快照：
+</p><p>_CrtMemCheckpoint( &amp;s1 );
+</p><p>// memory allocations take place here
+</p><p>_CrtMemCheckpoint( &amp;s2 );
+</p><p>
+&nbsp;</p><p>if ( _CrtMemDifference( &amp;s3, &amp;s1, &amp;s2) )
+</p><p>   _CrtMemDumpStatistics( &amp;s3 );
+</p><p>
+&nbsp;</p><p>_CrtMemDifference对比俩个快照结果，如果一样，说明没有内存泄露，如果不一样，将不同的结果存入s3中，打印s3的信息。但这些信息无法提供给你准确的位置，我们可以缩小_CrtMemCheckpoint夹击的范围，来准确定位位置。
+</p><h2>开源库
+</h2><p>我在网上找的一个使用CRT内存检测机制的开源库：<strong>Visual Leak Detector</strong>，他的优点在于：除了CRT的信息，他将内存泄露的调用堆栈也打印了出来，而且通过ini文件能配置一些选项，能够将泄漏信息输出到文件中等。这样以来，我们可以快速定位内存泄露的问题。而且使用简单，不需要在所有Cpp中包含头文件，只需要在一个cpp中包含一个头文件，在Debug模式下，我们的程序将会将它的DLL链接进来，它将能正常工作。不过我在，使用它的最新稳定版时候，在使用COM插件时总是崩溃。使用最新版的beta版本，偶尔崩溃。可以简单用来检测使用，使用完毕，屏蔽掉头文件，又和以前代码一模一样了。
+</p><h2>总结
+</h2><p>本文讲述了使用CRT提供的调试技术来定位内存泄露，当然定位泄露的方式不只这一种。这种方式属于源码级的检测。当然你还可以使用专业工具，如<span style="color:#333333; font-size:9pt;"   ><span style="font-family:Arial; background-color:white;"   >BoundsChecker</span><span style="font-family:宋体; background-color:white;"   >。还有强大的</span><span style="font-family:Arial; background-color:white;"   >WinDbg</span><span style="font-family:宋体; background-color:white;"   >调试器，也能检测内存泄露。而且，</span><span style="font-family:Arial; background-color:white;"   >Release</span><span style="font-family:宋体; background-color:white;"   >模式下，也能检测和定位。</span></span>
+</p>
+</body></html>

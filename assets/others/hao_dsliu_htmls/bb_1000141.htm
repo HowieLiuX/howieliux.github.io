@@ -1,0 +1,10 @@
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=utf8"><title>163 blogs的博客：【转】教你如何用OD加载微软符号库</title>
+<style type="text/css">
+a{color: #000000;text-decoration : none;font-size: 10pt;}
+a:hover {color: red;text-decoration : underline;}
+.replyBox{padding:4px;border:1px solid #D8D8D8;}
+</style></head><body><h2>【转】教你如何用OD加载微软符号库</h2>
+<p align="right">发布时间：2012-7-4 15:26
+<br>分类名称：Debug_Crack</p><br>
+<p><span style="color:#333333;"  >作 者:<span style="color:#666666;"  >     <span style="color:black;"  >海风月影<span style="color:#666666;"  ><br><span style="color:#333333;"  >时 间:<span style="color:#666666;"  > 2009-08-31,21:57:41<br><span style="color:#333333;"  >链 接:<span style="color:#666666;"  > http://bbs.pediy.com/showthread.php?t=96856<br></span><br></span>用过</span>windbg</span>的人都知道，</span>windbg</span>可以加载微软符号库，如果没有符号，可以自动去微软网站上下载</span><br></span>OD也有这个功能，下面我们来发掘一下。<br><br>工具：<br>ollydbg&nbsp;1.10<br><span style="color:red;"  >StrongOD&nbsp;v0.2.6.413以上</span><br>准备一个空目录去放微软符号（如果你经常用windbg调试，可以设成同一个目录）<br>将下载微软符号库的相关文件copy到od目录，见附件（可以直接去windbg目录下面copy过来），分别 是：dbgeng.dll，dbghelp.dll，srcsrv.dll，symbolcheck.dll，symsrv.dll，symsrv.yes。 一共6个文件，当然dbghelp.dll大家都有了^_^<br><br>过程：<br>let's&nbsp;go&nbsp;go&nbsp;go.<br>打开OD，设置符号路径，随便找一个目录，或者用windbg的符号目录。如图<br><img title="【转】教你如何用OD加载微软符号库 - Howie - Dspace"  src="pic/img3.ph.126.net_dxMt8Kj67gnvKxNaOG0Adw==_2646990681004719003.jpg"  alt=""  /><br><br>然后设置StrongOD的插件选项，如图<br><img title="【转】教你如何用OD加载微软符号库 - Howie - Dspace"  src="pic/img5.ph.126.net_6xb267DyaAn0AIMnMqd7Rw==_2572399812176397225.jpg"  alt=""  /><br><br>然后随便加载一个exe，比如这里我加载的是notepad.exe，看图，里面的内部函数已经解析出来<br><img title="【转】教你如何用OD加载微软符号库 - Howie - Dspace"  src="pic/img1.ph.126.net_EVVSChL_Zusc5v2wNys_gw==_3069484621047216081.jpg"  alt=""  /><br><br>再到ntdll.dll里面看一下，如图，全局变量的名字已经出来<br><img title="【转】教你如何用OD加载微软符号库 - Howie - Dspace"  src="pic/img6.ph.126.net_gnPd8z8yPL67NkS0ycVd4Q==_28147497688777686.jpg"  alt=""  /><br><br>这样设置完后，已经直接打开OD即可，如果嫌速度太慢，可以把插件选项关闭，即可恢复原来的模样</p>
+</body></html>

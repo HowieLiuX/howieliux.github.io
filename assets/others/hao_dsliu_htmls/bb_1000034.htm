@@ -1,0 +1,122 @@
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=utf8"><title>163 blogs的博客：FIDO 标准简介</title>
+<style type="text/css">
+a{color: #000000;text-decoration : none;font-size: 10pt;}
+a:hover {color: red;text-decoration : underline;}
+.replyBox{padding:4px;border:1px solid #D8D8D8;}
+</style></head><body><h2>FIDO 标准简介</h2>
+<p align="right">发布时间：2014-10-24 14:06
+<br>分类名称：默认分类</p><br>
+<h1>FIDO 联盟（Fast IDentity Online Alliance）简介
+</h1><p><strong>网站：http://fidoalliance.org
+</strong></p><p>FIDO Alliance，成立于2012年7月。
+</p><p>FIDO的目标是创建一套开放的标准协议，<span style="color:#555555; font-family:宋体; font-size:10pt; background-color:white;"     >保证各个厂商开发的强认证技术之间的互操作性，</span>改变目前的主流在线验证的方式（即使用密码作为主要验证手段），消除或者减弱用户对密码的依赖。对于互联网公司来说，随着重大数据泄露事故的频发，过去基于密码的在线身份验证技术已经难以维持互联网经济的稳定发展，安全界关于"密码已死"的呼声越来越高。而FIDO联盟正是在这个背景下应运而生的一个推动去密码化的强认证协议标准的组织。
+</p><p>FIDO的会员包括Nok Nok Labs、Google、BlackBerry、ARM、英特尔、PayPal、Lenovo、MasterCard、三星、VISA、Synaptics、RSA、微软等等。支付宝也于今年9月份左右加入的FIDO组织。
+</p><p>FIDO标准支持多种硬件设备，如U盘(或U盾)、NFC芯片、TPM(可信赖平台模块)芯片，以及指纹扫描器、语音识别、脸部识别、虹膜识别等生物识别硬件。目前的草案内容主要针对的是USB设备。
+</p><h1>FIDO 基本原理
+</h1><p>FIDO协议分为两大类：U2F和UAF。对应的也有两套规范（UAF Specifications，U2F Specifications），在如下地址下载：
+</p><p><a rel="nofollow" href="https://fidoalliance.org/specifications/download/"     >https://fidoalliance.org/specifications/download/</a>
+</p><ul><li><strong>UAF: Universal Authentication Framework protocol.</strong><br>UAF 支持指纹、语音、虹膜、脸部识别等生物身份识别方式。无需用户密码（Passwordless）介入，直接进行验证交易。用户在注册阶段，根据服务器支持的本地验证方式，选择一种验证方式，如：指纹识别，人脸识别，语音识别，等等，服务器也可保留密码验证方式，将密码和生物识别相结合，增强账户安全性。
+</li><li><strong>U2F: Universal Second Factor (U2F) protocol. </strong><br>U2F类似国内的二代U盾的保护机制，使用双因子（密码和能与用户交互的设备）保护用户账户和隐私。用户在注册阶段，使用服务器支持的加密设备，将账户和设备绑定。当进行登录验证操作时，服务器在合适的时候，提示用户插入设备并进行按键操作，加密设备对数据签名，发送给服务器，服务器做验证，如果验证成功，用户则可登录成功。由于有了第二因子（加密设备）的保护，用户可以选择不设置密码或者使用一串简单易记的4位密码。
+</li></ul><p>下图展示了俩种协议的验证方式：
+</p><p><img title="FIDO 标准简介 - Howie - Dspace"     src="pic/img2.ph.126.net_GFD8nFhWSA2rJ5R2d1z9qw==_2408299900753174922.jpg"     alt=""     />
+</p><p>和U盾相关的协议为U2F协议，下面内容主要针对U2F协议。
+</p><p>我们简要分析一下U2F协议的安全性：在使用传统的验证方法时，系统需要从客户端发送密码到远程服务器的密码库中进行比对，这样就存在密码被拦截和破解的风险。对远程服务器而言，一旦超级管理员的帐号被盗，用户的密码会被直接或者间接获取。破解者便能使用用户信息登陆服务器进行恶意操作。如果服务器使用了U2F，服务器被破解者攻破，但其如果无法获取用户的U2F设备，也就无法登陆服务器进行恶意操作。
+</p><h1>FIDO 工作原理
+</h1><p>FIDO协议使用标准的非对称公私钥对来提供安全保障。确切的说，FIDO草案中使用的是ECDSA。
+</p><ul><li>当用户登录服务器注册信息时，用户的加密设备产生一对非对称密钥对，私钥在加密设备中保留，黑客无法读取，公钥传给服务器，服务器将此公钥和用户对应的账户相关联。
+</li><li>当用户登录服务器验证信息时，用户使用设备中的私钥对服务器的挑战数据做签名，服务器使用对应的公钥做验证。用户的设备中的私钥，必须经过用户解锁（如按键，按下指纹等），才能被用来做签名操作
+</li></ul><h2>FIDO 注册演示
+</h2><ul><li>User is prompted to choose an available FIDO authenticator that matches the online service's acceptance policy.
+</li><li>User unlocks the FIDO authenticator using a fingerprint reader, a button on a second–factor device, securely–entered PIN or other method.
+</li><li>User's device creates a new public/private key pair unique for the local device, online service and user's account.
+</li><li>Public key is sent to the online service and associated with the user's account. The private key and any information about the local authentication method (such as biometric measurements or templates) never leave the local device.
+</li></ul><p><img title="FIDO 标准简介 - Howie - Dspace"     src="pic/img0.ph.126.net_5e3XQ6e6AOTUojQlYHrNGw==_982629143713702890.jpg"     alt=""     />
+</p><h2>FIDO 登陆演示
+</h2><ul><li>Online service challenges the user to login with a previously registered device that matches the service's acceptance policy.
+</li><li>User unlocks the FIDO authenticator using the same method as at Registration time.
+</li><li>Device uses the user's account identifier provided by the service to select the correct key and sign the service's challenge.
+</li><li>Client device sends the signed challenge back to the service, which verifies it with the stored public key and logs in the user.
+</li></ul><p><img title="FIDO 标准简介 - Howie - Dspace"     src="pic/img1.ph.126.net_Jx8LBUyAWCE_KOC6RZrlyQ==_808677608190164527.jpg"     alt=""     />
+</p><h1>FIDO（U2F）协议文档
+</h1><p>FIDO U2F规范目前草案有7个文档分别为：
+</p><p><img title="FIDO 标准简介 - Howie - Dspace"     src="pic/img0.ph.126.net_5VYm6PV0L-T3gt_NKu7DzQ==_2832764165633503965.jpg"     alt=""     />
+</p><p>通过名字，应该能了解个大概。文档的阅读顺序我已经做了标号。从0到7。7 为名词表 ，做查询名词使用。
+</p><p><strong>注：由于文档还处于修订当中，可能以后会有若干变化，本文是以2014.02.09的草案作为参考的。
+</strong></p><h1>U2F流程总览
+</h1><h2>U2F 注册
+</h2><div><table style="border-collapse:collapse;"     border="0"     ><colgroup><col style="width:192px;"     /><col style="width:192px;"     /><col style="width:259px;"     /><tbody valign="top"     ><tr style="background: #4472c4;"     ><td style="padding-left: 7px; padding-right: 7px; border-top:  solid #4472c4 0.5pt; border-left:  solid #4472c4 0.5pt; border-bottom:  solid #4472c4 0.5pt; border-right:  none;"     ><p><span style="color:white;"     ><strong>U2F设备</strong></span></p></td><td style="padding-left: 7px; padding-right: 7px; border-top:  solid #4472c4 0.5pt; border-left:  none; border-bottom:  solid #4472c4 0.5pt; border-right:  none;"     ><p style="text-align: center;"     ><span style="color:white;"     ><strong>浏览器</strong></span></p></td><td style="padding-left: 7px; padding-right: 7px; border-top:  solid #4472c4 0.5pt; border-left:  none; border-bottom:  solid #4472c4 0.5pt; border-right:  solid #4472c4 0.5pt;"     ><p style="text-align: center;"     ><span style="color:white;"     ><strong>服务器</strong></span></p></td></tr><tr style="background: #d9e2f3;"     ><td style="padding-left: 7px; padding-right: 7px; border-top:  none; border-left:  solid #8eaadb 0.5pt; border-bottom:  solid #8eaadb 0.5pt; border-right:  solid #8eaadb 0.5pt;"     >&nbsp;</td><td style="padding-left: 7px; padding-right: 7px; border-top:  none; border-left:  none; border-bottom:  solid #8eaadb 0.5pt; border-right:  solid #8eaadb 0.5pt;"     ><ol><li>用户输入用户名和密码，点击"注册"，提交给服务器。</li></ol></td><td style="padding-left: 7px; padding-right: 7px; border-top:  none; border-left:  none; border-bottom:  solid #8eaadb 0.5pt; border-right:  solid #8eaadb 0.5pt;"     >&nbsp;</td></tr><tr><td style="padding-left: 7px; padding-right: 7px; border-top:  none; border-left:  solid #8eaadb 0.5pt; border-bottom:  solid #8eaadb 0.5pt; border-right:  solid #8eaadb 0.5pt;"     >&nbsp;</td><td style="padding-left: 7px; padding-right: 7px; border-top:  none; border-left:  none; border-bottom:  solid #8eaadb 0.5pt; border-right:  solid #8eaadb 0.5pt;"     >&nbsp;</td><td style="padding-left: 7px; padding-right: 7px; border-top:  none; border-left:  none; border-bottom:  solid #8eaadb 0.5pt; border-right:  solid #8eaadb 0.5pt;"     ><ol><li><div>服务器组织注册数据：Registration Data {
+</div><p>DOMString Version;
+</p><p>DOMString challenge;
+</p><p>DOMString app_id;
+</p><p>DOMString sessionId;
+</p><p>}
+</p><p>
+&nbsp;</p><p>如果提交的用户名已经在服务器注册，服务器还需要组织签名数据：
+</p><p>Sign Data {
+</p><p>    DOMString Version;
+</p><p>    DOMString challenge;
+</p><p>    DOMString app_id;
+</p><p>    DOMString keyHandle;
+</p><p>    DOMString sessionId;
+</p><p>}
+</p></li></ol><p>将数据发送给客户端</p></td></tr><tr style="background: #d9e2f3;"     ><td style="padding-left: 7px; padding-right: 7px; border-top:  none; border-left:  solid #8eaadb 0.5pt; border-bottom:  solid #8eaadb 0.5pt; border-right:  solid #8eaadb 0.5pt;"     >&nbsp;</td><td style="padding-left: 7px; padding-right: 7px; border-top:  none; border-left:  none; border-bottom:  solid #8eaadb 0.5pt; border-right:  solid #8eaadb 0.5pt;"     ><ol><li>浏览器收到Registration Data 和 Sign Data。给U2F设备发送获取版本命令</li></ol></td><td style="padding-left: 7px; padding-right: 7px; border-top:  none; border-left:  none; border-bottom:  solid #8eaadb 0.5pt; border-right:  solid #8eaadb 0.5pt;"     >&nbsp;</td></tr><tr><td style="padding-left: 7px; padding-right: 7px; border-top:  none; border-left:  solid #8eaadb 0.5pt; border-bottom:  solid #8eaadb 0.5pt; border-right:  solid #8eaadb 0.5pt;"     ><ol><li>接受获取版本APDU指令，返回版本字符串"U2F_V2".</li></ol></td><td style="padding-left: 7px; padding-right: 7px; border-top:  none; border-left:  none; border-bottom:  solid #8eaadb 0.5pt; border-right:  solid #8eaadb 0.5pt;"     >&nbsp;</td><td style="padding-left: 7px; padding-right: 7px; border-top:  none; border-left:  none; border-bottom:  solid #8eaadb 0.5pt; border-right:  solid #8eaadb 0.5pt;"     >&nbsp;</td></tr><tr style="background: #d9e2f3;"     ><td style="padding-left: 7px; padding-right: 7px; border-top:  none; border-left:  solid #8eaadb 0.5pt; border-bottom:  solid #8eaadb 0.5pt; border-right:  solid #8eaadb 0.5pt;"     >&nbsp;</td><td style="padding-left: 7px; padding-right: 7px; border-top:  none; border-left:  none; border-bottom:  solid #8eaadb 0.5pt; border-right:  solid #8eaadb 0.5pt;"     ><ol><li>判断版本号。版本号目前应该为<strong>U2F_V2。</strong>
+</li><li>判断Sign Data值是否为空，为空说明用户未在服务器注册，不为空说明此用户已在服务器注册。不为空时，给U2F发送签名指令。 通过U2F设备验证此账号信息是否和U2F设备中保存的信息一致。</li></ol></td><td style="padding-left: 7px; padding-right: 7px; border-top:  none; border-left:  none; border-bottom:  solid #8eaadb 0.5pt; border-right:  solid #8eaadb 0.5pt;"     >&nbsp;</td></tr><tr><td style="padding-left: 7px; padding-right: 7px; border-top:  none; border-left:  solid #8eaadb 0.5pt; border-bottom:  solid #8eaadb 0.5pt; border-right:  solid #8eaadb 0.5pt;"     ><ol><li>U2F设备验证Key Handle是否存在设备中，Key Handle和 application id 是否匹配。如果验证成功，表面设备已经注册 </li></ol></td><td style="padding-left: 7px; padding-right: 7px; border-top:  none; border-left:  none; border-bottom:  solid #8eaadb 0.5pt; border-right:  solid #8eaadb 0.5pt;"     >&nbsp;</td><td style="padding-left: 7px; padding-right: 7px; border-top:  none; border-left:  none; border-bottom:  solid #8eaadb 0.5pt; border-right:  solid #8eaadb 0.5pt;"     >&nbsp;</td></tr><tr style="background: #d9e2f3;"     ><td style="padding-left: 7px; padding-right: 7px; border-top:  none; border-left:  solid #8eaadb 0.5pt; border-bottom:  solid #8eaadb 0.5pt; border-right:  solid #8eaadb 0.5pt;"     >&nbsp;</td><td style="padding-left: 7px; padding-right: 7px; border-top:  none; border-left:  none; border-bottom:  solid #8eaadb 0.5pt; border-right:  solid #8eaadb 0.5pt;"     ><ol><li>如果U2F验证通过，浏览器提示用户账户已注册。
+</li><li><div>如果用户未注册，组织注册数据，给U2F发送注册指令。注册数据：
+</div><p>SHA2(Client Data) + SHA2(app_id)
+</p><p>Client Data {
+</p><p>DOMString typ;
+</p><p>DOMString challenge;
+</p><p>DOMString origin;
+</p><p style="margin-left: 9pt;"     >DOMString or JwKey cid_pubkey
+</p><p>}</p></li></ol></td><td style="padding-left: 7px; padding-right: 7px; border-top:  none; border-left:  none; border-bottom:  solid #8eaadb 0.5pt; border-right:  solid #8eaadb 0.5pt;"     >&nbsp;</td></tr><tr><td style="padding-left: 7px; padding-right: 7px; border-top:  none; border-left:  solid #8eaadb 0.5pt; border-bottom:  solid #8eaadb 0.5pt; border-right:  solid #8eaadb 0.5pt;"     ><ol><li>U2F设备产生一对密钥对，用私钥对SHA2(Client Data) + SHA2(app_id) 做签名， 返回的数据：公钥+Key Handle+X509证书+签名值。</li></ol></td><td style="padding-left: 7px; padding-right: 7px; border-top:  none; border-left:  none; border-bottom:  solid #8eaadb 0.5pt; border-right:  solid #8eaadb 0.5pt;"     >&nbsp;</td><td style="padding-left: 7px; padding-right: 7px; border-top:  none; border-left:  none; border-bottom:  solid #8eaadb 0.5pt; border-right:  solid #8eaadb 0.5pt;"     >&nbsp;</td></tr><tr style="background: #d9e2f3;"     ><td style="padding-left: 7px; padding-right: 7px; border-top:  none; border-left:  solid #8eaadb 0.5pt; border-bottom:  solid #8eaadb 0.5pt; border-right:  solid #8eaadb 0.5pt;"     >&nbsp;</td><td style="padding-left: 7px; padding-right: 7px; border-top:  none; border-left:  none; border-bottom:  solid #8eaadb 0.5pt; border-right:  solid #8eaadb 0.5pt;"     ><ol><li>浏览器将U2F返回的值，Client  Data等信息传给服务器。</li></ol></td><td style="padding-left: 7px; padding-right: 7px; border-top:  none; border-left:  none; border-bottom:  solid #8eaadb 0.5pt; border-right:  solid #8eaadb 0.5pt;"     >&nbsp;</td></tr><tr><td style="padding-left: 7px; padding-right: 7px; border-top:  none; border-left:  solid #8eaadb 0.5pt; border-bottom:  solid #8eaadb 0.5pt; border-right:  solid #8eaadb 0.5pt;"     >&nbsp;</td><td style="padding-left: 7px; padding-right: 7px; border-top:  none; border-left:  none; border-bottom:  solid #8eaadb 0.5pt; border-right:  solid #8eaadb 0.5pt;"     >&nbsp;</td><td style="padding-left: 7px; padding-right: 7px; border-top:  none; border-left:  none; border-bottom:  solid #8eaadb 0.5pt; border-right:  solid #8eaadb 0.5pt;"     ><ol><li>服务器验证证书有效性，组织签名数据，使用对应的公钥做验签操作，验签成功，服务器将账户信息和公钥，Key Handle等信息关联在一起。</li></ol></td></tr><tr style="background: #d9e2f3;"     ><td style="padding-left: 7px; padding-right: 7px; border-top:  none; border-left:  solid #8eaadb 0.5pt; border-bottom:  solid #8eaadb 0.5pt; border-right:  solid #8eaadb 0.5pt;"     >&nbsp;</td><td style="padding-left: 7px; padding-right: 7px; border-top:  none; border-left:  none; border-bottom:  solid #8eaadb 0.5pt; border-right:  solid #8eaadb 0.5pt;"     >&nbsp;</td><td style="padding-left: 7px; padding-right: 7px; border-top:  none; border-left:  none; border-bottom:  solid #8eaadb 0.5pt; border-right:  solid #8eaadb 0.5pt;"     >&nbsp;</td></tr></table></div><h2>U2F 认证
+</h2><div><table style="border-collapse:collapse;"     border="0"     ><colgroup><col style="width:192px;"     /><col style="width:192px;"     /><col style="width:259px;"     /><tbody valign="top"     ><tr style="background: #4472c4;"     ><td style="padding-left: 7px; padding-right: 7px; border-top:  solid #4472c4 0.5pt; border-left:  solid #4472c4 0.5pt; border-bottom:  solid #4472c4 0.5pt; border-right:  none;"     ><p><span style="color:white;"     ><strong>U2F设备</strong></span></p></td><td style="padding-left: 7px; padding-right: 7px; border-top:  solid #4472c4 0.5pt; border-left:  none; border-bottom:  solid #4472c4 0.5pt; border-right:  none;"     ><p style="text-align: center;"     ><span style="color:white;"     ><strong>浏览器</strong></span></p></td><td style="padding-left: 7px; padding-right: 7px; border-top:  solid #4472c4 0.5pt; border-left:  none; border-bottom:  solid #4472c4 0.5pt; border-right:  solid #4472c4 0.5pt;"     ><p style="text-align: center;"     ><span style="color:white;"     ><strong>服务器</strong></span></p></td></tr><tr style="background: #d9e2f3;"     ><td style="padding-left: 7px; padding-right: 7px; border-top:  none; border-left:  solid #8eaadb 0.5pt; border-bottom:  solid #8eaadb 0.5pt; border-right:  solid #8eaadb 0.5pt;"     >&nbsp;</td><td style="padding-left: 7px; padding-right: 7px; border-top:  none; border-left:  none; border-bottom:  solid #8eaadb 0.5pt; border-right:  solid #8eaadb 0.5pt;"     ><ol><li>用户输入用户名和密码，点击"登陆"，提交给服务器。</li></ol></td><td style="padding-left: 7px; padding-right: 7px; border-top:  none; border-left:  none; border-bottom:  solid #8eaadb 0.5pt; border-right:  solid #8eaadb 0.5pt;"     >&nbsp;</td></tr><tr><td style="padding-left: 7px; padding-right: 7px; border-top:  none; border-left:  solid #8eaadb 0.5pt; border-bottom:  solid #8eaadb 0.5pt; border-right:  solid #8eaadb 0.5pt;"     >&nbsp;</td><td style="padding-left: 7px; padding-right: 7px; border-top:  none; border-left:  none; border-bottom:  solid #8eaadb 0.5pt; border-right:  solid #8eaadb 0.5pt;"     >&nbsp;</td><td style="padding-left: 7px; padding-right: 7px; border-top:  none; border-left:  none; border-bottom:  solid #8eaadb 0.5pt; border-right:  solid #8eaadb 0.5pt;"     ><ol><li><div>服务器组织认证数据：
+</div><p> Sign Data {
+</p><p>    DOMString Version;
+</p><p>    DOMString challenge;
+</p><p>    DOMString app_id;
+</p><p>    DOMString keyHandle;
+</p><p>    DOMString sessionId;
+</p><p>}
+</p></li></ol><p>将数据发送给客户端</p></td></tr><tr style="background: #d9e2f3;"     ><td style="padding-left: 7px; padding-right: 7px; border-top:  none; border-left:  solid #8eaadb 0.5pt; border-bottom:  solid #8eaadb 0.5pt; border-right:  solid #8eaadb 0.5pt;"     >&nbsp;</td><td style="padding-left: 7px; padding-right: 7px; border-top:  none; border-left:  none; border-bottom:  solid #8eaadb 0.5pt; border-right:  solid #8eaadb 0.5pt;"     ><ol><li>浏览器收到Sign Data。给U2F设备发送获取版本命令</li></ol></td><td style="padding-left: 7px; padding-right: 7px; border-top:  none; border-left:  none; border-bottom:  solid #8eaadb 0.5pt; border-right:  solid #8eaadb 0.5pt;"     >&nbsp;</td></tr><tr><td style="padding-left: 7px; padding-right: 7px; border-top:  none; border-left:  solid #8eaadb 0.5pt; border-bottom:  solid #8eaadb 0.5pt; border-right:  solid #8eaadb 0.5pt;"     ><ol><li>接受获取版本APDU指令，返回版本字符串"U2F_V2".</li></ol></td><td style="padding-left: 7px; padding-right: 7px; border-top:  none; border-left:  none; border-bottom:  solid #8eaadb 0.5pt; border-right:  solid #8eaadb 0.5pt;"     >&nbsp;</td><td style="padding-left: 7px; padding-right: 7px; border-top:  none; border-left:  none; border-bottom:  solid #8eaadb 0.5pt; border-right:  solid #8eaadb 0.5pt;"     >&nbsp;</td></tr><tr style="background: #d9e2f3;"     ><td style="padding-left: 7px; padding-right: 7px; border-top:  none; border-left:  solid #8eaadb 0.5pt; border-bottom:  solid #8eaadb 0.5pt; border-right:  solid #8eaadb 0.5pt;"     >&nbsp;</td><td style="padding-left: 7px; padding-right: 7px; border-top:  none; border-left:  none; border-bottom:  solid #8eaadb 0.5pt; border-right:  solid #8eaadb 0.5pt;"     ><ol><li>判断版本号。版本号目前应该为<strong>U2F_V2。</strong>
+</li><li><div>组织认证数据，给U2F发送认证指令。主要认证数据为：
+</div><p>SHA2(Client Data) + SHA2(app_id)+Key Handle.
+</p><p>Client Data {
+</p><p>DOMString typ;
+</p><p>DOMString challenge;
+</p><p>DOMString origin;
+</p><p style="margin-left: 9pt;"     >DOMString or JwKey cid_pubkey
+</p><p>}</p></li></ol></td><td style="padding-left: 7px; padding-right: 7px; border-top:  none; border-left:  none; border-bottom:  solid #8eaadb 0.5pt; border-right:  solid #8eaadb 0.5pt;"     >&nbsp;</td></tr><tr><td style="padding-left: 7px; padding-right: 7px; border-top:  none; border-left:  solid #8eaadb 0.5pt; border-bottom:  solid #8eaadb 0.5pt; border-right:  solid #8eaadb 0.5pt;"     ><ol><li>U2F设备验证Key Handle是否存在设备中，Key Handle和 application id 是否匹配。如果验证成功，通过Key  Handle对应的私钥对指定数据做签名，对应密钥对的引用计数器加一，返回值中数据包括引用计数和签名值。 </li></ol></td><td style="padding-left: 7px; padding-right: 7px; border-top:  none; border-left:  none; border-bottom:  solid #8eaadb 0.5pt; border-right:  solid #8eaadb 0.5pt;"     >&nbsp;</td><td style="padding-left: 7px; padding-right: 7px; border-top:  none; border-left:  none; border-bottom:  solid #8eaadb 0.5pt; border-right:  solid #8eaadb 0.5pt;"     >&nbsp;</td></tr><tr style="background: #d9e2f3;"     ><td style="padding-left: 7px; padding-right: 7px; border-top:  none; border-left:  solid #8eaadb 0.5pt; border-bottom:  solid #8eaadb 0.5pt; border-right:  solid #8eaadb 0.5pt;"     >&nbsp;</td><td style="padding-left: 7px; padding-right: 7px; border-top:  none; border-left:  none; border-bottom:  solid #8eaadb 0.5pt; border-right:  solid #8eaadb 0.5pt;"     ><ol><li>浏览器将U2F返回的值，Client  Data等信息传给服务器。</li></ol></td><td style="padding-left: 7px; padding-right: 7px; border-top:  none; border-left:  none; border-bottom:  solid #8eaadb 0.5pt; border-right:  solid #8eaadb 0.5pt;"     >&nbsp;</td></tr><tr><td style="padding-left: 7px; padding-right: 7px; border-top:  none; border-left:  solid #8eaadb 0.5pt; border-bottom:  solid #8eaadb 0.5pt; border-right:  solid #8eaadb 0.5pt;"     >&nbsp;</td><td style="padding-left: 7px; padding-right: 7px; border-top:  none; border-left:  none; border-bottom:  solid #8eaadb 0.5pt; border-right:  solid #8eaadb 0.5pt;"     >&nbsp;</td><td style="padding-left: 7px; padding-right: 7px; border-top:  none; border-left:  none; border-bottom:  solid #8eaadb 0.5pt; border-right:  solid #8eaadb 0.5pt;"     ><ol><li>服务器验证引用计数，判断设备是否被克隆，验证Client Data数据合法性，组织签名数据，使用对应的公钥做验签操作，验签成功，服务器将账户的引用计数更新为最新的引用计数。服务器允许用户登录。</li></ol></td></tr><tr style="background: #d9e2f3;"     ><td style="padding-left: 7px; padding-right: 7px; border-top:  none; border-left:  solid #8eaadb 0.5pt; border-bottom:  solid #8eaadb 0.5pt; border-right:  solid #8eaadb 0.5pt;"     >&nbsp;</td><td style="padding-left: 7px; padding-right: 7px; border-top:  none; border-left:  none; border-bottom:  solid #8eaadb 0.5pt; border-right:  solid #8eaadb 0.5pt;"     >&nbsp;</td><td style="padding-left: 7px; padding-right: 7px; border-top:  none; border-left:  none; border-bottom:  solid #8eaadb 0.5pt; border-right:  solid #8eaadb 0.5pt;"     >&nbsp;</td></tr></table></div><p>
+&nbsp;</p><h2>U2F 协议解析
+</h2><h3>U2F的设备类型
+</h3><p>文档中提到，U2F的设备类型可以为USB设备，NFC设备，蓝牙等设备。目前U2F规范中只涉及到了USB设备。以后会做补充。
+</p><h3>服务器关联的密钥对
+</h3><p>U2F设备产生的密钥对应该是服务器关联的，一对密钥对应一个服务器，而不是一个U2F设备对应一个服务器。在注册的时候，服务器给U2F设备传入服务器相关信息，U2F设备产生一对密钥对，将此密钥对和服务器相关信息相关联，给此密钥对分配一个句柄（Key Handle），并将其和公钥传给服务器，服务器将注册的 账户信息，公钥，Key Handle全部关联在一起并保存。
+</p><p>当用户需要使用U2F做验证操作时，服务器产生挑战数据，使用U2F设备做签名，此时服务器将Key Handle和服务器信息通过浏览器传给U2F设备，U2F设备使用Key Handle，寻找对应的密钥对，如果密钥对存在，检验密钥对应的服务器信息是否和传入的服务器信息匹配，如果不匹配，说明服务器是伪造或者不正确的。如果正确，U2F设备等待用户按键确认，用户按键后，U2F设备对挑战数据做签名，签名值返回给服务器，服务器验证签名值，如果签名正确，说明此公钥对应的唯一私钥是正确的，表面用户拥有合法U2F设备，如果签名不正确，说明此用户正在伪造身份登录。可见，U2F验证身份是双向的，U2F验证服务器的真伪，服务器验证U2F的真假。
+</p><h3>U2F设备"激活"和浏览器提醒
+</h3><p>注册时，在产生密钥对前，U2F设备需要先被"激活"。例如，通过用户按U2F设备上的按钮，表示用户允许继续，激活U2F设备，U2F接着做后续操作。等待用户按键时，浏览器需要提醒用户按键确认。
+</p><p>验证时，在做签名前，U2F设备仍然需要先被"激活"。例如，通过用户按U2F设备上的按钮，表示用户允许继续，激活U2F设备，U2F接着做签名操作。等待用户按键时，浏览器需要提醒用户按键确认。
+</p><h3>U2F设备可以很廉价
+</h3><p>为了保证安全性，私钥的保护很重要。U2F协议允许一个廉价的设备，同时保证此设备不会泄露私钥。Key Handle可以不是U2F设备上一个私钥的索引，相反，Key Handle可以用来存储私钥和服务器相关信息，这些信息可以被加密保存到一个Key Handle中。（例如使用AES加密私钥和服务器信息）。
+</p><h3>验证U2F的真伪
+</h3><p>服务器需要一种方式，来确定用户使用的设备是服务器所授权和允许使用的。例如，某银行只使用了飞天诚信的U盾，银行服务器就应该有足够的认证信息，来判断用户使用的U盾就是飞天诚信的，而不是别的厂商制造的。这样对厂商版权有利，对银行安全性也有保障。一个厂商生产的一批U2F Key中，它们应该都共享一对公共的根密钥对，使用此跟密钥对来颁发证书，服务器将验证此证书的合法性，当然，验证使用的是对应的公钥。FIDO草案中，目前还未指明如何颁发根密钥对的过程，这个过程还在修订中。
+</p><h3>防止U2F设备被克隆
+</h3><p>U2F协议中，使用了计数器。在用户注册完设备后，服务器会初始化计数器（从0开始），设备内部，对应的密钥对也有一个计数器。用户每验证一次，设备内计数器加一，此计数会传给服务器，服务器比对服务器上的计数器和设备的计数器，如果服务器的计数器小于等于设备的计数器，属于正常操作，服务器验证成功后，将计数器更新为设备当前的计数器。如果服务器的计数器大于设备的计数器，说明U2F设备已被克隆。例如，用户注册完一次后，并登陆，服务器的计数器更新为1，U2F设备也为1.下次用户再次登陆，服务器和设备都跟新为2. 如果U2F设备被克隆，其它人使用该设备登陆，服务器计数器会随着恶意使用者的登陆，计数器会递增。假设，恶意用户登陆了两次，服务器的技术则为4。当真正的用户登陆时，它的计数器加1，变为3，传给服务器。服务器发现它的计数比服务器上的小，服务器就会给用户发出警告信息，警告用户设备已被克隆。但这种技术有个滞后的弊端，如果用户不再登陆，或者很长时间都没有登陆，用户是无法发现被克隆的。即便是很快发现了，估计也为时已晚，黑客不可能等你发现了再去窃取你的隐私。
+</p><h3>防止钓鱼网站
+</h3><p>假如，某钓鱼网站在你注册的时候，获取到了你的Key Handle和公钥。当做认证的时候，浏览器获取的网址（application identity）和你注册的时候网址是不一样的。这样，将Key Handle ，app_id信息传入U2F设备中，U2F设备也不会实施签名操作，因为它发现自身存储的Key Handle对应的app_id和传入的app_id不一致。
+</p><h1>FIDO测试网站
+</h1><p>下面罗列了几个测试网站，可以做测试：
+</p><p>u2fdemo.appspot.com
+</p><p>demo.yubico.com/u2f.php
+</p><p>
+&nbsp;</p><h1>FIDO相关新闻事件
+</h1><p>今年于加利福尼亚州蒙特雷举行的The Cloud Identity Summit上，FIDO联盟标准计划是一大重要主题。该联盟在会议上举办了一场互操作性研讨会，成员们演示了他们的FIDO Ready解决方案如何协同工作。
+</p><p>FIDO联盟是一家非营利性组织，创立于两年之前，旨在重新思考和重新设计身份验证技术。成员们努力实现无密码的用户体验。该组织包括谷歌、微软和三星等重量级成员。
+</p><p>Yubico公司演示了YubiKey NEO U2F身份验证。Yubico公司首席执行官兼创始人Stina Ehrensvard表示，有三家公司演示了基于Universal Authentication Framework框架协议的解决方案，还有六家公司演示了基于Universal Second Factor的设备和服务。
+</p><p>Eyelock公司率先演示了用于眼睛识别的Universal Second Factor协议。Eyelock和StrongAuth联合演示了使用USB接口的身份验证设备myris。Eyelock首席运营官Jeff Carter表示，Myris可将人眼的虹膜特征转换为独特的代码，然后与用户的加密代码进行匹配,决定是否授予访问权限。
+</p><p>StrongAuth公司的首席技术官Arshad Noor表示："StrongAuth加入FIDO联盟还不到五个月的时间，但我们确信FIDO Universal Second Factor协议具有足够的吸引力，能够得到广泛实施，我们将以尽可能快的速度推出FIDO Ready解决方案。The Cloud Identity Summit的互操作性研讨会证明了FIDO标准的效用，一旦规范获得批准，面向市场的解决方案很可能投入部署。"
+</p><p>AGNITiO和Nok Nok使用AGNITiO面向移动设备的FIDO Ready语音ID，共同演示了如何在移动设备上使用Nok Nok Labs客户端进行注册并登录到FIDO应用程序，以及如何使用AGNITiO语音ID密码短语。用户还能够选择在线购买，在支付界面中说出密码短语来批准购买。
+</p><p>Nok Nok Labs演示了Universal Second Factor和Universal Authentication Framework与Nok Nok Multifactor身份验证服务器的集成。Nok Nok公司高级营销总监Jamie Cowper表示："我们利用带有Synaptics传感器的三星S5，以及AGNITiO语音生物识别解决方案，实现了与指纹识别的集成。我们还结合ForgeRock OpenAM解决方案演示了FIDO协议，展示FIDO如何能够为联合解决方案提供补充。"
+</p><p>Plug-up International公司演示了双重FIDO Universal Second Factor和Universal Authentication Framework USB身份验证程序令牌与三个服务器合作伙伴的互操作。
+</p><p>FIDO主网站有这些公司的演示视频：<br><a rel="nofollow" href="https://fidoalliance.org/adoption/videos/"     >https://fidoalliance.org/adoption/videos/</a>
+</p>
+</body></html>

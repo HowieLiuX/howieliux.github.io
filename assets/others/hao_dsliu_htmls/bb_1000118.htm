@@ -1,0 +1,10 @@
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=utf8"><title>163 blogs的博客：模板实参推演</title>
+<style type="text/css">
+a{color: #000000;text-decoration : none;font-size: 10pt;}
+a:hover {color: red;text-decoration : underline;}
+.replyBox{padding:4px;border:1px solid #D8D8D8;}
+</style></head><body><h2>模板实参推演</h2>
+<p align="right">发布时间：2012-9-10 00:29
+<br>分类名称：C++</p><br>
+<p>当函数模板被调用时对函数实参类型的检查决定了模板实参的类型和值这个过程被称为模板实参推演(template argument deduction)。 </p><p>要想成功地进行模板实参推演函数实参的类型不一定要严格匹配相应函数参数的类型 </p><p>下列三种类型转换是允许的： </p><ol><li><div style="text-align: justify;"  >左值转换 </div></li></ol><ul style="margin-left: 42pt;"  ><li><div style="text-align: justify;"  >左值到右值的转换 </div></li><li><div style="text-align: justify;"  >从数组到指针的转换 </div></li><li><div style="text-align: justify;"  >从函数到指针的转换 </div></li></ul><ol><li><div style="text-align: justify;"  >限定转换（const/volatile） </div></li><li><div style="text-align: justify;"  >到一个基类(该基类根据一个类模板实例化而来)的转换 </div></li></ol><p> &nbsp;</p><p>也就是说，编译器在模板推演之前，先进行上述转换，然后再推演。 </p><p><img title="模板实参推演 - Howie - Dspace"  src="pic/img9.ph.126.net_Ilt117Vtm9zHvPN4A6UySg==_6597600830772292289.jpg"  alt=""  />  </p>
+</body></html>

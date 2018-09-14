@@ -1,0 +1,10 @@
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=utf8"><title>163 blogs的博客：【原】OpenSC中搜索配置文件的顺序</title>
+<style type="text/css">
+a{color: #000000;text-decoration : none;font-size: 10pt;}
+a:hover {color: red;text-decoration : underline;}
+.replyBox{padding:4px;border:1px solid #D8D8D8;}
+</style></head><body><h2>【原】OpenSC中搜索配置文件的顺序</h2>
+<p align="right">发布时间：2012-7-18 11:08
+<br>分类名称：PKI</p><br>
+=================== ***.profile search steps ===================<br>int sc_profile_load(struct sc_profile *profile, const char *filename)；<br><br>load profile steps：<br>1. find profile_dir option in opensc.conf;<br>2. find ProfileDir value in "HKEY_CURRENT_USER\\Software\\OpenSC Project\\OpenSC";<br>3. find ProfileDir value in "HKEY_LOCAL_MACHINE\\Software\\OpenSC Project\\OpenSC";<br><br>It only use the macro "SC_PKCS15_PROFILE_DIRECTORY" which is defined in config.h, if not in windows.<br><br>=================== opensc.conf search steps ===================<br>static void process_config_file(sc_context_t *ctx, struct _sc_ctx_options *opts);<br><br>load opensc.conf steps:<br>1. getenv("OPENSC_CONF");<br>2. find ConfigFile value in "HKEY_CURRENT_USER\\Software\\OpenSC Project\\OpenSC";<br>3. find ConfigFile value in "HKEY_LOCAL_MACHINE\\Software\\OpenSC Project\\OpenSC";
+</body></html>

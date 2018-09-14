@@ -1,0 +1,87 @@
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=utf8"><title>163 blogs的博客：Mutex</title>
+<style type="text/css">
+a{color: #000000;text-decoration : none;font-size: 10pt;}
+a:hover {color: red;text-decoration : underline;}
+.replyBox{padding:4px;border:1px solid #D8D8D8;}
+</style></head><body><h2>Mutex</h2>
+<p align="right">发布时间：2010-2-11 12:19
+<br>分类名称：windows</p><br>
+<style> <!--    @font-face  {font-family:宋体;  panose-1:2 1 6 0 3 1 1 1 1 1;  mso-font-alt:simsun;  mso-font-charset:134;  mso-generic-font-family:auto;  mso-font-pitch:variable;  mso-font-signature:3 135135232 16 0 262145 0;} @font-face  {font-family:"cambria math";  panose-1:2 4 5 3 5 4 6 3 2 4;  mso-font-charset:0;  mso-generic-font-family:roman;  mso-font-pitch:variable;  mso-font-signature:-1610611985 1107304683 0 0 159 0;} @font-face  {font-family:calibri;  panose-1:2 15 5 2 2 2 4 3 2 4;  mso-font-charset:0;  mso-generic-font-family:swiss;  mso-font-pitch:variable;  mso-font-signature:-1610611985 1073750139 0 0 159 0;} @font-face  {font-family:tahoma;  panose-1:2 11 6 4 3 5 4 4 2 4;  mso-font-charset:0;  mso-generic-font-family:swiss;  mso-font-pitch:variable;  mso-font-signature:1627400839 -2147483648 8 0 66047 0;} @font-face  {font-family:"@宋体";  panose-1:2 1 6 0 3 1 1 1 1 1;  mso-font-charset:134;  mso-generic-font-family:auto;  mso-font-pitch:variable;  mso-font-signature:3 135135232 16 0 262145 0;}    p.msonormal, li.msonormal, div.msonormal  {mso-style-unhide:no;  mso-style-qformat:yes;  mso-style-parent:"";  margin:0cm;  margin-bottom:.0001pt;  text-align:justify;  text-justify:inter-ideograph;  mso-pagination:none;  font-size:10.5pt;  mso-bidi-font-size:11.0pt;  font-family:"calibri","sans-serif";  mso-fareast-font-family:宋体;  mso-bidi-font-family:"times new roman";  mso-font-kerning:1.0pt;} .msochpdefault  {mso-style-type:export-on<wbr>ly;  mso-default-props:yes;  font-size:10.0pt;  mso-ansi-font-size:10.0pt;  mso-bidi-font-size:10.0pt;  mso-ascii-font-family:calibri;  mso-fareast-font-family:宋体;  mso-hansi-font-family:calibri;  mso-font-kerning:0pt;}    @page  {mso-page-border-surround-header:no;  mso-page-border-surround-footer:no;} @page section1  {size:612.0pt 792.0pt;  margin:72.0pt 90.0pt 72.0pt 90.0pt;  mso-header-margin:36.0pt;  mso-footer-margin:36.0pt;  mso-paper-source:0;} div.section1  {page:section1;} --> -->--></style>
+
+<p><style> <!--    @font-face  {font-family:wingdings;  panose-1:5 0 0 0 0 0 0 0 0 0;  mso-font-charset:2;  mso-generic-font-family:auto;  mso-font-pitch:variable;  mso-font-signature:0 268435456 0 0 -2147483648 0;} @font-face  {font-family:宋体;  panose-1:2 1 6 0 3 1 1 1 1 1;  mso-font-alt:simsun;  mso-font-charset:134;  mso-generic-font-family:auto;  mso-font-pitch:variable;  mso-font-signature:3 135135232 16 0 262145 0;} @font-face  {font-family:"cambria math";  panose-1:2 4 5 3 5 4 6 3 2 4;  mso-font-charset:0;  mso-generic-font-family:roman;  mso-font-pitch:variable;  mso-font-signature:-1610611985 1107304683 0 0 159 0;} @font-face  {font-family:calibri;  panose-1:2 15 5 2 2 2 4 3 2 4;  mso-font-charset:0;  mso-generic-font-family:swiss;  mso-font-pitch:variable;  mso-font-signature:-1610611985 1073750139 0 0 159 0;} @font-face  {font-family:tahoma;  panose-1:2 11 6 4 3 5 4 4 2 4;  mso-font-charset:0;  mso-generic-font-family:swiss;  mso-font-pitch:variable;  mso-font-signature:1627400839 -2147483648 8 0 66047 0;} @font-face  {font-family:"@宋体";  panose-1:2 1 6 0 3 1 1 1 1 1;  mso-font-charset:134;  mso-generic-font-family:auto;  mso-font-pitch:variable;  mso-font-signature:3 135135232 16 0 262145 0;}    p.msonormal, li.msonormal, div.msonormal  {mso-style-unhide:no;  mso-style-qformat:yes;  mso-style-parent:"";  margin:0cm;  margin-bottom:.0001pt;  text-align:justify;  text-justify:inter-ideograph;  mso-pagination:none;  font-size:10.5pt;  mso-bidi-font-size:11.0pt;  font-family:"calibri","sans-serif";  mso-fareast-font-family:宋体;  mso-bidi-font-family:"times new roman";  mso-font-kerning:1.0pt;} p.msolistparagraph, li.msolistparagraph, div.msolistparagraph  {mso-style-priority:34;  mso-style-unhide:no;  mso-style-qformat:yes;  margin:0cm;  margin-bottom:.0001pt;  text-align:justify;  text-justify:inter-ideograph;  text-indent:21.0pt;  mso-char-indent-count:2.0;  mso-pagination:none;  font-size:10.5pt;  mso-bidi-font-size:11.0pt;  font-family:"calibri","sans-serif";  mso-fareast-font-family:宋体;  mso-bidi-font-family:"times new roman";  mso-font-kerning:1.0pt;} .msochpdefault  {mso-style-type:export-on<wbr>ly;  mso-default-props:yes;  font-size:10.0pt;  mso-ansi-font-size:10.0pt;  mso-bidi-font-size:10.0pt;  mso-ascii-font-family:calibri;  mso-fareast-font-family:宋体;  mso-hansi-font-family:calibri;  mso-font-kerning:0pt;}    @page  {mso-page-border-surround-header:no;  mso-page-border-surround-footer:no;} @page section1  {size:612.0pt 792.0pt;  margin:72.0pt 90.0pt 72.0pt 90.0pt;  mso-header-margin:36.0pt;  mso-footer-margin:36.0pt;  mso-paper-source:0;} div.section1  {page:section1;}    @list l0  {mso-list-id:2136751203;  mso-list-type:hybrid;  mso-list-template-ids:-694281694 67698689 67698691 67698693 67698689 67698691 67698693 67698689 67698691 67698693;} @list l0:level1  {mso-level-number-format:bullet;  mso-level-text:?;  mso-level-tab-stop:none;  mso-level-number-;  margin-left:21.0pt;  text-indent:-21.0pt;  font-family:wingdings;} ol  {margin-bottom:0cm;} ul  {margin-bottom:0cm;} --> -->--></style>
+
+</p><p><span style="font-size: 10pt; font-family: &quot;Tahoma&quot;,&quot;sans-serif&quot;;" lang="EN-US"><span style="">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span>Usage count<span style="">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span></span></p>
+
+<p><span style="font-size: 10pt; font-family: &quot;Tahoma&quot;,&quot;sans-serif&quot;;" lang="EN-US"><span style="">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span>Thread ID<span style="">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span>identifies
+which thread in the system currently owns the mutex.</span></p>
+
+<p><span style="font-size: 10pt; font-family: &quot;Tahoma&quot;,&quot;sans-serif&quot;;" lang="EN-US"><span style="">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span><b style="">Recursion
+counter</b><span style="">&nbsp;&nbsp;&nbsp;&nbsp; </span>indicates the number of
+times that this thread owns the mutex.</span></p>
+
+<p><span style="font-size: 10pt; font-family: &quot;Tahoma&quot;,&quot;sans-serif&quot;;" lang="EN-US">&nbsp;</span></p>
+
+<p><span style="font-size: 10pt; font-family: &quot;Tahoma&quot;,&quot;sans-serif&quot;;" lang="EN-US">Usage</span></p>
+
+<p style="margin-left: 21pt; text-indent: -21pt;"><span style="font-size: 10pt; font-family: Wingdings;" lang="EN-US"><span style="">l<span style="font: 7pt &quot;Times New Roman&quot;;">&nbsp; </span></span></span><span style="font-size: 10pt; font-family: &quot;Tahoma&quot;,&quot;sans-serif&quot;;" lang="EN-US">If the thread ID is 0 (an invalid
+thread ID), the mutex is not owned by any thread and is signaled.</span></p>
+
+<p style="margin-left: 21pt; text-indent: -21pt;"><span style="font-size: 10pt; font-family: Wingdings;" lang="EN-US"><span style="">l<span style="font: 7pt &quot;Times New Roman&quot;;">&nbsp; </span></span></span><span style="font-size: 10pt; font-family: &quot;Tahoma&quot;,&quot;sans-serif&quot;;" lang="EN-US">If the thread ID is a nonzero value, a
+thread owns the mutex and the mutex is nonsignaled.</span></p>
+
+<p style="margin-left: 21pt; text-indent: -21pt;"><span style="font-size: 10pt; font-family: Wingdings;" lang="EN-US"><span style="">l<span style="font: 7pt &quot;Times New Roman&quot;;">&nbsp; </span></span></span><span style="font-size: 10pt; font-family: &quot;Tahoma&quot;,&quot;sans-serif&quot;;" lang="EN-US">The system checks to see whether the
+thread attempting to acquire the mutex has the same thread ID as recorded
+inside the mutex object. If the thread IDs match, the system allows the thread
+to remain schedulable—even though the mutex was nonsignaled.</span></p>
+
+<p><span style="font-size: 10pt; font-family: &quot;Tahoma&quot;,&quot;sans-serif&quot;;" lang="EN-US">&nbsp;</span></p>
+
+<p><span style="font-size: 10pt; font-family: &quot;Tahoma&quot;,&quot;sans-serif&quot;;" lang="EN-US">Functions:</span></p>
+
+<p><span style="font-size: 10pt; font-family: &quot;Tahoma&quot;,&quot;sans-serif&quot;;" lang="EN-US"><span style="">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span>HANDLE CreateMutex(</span></p>
+
+<p style="margin-left: 21pt;"><span style="font-size: 10pt; font-family: &quot;Tahoma&quot;,&quot;sans-serif&quot;;" lang="EN-US"><span style="">&nbsp;&nbsp;
+</span>PSECURITY_ATTRIBUTES psa,</span></p>
+
+<p style="margin-left: 21pt;"><span style="font-size: 10pt; font-family: &quot;Tahoma&quot;,&quot;sans-serif&quot;;" lang="EN-US"><span style="">&nbsp;&nbsp;
+</span>BOOL bInitialOwner,</span></p>
+
+<p style="margin-left: 21pt;"><span style="font-size: 10pt; font-family: &quot;Tahoma&quot;,&quot;sans-serif&quot;;" lang="EN-US"><span style="">&nbsp;&nbsp;
+</span>PCTSTR pszName);</span></p>
+
+<p style="margin-left: 21pt;"><span style="font-size: 10pt; font-family: &quot;Tahoma&quot;,&quot;sans-serif&quot;;" lang="EN-US">&nbsp;</span></p>
+
+<p style="margin-left: 21pt;"><span style="font-size: 10pt; font-family: &quot;Tahoma&quot;,&quot;sans-serif&quot;;" lang="EN-US">HANDLE CreateMutexEx(</span></p>
+
+<p style="margin-left: 21pt;"><span style="font-size: 10pt; font-family: &quot;Tahoma&quot;,&quot;sans-serif&quot;;" lang="EN-US"><span style="">&nbsp;&nbsp;
+</span>PSECURITY_ATTRIBUTES psa,</span></p>
+
+<p style="margin-left: 21pt;"><span style="font-size: 10pt; font-family: &quot;Tahoma&quot;,&quot;sans-serif&quot;;" lang="EN-US"><span style="">&nbsp;&nbsp;
+</span>PCTSTR pszName,</span></p>
+
+<p style="margin-left: 21pt;"><span style="font-size: 10pt; font-family: &quot;Tahoma&quot;,&quot;sans-serif&quot;;" lang="EN-US"><span style="">&nbsp;&nbsp;
+</span>DWORD dwFlags,</span></p>
+
+<p style="margin-left: 21pt;"><span style="font-size: 10pt; font-family: &quot;Tahoma&quot;,&quot;sans-serif&quot;;" lang="EN-US"><span style="">&nbsp;&nbsp;
+</span>DWORD dwDesiredAccess);</span></p>
+
+<p style="margin-left: 21pt;"><span style="font-size: 10pt; font-family: &quot;Tahoma&quot;,&quot;sans-serif&quot;;" lang="EN-US">&nbsp;</span></p>
+
+<p style="margin-left: 21pt;"><span style="font-size: 10pt; font-family: &quot;Tahoma&quot;,&quot;sans-serif&quot;;" lang="EN-US">HANDLE OpenMutex(</span></p>
+
+<p style="margin-left: 21pt;"><span style="font-size: 10pt; font-family: &quot;Tahoma&quot;,&quot;sans-serif&quot;;" lang="EN-US"><span style="">&nbsp;&nbsp;
+</span>DWORD dwDesiredAccess,</span></p>
+
+<p style="margin-left: 21pt;"><span style="font-size: 10pt; font-family: &quot;Tahoma&quot;,&quot;sans-serif&quot;;" lang="EN-US"><span style="">&nbsp;&nbsp;
+</span>BOOL bInheritHandle,</span></p>
+
+<p style="margin-left: 21pt;"><span style="font-size: 10pt; font-family: &quot;Tahoma&quot;,&quot;sans-serif&quot;;" lang="EN-US"><span style="">&nbsp;&nbsp;
+</span>PCTSTR pszName);</span></p>
+
+<p style="margin-left: 21pt;"><span style="font-size: 10pt; font-family: &quot;Tahoma&quot;,&quot;sans-serif&quot;;" lang="EN-US">&nbsp;</span></p>
+
+<span style="font-size: 10pt; font-family: &quot;Tahoma&quot;,&quot;sans-serif&quot;;" lang="EN-US"><span style="">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span>BOOL
+ReleaseMutex(HANDLE hMutex);</span><p></p>
+
+
+</body></html>

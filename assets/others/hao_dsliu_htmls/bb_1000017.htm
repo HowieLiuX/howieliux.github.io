@@ -1,0 +1,601 @@
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=utf8"><title>163 blogs的博客：模板相关知识总结</title>
+<style type="text/css">
+a{color: #000000;text-decoration : none;font-size: 10pt;}
+a:hover {color: red;text-decoration : underline;}
+.replyBox{padding:4px;border:1px solid #D8D8D8;}
+</style></head><body><h2>模板相关知识总结</h2>
+<p align="right">发布时间：2016-3-18 10:26
+<br>分类名称：STL</p><br>
+<p style="background: #f8fcff;"     ><span style="color:black; font-size:12pt;"     ><span style="font-family:宋体;"     ><strong>注意</strong></span><span style="font-family:Lucida Bright;"     >
+<br></span><span style="font-family:宋体;"     >这篇文章很多是由自己总结，甚至有的可能是凭空想象，可能有很多错误和不严谨的地方，读者需要带着怀疑和批判的眼光来读本文。</span><span style="font-family:Lucida Bright;"     >
+</span></span></p><p style="background: #f8fcff;"     ><span style="color:black; font-family:微软雅黑; font-size:16pt;"     ><strong>定义一个模板<span style="color:#444444;"     >
+</span></strong></span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >template&lt; parameter1, parameter2, …&gt;
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >functions / class definition
+</span></p><p style="background: #f8fcff;"     ><span style="color:black; font-size:12pt;"     ><span style="font-family:Lucida Bright;"     >Parameter </span><span style="font-family:宋体;"     >一般有三种类型</span><span style="font-family:Lucida Bright;"     >: 
+</span></span></p><ol style="margin-left: 38pt;"     ><li><div style="background: #f8fcff;"     ><span style="color:black; font-size:12pt;"     ><strong><span style="font-family:Lucida Bright;"     >type parameter</span><span style="font-family:宋体;"     >（类型参数）</span></strong><span style="font-family:Lucida Bright;"     > : typename T. T</span><span style="font-family:宋体;"     >可以是系统固有的类型如</span><span style="font-family:Lucida Bright;"     >int</span><span style="font-family:宋体;"     >，</span><span style="font-family:Lucida Bright;"     >long</span><span style="font-family:宋体;"     >，也可以是用户自定义类型。</span><span style="font-family:Lucida Bright;"     >
+</span></span></div></li><li><div style="background: #f8fcff;"     ><span style="color:black; font-size:12pt;"     ><strong><span style="font-family:Lucida Bright;"     >Nontype parameter </span><span style="font-family:宋体;"     >（非类型参数）</span></strong><span style="font-family:Lucida Bright;"     >: const value</span><span style="font-family:宋体;"     >。表示方法如</span><span style="font-family:Lucida Bright;"     >int n</span><span style="font-family:宋体;"     >，</span><span style="font-family:Lucida Bright;"     >char const *szStr</span><span style="font-family:宋体;"     >，诸如此类的表示。有点像一个函数参数，但是又有限制，模板实例化时，只能传入</span><span style="font-family:Lucida Bright;"     >const value</span><span style="font-family:宋体;"     >。为何不能为变量？因为变量是运行时确定的，而模板是在编译时确定的。</span><span style="font-family:Lucida Bright;"     >Const</span><span style="font-family:宋体;"     >类型可以在编译时确定下来。</span><span style="font-family:Lucida Bright;"     >
+</span></span></div></li><li><div style="background: #f8fcff;"     ><span style="color:black; font-size:12pt;"     ><span style="font-family:Lucida Bright;"     ><strong>template type parameter</strong></span><span style="font-family:宋体;"     ><strong>（模板类型的参数）</strong>：将一个类模板作为模板参数。</span><span style="font-family:Lucida Bright;"     >
+</span></span></div></li></ol><p style="background: #f8fcff;"     ><span style="color:black; font-size:12pt;"     ><span style="font-family:宋体;"     >所以模板的定义可以细化如下：</span><span style="font-family:Lucida Bright;"     >
+</span></span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >template&lt;[type parameters， …], [Nontype parameters， …], [template type parameters,…] …&gt;
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >functions / class definition
+</span></p><p style="background: #f8fcff;"     ><span style="color:black; font-size:12pt;"     ><span style="font-family:Lucida Bright;"     >[] </span><span style="font-family:宋体;"     >代表</span><span style="font-family:Lucida Bright;"     >Option</span><span style="font-family:宋体;"     >，可选。</span><span style="font-family:Lucida Bright;"     >
+</span></span></p><p style="background: #f8fcff;"     ><span style="color:black; font-size:12pt;"     ><span style="font-family:宋体;"     >下面举例说明：</span><span style="font-family:Lucida Bright;"     >
+</span></span></p><ul><li><div style="background: #f8fcff;"     ><span style="color:black; font-size:12pt;"     ><strong><span style="font-family:宋体;"     >只有</span><span style="font-family:Lucida Bright;"     >type parameters</span><span style="font-family:宋体;"     >的情况</span></strong><span style="font-family:Lucida Bright;"     >
+</span></span></div></li></ul><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >template &lt;class Type&gt;
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >class QueueItem;
+</span></p><p style="background: #f7f9fa;"     >&nbsp;
+&nbsp;</p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >template &lt;typename Type&gt;
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >inline Type min( Array&lt;Type&gt;, int );
+</span></p><ul><li><div style="background: #f8fcff;"     ><span style="color:black; font-size:12pt;"     ><strong><span style="font-family:Lucida Bright;"     >type parameters </span><span style="font-family:宋体;"     >和</span><span style="font-family:Lucida Bright;"     > Nontype parameters</span><span style="font-family:宋体;"     >共存的情况</span></strong><span style="font-family:Lucida Bright;"     >
+</span></span></div></li></ul><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >template &lt;typename Type, int size&gt;
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >Type min( Type (&amp;r_array)[size] );
+</span></p><p style="background: #f7f9fa;"     >&nbsp;
+&nbsp;</p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >template &lt;class Type, int size&gt;
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >class Buffer;
+</span></p><ul><li><div style="background: #f8fcff;"     ><span style="color:black; font-size:12pt;"     ><strong><span style="font-family:宋体;"     >只有</span><span style="font-family:Lucida Bright;"     >Nontype parameters </span><span style="font-family:宋体;"     >的情况</span></strong><span style="font-family:Lucida Bright;"     >
+</span></span></div></li></ul><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >template&lt;CK_ULONG u&gt; struct type_trait;
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >template&lt;CK_ULONG&gt; struct type_trait;&nbsp;&nbsp;&nbsp;&nbsp;// u可以被省略，就如同函数参数在声明的时候可以被省略一样，但真正用的时候，不能省略。
+</span></p><ul><li><div style="background: #f8fcff;"     ><span style="color:black; font-size:12pt;"     ><strong><span style="font-family:宋体;"     >有</span><span style="font-family:Lucida Bright;"     >template type parameter</span><span style="font-family:宋体;"     >的情况</span></strong><span style="font-family:Lucida Bright;"     >
+</span></span></div></li></ul><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >template &lt;class Type, template&lt;class&gt; class seq&gt;&nbsp;&nbsp;&nbsp;&nbsp;// U参数被省略
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >class Buffer;
+</span></p><p style="background: #f7f9fa;"     >&nbsp;
+&nbsp;</p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >template &lt;class Type, template&lt;class U&gt; class seq&gt; // 两个参数都未被省略
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >class Buffer;
+</span></p><p style="background: #f7f9fa;"     >&nbsp;
+&nbsp;</p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >template &lt;class Type, template&lt;class, size_t&gt; class seq&gt; // 两个参数都被省略
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >class Buffer2;
+</span></p><p style="background: #f7f9fa;"     >&nbsp;
+&nbsp;</p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >template &lt;class Type, template&lt;class U, size_t nSize&gt; class seq&gt; // 两个参数都未被省略
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >class Buffer2;
+</span></p><p style="background: #f8fcff;"     ><span style="color:black; font-size:12pt;"     ><strong><span style="font-family:宋体;"     >注释：声明一个</span><span style="font-family:Lucida Bright;"     >template</span><span style="font-family:宋体;"     >时候，和声明一个函数一样，</span><span style="font-family:Lucida Bright;"     >Parameter</span><span style="font-family:宋体;"     >可以被省略，只保留类型，如：</span></strong><span style="font-family:Lucida Bright;"     >
+</span></span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >template &lt;typename , unsigned long &gt;  // Type 和 n被省略。
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >class QueueItem;
+</span></p><p style="background: #f7f9fa;"     >&nbsp;
+&nbsp;</p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >template &lt;class Type, unsigned long n&gt;
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >class QueueItem {
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >public:
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >&nbsp;&nbsp;&nbsp;&nbsp;QueueItem( const Type &amp; i);
+</span></p><p style="background: #f7f9fa;"     >&nbsp;
+&nbsp;</p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >private:
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >&nbsp;&nbsp;&nbsp;&nbsp;Type item;
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >&nbsp;&nbsp;&nbsp;&nbsp;QueueItem *next;
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >};
+</span></p><p style="background: #f7f9fa;"     >&nbsp;
+&nbsp;</p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >template &lt;class Type, unsigned long n&gt;
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >QueueItem&lt;Type, n&gt;::QueueItem(const Type &amp; i)
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >{
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >&nbsp;&nbsp;&nbsp;&nbsp;item = i;
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >}
+</span></p><p style="background: #f8fcff;"     ><span style="color:black; font-size:12pt;"     ><span style="font-family:宋体;"     >当然，模板也可以有默认参数：</span><span style="font-family:Lucida Bright;"     >
+</span></span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >template &lt;class Type = int, int size = 30&gt;
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >class Buffer;
+</span></p><p style="background: #f8fcff;"     ><span style="color:black; font-family:微软雅黑; font-size:16pt;"     ><strong>Template 基础知识点<span style="color:#444444;"     >
+</span></strong></span></p><p style="background: #f8fcff;"     ><span style="color:black; font-size:12pt;"     ><span style="font-family:宋体;"     >下面是总结自</span><span style="font-family:Lucida Bright;"     >C++ Primer</span><span style="font-family:宋体;"     >：</span><span style="font-family:Lucida Bright;"     >
+</span></span></p><p style="background: #f8fcff;"     ><span style="color:black; font-family:微软雅黑; font-size:13pt;"     ><strong>常见错误<span style="color:#444444;"     >
+</span></strong></span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >template &lt;class Type&gt;
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >Type min1( Type a, Type b )
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >{
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >    // C++ Primer : 错误, 重新声明模板参数 Type
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >    // 但是我使用VS2010编译通过，只是给出了一个警告
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >    typedef double Type;
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >    Type tmp = a &lt; b ? a : b;
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >    return tmp;
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >}
+</span></p><p style="background: #f7f9fa;"     >&nbsp;
+&nbsp;</p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >// Type 重复使用。 就如同参数名不能一样。一样了编译器就无法识别了。
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >// 所以判断一个语法是否正确的通法是：是否能够造成编译器无法分析
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >template &lt;class Type, class Type&gt;
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >Type min2( Type a, Type b);
+</span></p><p style="background: #f7f9fa;"     >&nbsp;
+&nbsp;</p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >// typename or class 关键字不能省略。
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >template &lt;typename T, U&gt;
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >T sum( T*, U );
+</span></p><p style="background: #f7f9fa;"     >&nbsp;
+&nbsp;</p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >// 有时，编译器无法区分出是类型以及不是类型的表达式
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >// 如果编译器在模板定义中遇到表达式Parm::name 且Parm 这个模板类型参数代表了一个类, 
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >// 那么name引用的是Parm的一个类型成员吗?
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >// 编译器不知道name是否为一个类型, 因为它只有在模板被实例化之后才能找到Parm
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >// 表示的类的定义. 为了让编译器不为之混淆，你必须显示的告诉编译器它是否是个类型表达式，
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >// 使用typename可以做到，所以在我转的另一篇的typename的用法中提到，typename用在模板中，目的是为了帮助编译器区分它是个类型，
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >//  否则编译器默认将其看做一个成员对待。
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >template &lt;class Parm, class U&gt;
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >Parm minus( Parm* array, U value )
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >{
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >    Parm::name * p;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;// 这是一个指针声明还是乘法乘法？
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >    typename Parm::name * p;&nbsp;&nbsp;&nbsp;&nbsp;// ok: 指针声明
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >}
+</span></p><p style="background: #f7f9fa;"     >&nbsp;
+&nbsp;</p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >// ok: 关键字跟在模板参数表之后
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >template &lt;typename Type&gt;
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >inline
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >Type min( Type, Type );
+</span></p><p style="background: #f7f9fa;"     >&nbsp;
+&nbsp;</p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >// 错误: inline 指示符放置的位置错误
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >inline
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >template &lt;typename Type&gt;
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >Type min( Array&lt;Type&gt;, int );
+</span></p><p style="background: #f7f9fa;"     >&nbsp;
+&nbsp;</p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >// 正确: inline 指示符放置的位置
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >template &lt;typename Type&gt;
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >inline Type min( Array&lt;Type&gt;, int );
+</span></p><p style="background: #f8fcff;"     ><span style="color:black; font-family:微软雅黑; font-size:13pt;"     ><strong>函数模板实例化<span style="color:#444444;"     >
+</span></strong></span></p><p style="background: #f8fcff;"     ><span style="color:black; font-size:12pt;"     ><span style="font-family:宋体;"     >如果没有显示指定模板参数，这个过程是编译器隐式发生的，它可以被看作是函数模板调用或取函数模板的地址的<strong>副作用</strong>。</span><span style="font-family:Lucida Bright;"     >
+</span></span></p><p style="background: #f8fcff;"     ><span style="color:black; font-size:12pt;"     ><span style="font-family:宋体;"     >在下面的程序中</span><span style="font-family:Lucida Bright;"     >min()</span><span style="font-family:宋体;"     >被实例化两次：一次是针对</span><span style="font-family:Lucida Bright;"     >5 </span><span style="font-family:宋体;"     >个</span><span style="font-family:Lucida Bright;"     >int </span><span style="font-family:宋体;"     >的数组类型，另一次是针对</span><span style="font-family:Lucida Bright;"     >6 </span><span style="font-family:宋体;"     >个</span><span style="font-family:Lucida Bright;"     >double </span><span style="font-family:宋体;"     >的数组类型。</span><span style="font-family:Lucida Bright;"     >
+</span></span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >template &lt;typename Type, int size&gt;
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >Type min( Type (&amp;r_array)[size] )；
+</span></p><p style="background: #f7f9fa;"     >&nbsp;
+&nbsp;</p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >// size 没有指定——ok
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >// size = 初始化表中的值的个数
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >int ia[] = { 10, 7, 14, 3, 25 };
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >double da[6] = { 10.2, 7.1, 14.5, 3.2, 25.0, 16.8 };
+</span></p><p style="background: #f7f9fa;"     >&nbsp;
+&nbsp;</p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >// 为5 个int 的数组实例化min()
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >// Type =&gt; int, size =&gt; 5
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >int i = min( ia );
+</span></p><p style="background: #f7f9fa;"     >&nbsp;
+&nbsp;</p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >// 为 6 个 double 的数组实例化 min()
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >// Type =&gt; double, size =&gt; 6
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >double d = min( da );
+</span></p><p style="background: #f8fcff;"     ><span style="color:black; font-family:微软雅黑; font-size:12pt;"     ><strong>函数模板实参推演<span style="color:#333333;"     >
+</span></strong></span></p><p style="background: #f8fcff;"     ><span style="color:black; font-size:12pt;"     ><span style="font-family:宋体;"     >为了判断用作模板实参的实际类型和值编译器需要检查函数调用中提供的函数实参的类型。在我们的例子中</span><span style="font-family:Lucida Bright;"     >ia </span><span style="font-family:宋体;"     >的类型（即</span><span style="font-family:Lucida Bright;"     >5 </span><span style="font-family:宋体;"     >个</span><span style="font-family:Lucida Bright;"     >int </span><span style="font-family:宋体;"     >的数组）和</span><span style="font-family:Lucida Bright;"     >da </span><span style="font-family:宋体;"     >的类型（即</span><span style="font-family:Lucida Bright;"     >6 </span><span style="font-family:宋体;"     >个</span><span style="font-family:Lucida Bright;"     >double </span><span style="font-family:宋体;"     >的数组）被用来决定每个实例的模板实参。用函数实参的类型来决定模板实参的类型和值的过程被称为<strong>模板实参推演</strong>（</span><span style="font-family:Lucida Bright;"     >template argument deduction</span><span style="font-family:宋体;"     >）。</span><span style="font-family:Lucida Bright;"     >
+</span></span></p><p style="background: #f8fcff;"     ><span style="color:black; font-size:12pt;"     ><span style="font-family:宋体;"     >我们也可以不依赖模板实参推演过程，而是显式地指定模板实参。（需要调用者来明确）</span><span style="font-family:Lucida Bright;"     >
+</span></span></p><p style="background: #f8fcff;"     ><span style="color:black; font-size:12pt;"     ><span style="font-family:宋体;"     ><strong>函数模板在它被调用或取其地址时被实例化。</strong>在下面的例子中指针</span><span style="font-family:Lucida Bright;"     >pf </span><span style="font-family:宋体;"     >被函数模板实例的地址初始化，编译器通过检查</span><span style="font-family:Lucida Bright;"     >pf </span><span style="font-family:宋体;"     >指向的函数的参数类型来决定模板实例的实参。</span><span style="font-family:Lucida Bright;"     >
+</span></span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >template &lt;typename Type, int size&gt;
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >Type min( Type (&amp;p_array)[size] ) { /* ... */ }
+</span></p><p style="background: #f7f9fa;"     >&nbsp;
+&nbsp;</p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >// pf 指向 int min( int (&amp;)[10] )
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >int (*pf)(int (&amp;)[10]) = &amp;min;
+</span></p><p style="background: #f8fcff;"     ><span style="color:black; font-size:12pt;"     ><span style="font-family:Lucida Bright;"     >Type </span><span style="font-family:宋体;"     >的模板实参为</span><span style="font-family:Lucida Bright;"     >int</span><span style="font-family:宋体;"     >，</span><span style="font-family:Lucida Bright;"     > size </span><span style="font-family:宋体;"     >的模板实参为</span><span style="font-family:Lucida Bright;"     >10</span><span style="font-family:宋体;"     >。</span><span style="font-family:Lucida Bright;"     >
+</span><span style="font-family:宋体;"     >被实例化的函数是</span><span style="font-family:Lucida Bright;"     >min(int(&amp;)[10])</span><span style="font-family:宋体;"     >，指针</span><span style="font-family:Lucida Bright;"     >pf </span><span style="font-family:宋体;"     >指向这个模板实例。</span><span style="font-family:Lucida Bright;"     >
+</span></span></p><p style="background: #f8fcff;"     ><span style="color:black; font-size:12pt;"     ><span style="font-family:宋体;"     >在取函数模板实例的地址时，必须能够通过上下文环境为一个模板实参决定一个惟一的类型或值。如果不能决定出这个惟一的类型或值，就会产生编译时刻错误</span><span style="font-family:Lucida Bright;"     >,</span><span style="font-family:宋体;"     >例如：</span><span style="font-family:Lucida Bright;"     >
+</span></span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >template &lt;typename Type, int size&gt;
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >Type min( Type (&amp;r_array)[size] ) { /* ... */ }
+</span></p><p style="background: #f7f9fa;"     >&nbsp;
+&nbsp;</p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >typedef int (&amp;rai)[10];
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >typedef double (&amp;rad)[20];
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >void func( int (*)(rai) );
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >void func( double (*)(rad) );
+</span></p><p style="background: #f7f9fa;"     >&nbsp;
+&nbsp;</p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >int main() {
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >    // 错误: 哪一个 min() 的实例?
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >    func( &amp;min );
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >}
+</span></p><p style="background: #f8fcff;"     ><span style="color:black; font-size:12pt;"     ><span style="font-family:宋体;"     >因为函数</span><span style="font-family:Lucida Bright;"     >func()</span><span style="font-family:宋体;"     >被重载了，所以编译器不可能通过查看</span><span style="font-family:Lucida Bright;"     >func()</span><span style="font-family:宋体;"     >的参数类型，来为模板参数</span><span style="font-family:Lucida Bright;"     >Type </span><span style="font-family:宋体;"     >决定惟一的类型，以及为</span><span style="font-family:Lucida Bright;"     >size </span><span style="font-family:宋体;"     >的模板实参决定一个惟一值。这种情况，可以使用显示调用</span><span style="font-family:Lucida Bright;"     >: func&lt;int, 10&gt;(&amp;min)</span><span style="font-family:宋体;"     >这种方式。</span><span style="font-family:Lucida Bright;"     >
+</span></span></p><p style="background: #f8fcff;"     ><span style="color:black; font-size:12pt;"     ><span style="font-family:Lucida Bright;"     >C++ Primer</span><span style="font-family:宋体;"     >讲述了模板实参推演的过程，我不建议去记忆和学习。因为曾经看过。看过多少遍，基本上就忘过多少遍。本人比较笨，希望能理解。呵呵。因为你知道了其原理和不知道其原理其实没有多大区别</span><span style="font-family:Lucida Bright;"     >
+</span><span style="font-family:宋体;"     >，在实际运用当中，很少需要你去了解那么深刻。</span><span style="font-family:Lucida Bright;"     >
+</span></span></p><p style="background: #f8fcff;"     ><span style="color:black; font-family:微软雅黑; font-size:12pt;"     ><strong>显式指定（explicitly specify）函数模板实参<span style="color:#333333;"     >
+</span></strong></span></p><p style="background: #f8fcff;"     ><span style="color:black; font-size:12pt;"     ><span style="font-family:宋体;"     >不依靠编译器，显式的实例化模板</span><span style="font-family:Lucida Bright;"     >
+</span></span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >// min5( unsigned int, unsigned int ) 被实例化
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >min5&lt; unsigned int &gt;( ui, 1024 );
+</span></p><p style="background: #f7f9fa;"     >&nbsp;
+&nbsp;</p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >// T1 不出现在函数模板参数表中
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >// 问题：T1 的模板实参不能从函数实参中被推演出来
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >template &lt;class T1, class T2, class T3&gt;
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >T1 sum( T2, T3 );
+</span></p><p style="background: #f7f9fa;"     >&nbsp;
+&nbsp;</p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >// 错误: T1 不能被推演出来
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >ui_type loc1 = sum( ch, ui );
+</span></p><p style="background: #f7f9fa;"     >&nbsp;
+&nbsp;</p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >// ok: 模板实参被显式指定
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >// T1 和 T3 是unsigned int, T2 是 char
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >ui_type loc2 = sum&lt; ui_type, char, ui_type &gt;( ch, ui );
+</span></p><p style="background: #f8fcff;"     ><span style="color:black; font-size:12pt;"     ><span style="font-family:宋体;"     >在显式特化（</span><span style="font-family:Lucida Bright;"     >explicit specification</span><span style="font-family:宋体;"     >）中，我们只需列出不能被隐式推演的模板实参，如同缺省实参一样，我们只能省略尾部的实参例</span><span style="font-family:Lucida Bright;"     >,</span><span style="font-family:宋体;"     >例如：</span><span style="font-family:Lucida Bright;"     >
+</span></span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >// ok: T3 是 unsigned int
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >// T3 从 ui 的类型中推演出来
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >ui_type loc3 = sum&lt; ui_type, char &gt;( ch, ui );
+</span></p><p style="background: #f7f9fa;"     >&nbsp;
+&nbsp;</p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >// ok: T2 是 char, T3 是 unsigned int
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >// T2 和 T3 从 pf 的类型中推演出来
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >ui_type (*pf)( char, ui_type ) = &amp;sum&lt; ui_type &gt;;
+</span></p><p style="background: #f7f9fa;"     >&nbsp;
+&nbsp;</p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >// 错误: 只能省略尾部的实参
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >ui_type loc4 = sum&lt; ui_type, , ui_type &gt;( ch, ui );
+</span></p><p style="background: #f8fcff;"     ><span style="color:black; font-family:微软雅黑; font-size:13pt;"     ><strong>类模板<span style="color:#444444;"     >
+</span></strong></span></p><p style="background: #f8fcff;"     ><span style="color:black; font-family:微软雅黑; font-size:12pt;"     ><strong>声明<span style="color:#333333;"     >
+</span></strong></span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >template &lt;class T&gt;
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >class QueueItem;
+</span></p><p style="background: #f7f9fa;"     >&nbsp;
+&nbsp;</p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >template &lt;class Type, int size&gt;
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >class Buffer;
+</span></p><p style="background: #f7f9fa;"     >&nbsp;
+&nbsp;</p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >// 模板实例没有指定size的大小时，默认为1024
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >template &lt;class Type, int size=1024&gt;
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >class Buffer;
+</span></p><p style="background: #f8fcff;"     ><span style="color:black; font-family:微软雅黑; font-size:12pt;"     ><strong>定义<span style="color:#333333;"     >
+</span></strong></span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >template &lt;class Type&gt;
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >class QueueItem {
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >public:
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >    QueueItem( const Type &amp; );
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >private:
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >    Type item;
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >    QueueItem *next;
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >};
+</span></p><p style="background: #f8fcff;"     ><span style="color:black; font-size:12pt;"     ><span style="font-family:宋体;"     >在类模板定义中吗，类模板的名字（</span><span style="font-family:Lucida Bright;"     >QueueItem</span><span style="font-family:宋体;"     >）相当于是（</span><span style="font-family:Lucida Bright;"     >QueueItem&lt;Type&gt;</span><span style="font-family:宋体;"     >）的缩写。这种简写形式只能被用在类模板</span><span style="font-family:Lucida Bright;"     >QueueItem </span><span style="font-family:宋体;"     >自己的定义中</span><span style="font-family:Lucida Bright;"     >, </span><span style="font-family:宋体;"     >以及在类模板定义之外出现的成员定义中。</span><span style="font-family:Lucida Bright;"     >
+</span></span></p><p style="background: #f8fcff;"     ><span style="color:black; font-family:微软雅黑; font-size:12pt;"     ><strong>类模板实例化<span style="color:#333333;"     >
+</span></strong></span></p><p style="background: #f8fcff;"     ><span style="color:black; font-size:12pt;"     ><span style="font-family:宋体;"     >从通用的类模板定义中生成类的过程被称为模板实例化（</span><span style="font-family:Lucida Bright;"     >template instantiation</span><span style="font-family:宋体;"     >）。类模板定义指定了怎样根据一个或多个实际的类型或值的集合来构造单独的类。</span><span style="font-family:Lucida Bright;"     >Queue</span><span style="font-family:宋体;"     >的类模板定义被用作</span><span style="font-family:Lucida Bright;"     >"Queue</span><span style="font-family:宋体;"     >类的特定类型的实例</span><span style="font-family:Lucida Bright;"     >"</span><span style="font-family:宋体;"     >的自动生成模板。</span><span style="font-family:Lucida Bright;"     >
+</span></span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >Queue&lt;int&gt; qi;
+</span></p><p style="background: #f8fcff;"     ><span style="color:black; font-size:12pt;"     ><span style="font-family:宋体;"     >一个针对</span><span style="font-family:Lucida Bright;"     >int </span><span style="font-family:宋体;"     >型对象的</span><span style="font-family:Lucida Bright;"     >Queue </span><span style="font-family:宋体;"     >类就被从通用类模板定义中创建出来。所以，是实例的类型越多，被编译器实例化出来的类就越多，你的程序也就越庞大。所以，<strong>程序大小有要求的，最好不要用模板。</strong></span><span style="font-family:Lucida Bright;"     >
+<br></span><span style="font-family:宋体;"     >与函数模板实例的模板实参不同的是，根据类模板实例被使用的上下文环境，编译器无法推断出类模板实例的模板实参</span><span style="font-family:Lucida Bright;"     >
+</span></span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >Queue qs; // 错误: 哪一个模板实例?
+</span></p><p style="background: #f8fcff;"     ><span style="color:black; font-size:12pt;"     ><span style="font-family:宋体;"     ><strong>只有当代码中使用了类模板的一个实例的名字，并且上下文环境要求必须存在类的定义时，这个类模板才被实例化。并不是每次使用一个类都要求知道该类的定义。</strong></span><span style="font-family:Lucida Bright;"     >
+</span><span style="font-family:宋体;"     >如：</span><span style="font-family:Lucida Bright;"     >
+</span></span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >class Matrix;
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >Matrix *pm; // ok: 不需要类 Matrix 的定义
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >void inverse( Matrix &amp; ); // ok 也不需要
+</span></p><p style="background: #f7f9fa;"     >&nbsp;
+&nbsp;</p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >// Queue&lt;int&gt; 没有为其在 foo() 中的使用实例化
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >void foo( Queue&lt;int&gt; &amp;qi )
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >{
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >    Queue&lt;int&gt; *pqi = &amp;qi;
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >    // ...
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >}
+</span></p><p style="background: #f8fcff;"     ><span style="color:black; font-size:12pt;"     ><span style="font-family:宋体;"     >所以<strong>声明一个类模板实例的指针和引用不会引起类模板被实例化</strong>。</span><span style="font-family:Lucida Bright;"     >
+</span></span></p><p style="background: #f8fcff;"     ><span style="color:black; font-size:12pt;"     ><span style="font-family:宋体;"     >定义一个类的对象时需要该类的定义。例如在下面的例子中，</span><span style="font-family:Lucida Bright;"     >obj1 </span><span style="font-family:宋体;"     >的定义就是错的。这个对象的定义要求让编译器知道</span><span style="font-family:Lucida Bright;"     >Matrix </span><span style="font-family:宋体;"     >的大小，以便为</span><span style="font-family:Lucida Bright;"     >obj1 </span><span style="font-family:宋体;"     >分配正确的内存数</span><span style="font-family:Lucida Bright;"     >
+</span></span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >class Matrix;
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >Matrix obj1; // 错误: Matrix 没有被定义
+</span></p><p style="background: #f7f9fa;"     >&nbsp;
+&nbsp;</p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >class Matrix { ... };
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >Matrix obj2; // ok
+</span></p><p style="background: #f8fcff;"     ><span style="color:black; font-size:12pt;"     ><span style="font-family:宋体;"     ><strong>如果一个对象的类型是一个类模板的实例，那么当对象被定义时，类模板也被实例化</strong></span><span style="font-family:Lucida Bright;"     >
+</span></span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >Queue&lt;int&gt; qi;  // Queue&lt;int&gt; 被实例化
+</span></p><p style="background: #f8fcff;"     ><span style="color:black; font-size:12pt;"     ><span style="font-family:宋体;"     ><strong>如果一个指针或引用指向一个类模板实例，那么只有当检查这个指针或引用所指的那个对象时，类模板才会被实例化。</strong></span><span style="font-family:Lucida Bright;"     >
+</span></span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >void foo( Queue&lt;int&gt; &amp;qi )
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >{
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >    Queue&lt;int&gt; *pqi = &amp;qi;
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >    // 因为成员函数被调用, 所以 Queue&lt;int&gt; 被实例化
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >    pqi-&gt;add( 255 );
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >    // ...
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >}
+</span></p><p style="background: #f8fcff;"     ><span style="color:black; font-family:微软雅黑; font-size:12pt;"     ><strong>非类型参数的模板实参<span style="color:#333333;"     >
+</span></strong></span></p><p style="background: #f8fcff;"     ><span style="color:black; font-size:12pt;"     ><span style="font-family:宋体;"     ><strong>绑定给非类型参数的表达式必须是一个常量表达式，也就是在编译时刻能够被计算出来。</strong></span><span style="font-family:Lucida Bright;"     >
+</span></span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >// 这么定义是没问题的
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >template &lt;int *ptr&gt; class BufPtr { ... };
+</span></p><p style="background: #f7f9fa;"     >&nbsp;
+&nbsp;</p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >// 但是如果这么实例化就是不对的，因为模板实参不能在编译时刻被计算出来
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >BufPtr&lt; new int[24] &gt; bp;
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >template &lt;int size&gt; Buf{ ... };
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >template &lt;int *ptr&gt; class BufPtr { ... };
+</span></p><p style="background: #f7f9fa;"     >&nbsp;
+&nbsp;</p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >int size_val = 1024;
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >const int c_size_val = 1024;
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >Buf&lt; 1024 &gt; buf0; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;// ok
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >Buf&lt; c_size_val &gt; buf1; &nbsp;&nbsp;&nbsp;&nbsp;// ok
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >Buf&lt; sizeof(size_val) &gt; buf2; &nbsp;&nbsp;&nbsp;&nbsp;// ok: sizeof(int)
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >BufPtr&lt; &amp;size_val &gt; bp0; &nbsp;&nbsp;&nbsp;&nbsp;// ok
+</span></p><p style="background: #f7f9fa;"     >&nbsp;
+&nbsp;</p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >// 错误：不能在编译时刻计算出来。
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >Buf&lt; size_val &gt; buf3;
+</span></p><p style="background: #f8fcff;"     ><span style="color:black; font-size:12pt;"     ><span style="font-family:宋体;"     ><strong>类模板的成员函数</strong></span><span style="font-family:Lucida Bright;"     >
+</span></span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >// 内部定义
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >template &lt;class Type&gt;
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >class Queue {
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >public:
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >    // inline 构造成员函数
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >    Queue() : front( 0 ), back ( 0 ) { }
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >    // ...
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >};
+</span></p><p style="background: #f7f9fa;"     >&nbsp;
+&nbsp;</p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >// 外部定义
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >template &lt;class Type&gt;
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >class Queue {
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >public:
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >    Queue( );
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >private:
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >    // ...
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >};
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >template &lt;class Type&gt;
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >inline Queue&lt;Type&gt;::
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >    Queue( ) { front = back = 0; }
+</span></p><p style="background: #f8fcff;"     ><span style="color:black; font-size:12pt;"     ><span style="font-family:宋体;"     >类模板的成员函数本身也是一个模板。<strong>标准</strong></span><strong><span style="font-family:Lucida Bright;"     >C++</span><span style="font-family:宋体;"     >要求这样的成员函数只有在被调用或者取地址时，才被实例化（标准</span><span style="font-family:Lucida Bright;"     >C++</span></strong><span style="font-family:宋体;"     ><strong>之前的有些编译器在实例化类模板时，就实例化类模板的成员函数。）</strong>用来实例化成员函数的类型就是其成员函数要调用的那个类对象的类型。</span><span style="font-family:Lucida Bright;"     >
+</span></span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >Queue&lt;string&gt; qs;
+</span></p><p style="background: #f8fcff;"     ><span style="color:black; font-size:12pt;"     ><span style="font-family:宋体;"     >对象</span><span style="font-family:Lucida Bright;"     >qs </span><span style="font-family:宋体;"     >的类型是</span><span style="font-family:Lucida Bright;"     >Queue&lt;string&gt; </span><span style="font-family:宋体;"     >。当初始化这个类对象时，</span><span style="font-family:Lucida Bright;"     >Queue&lt;string&gt;</span><span style="font-family:宋体;"     >类的构造函数被调用，在这种情况下用来实例化构造函数的模板实参是</span><span style="font-family:Lucida Bright;"     >string</span><span style="font-family:宋体;"     >。</span><span style="font-family:Lucida Bright;"     >
+</span></span></p><p style="background: #f8fcff;"     ><span style="color:black; font-family:微软雅黑; font-size:12pt;"     ><strong>常见错误<span style="color:#333333;"     >
+</span></strong></span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >// 错误: 必须是 &lt;typename T, class U&gt; 或 &lt;typename T, typename U&gt;
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >template &lt;typename T, U&gt;
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >    class collection;
+</span></p><p style="background: #f8fcff;"     ><span style="color:black; font-size:12pt;"     ><span style="font-family:宋体;"     >在下面的例子中，</span><span style="font-family:Lucida Bright;"     >item </span><span style="font-family:宋体;"     >的类型不是</span><span style="font-family:Lucida Bright;"     >double</span><span style="font-family:宋体;"     >，它的类型是模板参数的类型：</span><span style="font-family:Lucida Bright;"     >
+</span></span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >typedef double Type;
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >template &lt;class Type&gt;
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >class QueueItem {
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >public:
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >    // ...
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >private:
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >    // item 不是 double 类型
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >    Type item;
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >    QueueItem *next;
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >};
+</span></p><p style="background: #f7f9fa;"     >&nbsp;
+&nbsp;</p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >// 错误: 重复使用名为Type 的模板参数
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >template &lt;class Type, class Type&gt;
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >    class container;
+</span></p><p style="background: #f7f9fa;"     >&nbsp;
+&nbsp;</p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >template &lt;class Type&gt;
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >class Queue {
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >public:
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >    // ...
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >private:
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >// 错误: QueueItem 不是一个已知类型
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >// 应该为QueueItem&lt;Type&gt;, 或者确定类型: QueueItem&lt;int&gt;之类的
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >    QueueItem *front;
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >};
+</span></p><p style="background: #f8fcff;"     ><span style="color:black; font-family:微软雅黑; font-size:13pt;"     ><strong>书和编译器的一些分歧<span style="color:#444444;"     >
+</span></strong></span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >template &lt;class Type&gt;
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >class QueueItem {
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >public:
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >    // ...
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >private:
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >// C++ Primer：错误: 成员名不能与模板参数 Type 同名
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >// 但我使用VS2008，VS2010，VS2012都可以编译通过，而且没有任何警告。
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >    typedef double Type;
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >    Type item;
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >    QueueItem *next;
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >};
+</span></p><p style="background: #f7f9fa;"     >&nbsp;
+&nbsp;</p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >// C++ Primer: ok: 考虑两个声明中的缺省实参
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >// 但我使用VS2008，VS2010，VS2012无法编译通过，编译器要求size也得需要默认值。
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >template &lt;class Type = string , int size&gt;
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >    class Buffer;
+</span></p><p style="background: #f8fcff;"     ><span style="color:black; font-family:微软雅黑; font-size:13pt;"     ><strong>模板特化<span style="color:#444444;"     >
+</span></strong></span></p><p style="background: #f8fcff;"     ><span style="color:black; font-size:12pt;"     ><span style="font-family:宋体;"     >模板特化是</span><span style="font-family:Lucida Bright;"     >C++</span><span style="font-family:宋体;"     >语言中，很奇特的一种技术。以它为理论基础，出现了元模板编程，大量运用在</span><span style="font-family:Lucida Bright;"     >Boost</span><span style="font-family:宋体;"     >模板库中。</span><span style="font-family:Lucida Bright;"     ><br></span><span style="font-family:宋体;"     >关于为什么模板需要特化模板，这里不做详细说明，可以自行百度。特化从某种程度上说，是为了控制编译器实例化模板，让其更加精确的实例化出对应的模板。</span><span style="font-family:Lucida Bright;"     >
+</span></span></p><p style="background: #f8fcff;"     ><span style="color:black; font-size:12pt;"     ><span style="font-family:宋体;"     >如果将模板看成所有可能性，那模板特化就是部分可能性。特化限定了所有可能性的一部分特性，模板特化相当于整个模板的一个子集。</span><span style="font-family:Lucida Bright;"     >
+</span><span style="font-family:宋体;"     >编译器实例化模板的过程，也属于模板特化的一种。而我们这里说的是由程序员显式的控制模板的特化。</span><span style="font-family:Lucida Bright;"     >
+</span></span></p><p style="background: #f8fcff;"     ><span style="color:black; font-size:12pt;"     ><span style="font-family:宋体;"     >模板特化分为<strong>全特化</strong>和<strong>半特化（或叫偏特化）</strong>。</span><span style="font-family:Lucida Bright;"     >
+</span><span style="font-family:宋体;"     ><strong>类模板和函数模板都能全特化，而函数模板无法半特化，只有类模板可以半特化。</strong></span><span style="font-family:Lucida Bright;"     >
+</span></span></p><p style="background: #f8fcff;"     ><span style="color:black; font-family:微软雅黑; font-size:12pt;"     ><strong>模板全特化<span style="color:#333333;"     >
+</span></strong></span></p><p style="background: #f8fcff;"     ><span style="color:black; font-size:12pt;"     ><span style="font-family:宋体;"     >全特化的格式为：</span><span style="font-family:Lucida Bright;"     >
+</span></span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >template&lt;&gt;
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >function/class classname&lt;parameter instances…&gt;
+</span></p><p style="background: #f8fcff;"     ><span style="color:black; font-size:12pt;"     ><span style="font-family:宋体;"     >例如：</span><span style="font-family:Lucida Bright;"     >
+</span></span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >// 定义Compare模板
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >template&lt;class T&gt;
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >class Compare
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >{
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >public:
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >    static bool IsEqual(const T&amp; lh, const T&amp; rh)
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >    {
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >        return lh == rh;
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >    }
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >};
+</span></p><p style="background: #f7f9fa;"     >&nbsp;
+&nbsp;</p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >// 特化模板为： float
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >template&lt;&gt;
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >class Compare&lt;float&gt;
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >{
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >public:
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >    static bool IsEqual(const float&amp; lh, const float&amp; rh)
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >    {
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >        return abs(lh - rh) &lt; 10e-3;
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >    }
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >};
+</span></p><p style="background: #f7f9fa;"     >&nbsp;
+&nbsp;</p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >// 特化模板为： double
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >template&lt;&gt;
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >class Compare&lt;double&gt;
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >{
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >public:
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >    static bool IsEqual(const double&amp; lh, const double&amp; rh)
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >    {
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >        return abs(lh - rh) &lt; 10e-6;
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >    }
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >};
+</span></p><p style="background: #f8fcff;"     ><span style="color:black; font-family:微软雅黑; font-size:12pt;"     ><strong>模板半特化<span style="color:#333333;"     >
+</span></strong></span></p><p style="background: #f8fcff;"     ><span style="color:black; font-size:12pt;"     ><span style="font-family:宋体;"     >半特化的格式为：</span><span style="font-family:Lucida Bright;"     >
+</span></span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >template&lt;parameters...&gt;
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >function/class classname&lt;parameters..., parameter instances…&gt;
+</span></p><p style="background: #f8fcff;"     ><span style="color:black; font-size:12pt;"     ><span style="font-family:宋体;"     >半特化，就是没有完全特化，只特化了部分模板参数，如：</span><span style="font-family:Lucida Bright;"     >
+</span></span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >template &lt;class T, class Allocator&gt;
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >class vector { // … // };
+</span></p><p style="background: #f7f9fa;"     >&nbsp;
+&nbsp;</p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >//将class T，特化为bool,而Allocator没有被特化。注意半特化格式的写法
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >template &lt;class Allocator&gt;
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >class vector&lt;bool, Allocator&gt; { //…//};
+</span></p><p style="background: #f8fcff;"     ><span style="color:black; font-size:12pt;"     ><span style="font-family:宋体;"     >半特化同样要在函数或者类名后面同样要加上</span><span style="font-family:Lucida Bright;"     >&lt;&gt;, </span><span style="font-family:宋体;"     >里面填入特化的参数，但没有特化的的参数，仍然使用原参数，但</span><span style="font-family:Lucida Bright;"     >template</span><span style="font-family:宋体;"     >的</span><span style="font-family:Lucida Bright;"     >&lt;&gt;</span><span style="font-family:宋体;"     >中的参数不为空，其中留下不特化的参数。</span><span style="font-family:Lucida Bright;"     >
+</span></span></p><p style="background: #f8fcff;"     ><span style="color:black; font-size:12pt;"     ><span style="font-family:宋体;"     >全特化，半特化和模板定义外观类似，不容易区分，容易使人混淆。这里有个区分<strong>技巧</strong>：</span><span style="font-family:Lucida Bright;"     ><br></span><strong><span style="font-family:宋体;"     >是不是模板特化不是看</span><span style="font-family:Lucida Bright;"     >template&lt;&gt;</span><span style="font-family:宋体;"     >，而是看函数，或者类名后面是是否有</span><span style="font-family:Lucida Bright;"     >'&lt;</span><span style="font-family:宋体;"     >实例参数</span><span style="font-family:Lucida Bright;"     >&gt;'</span><span style="font-family:宋体;"     >，如果有，那就是说明这个定义正在特例化。</span></strong><span style="font-family:Lucida Bright;"     >
+</span></span></p><p style="background: #f8fcff;"     ><span style="color:black; font-size:12pt;"     ><span style="font-family:宋体;"     >上面的例子，将模板特化为实际的类型，（</span><span style="font-family:Lucida Bright;"     >class T</span><span style="font-family:宋体;"     >，特化为</span><span style="font-family:Lucida Bright;"     >bool</span><span style="font-family:宋体;"     >），还能特化</span><span style="font-family:Lucida Bright;"     >"</span><span style="font-family:宋体;"     >半成品</span><span style="font-family:Lucida Bright;"     >"</span><span style="font-family:宋体;"     >，这个半成品主要就是指针和引用，如：</span><span style="font-family:Lucida Bright;"     >
+</span></span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >template &lt;class _Iterator&gt;
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >struct iterator_traits {
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >  typedef typename _Iterator::iterator_category iterator_category;
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >  typedef typename _Iterator::value_type        value_type;
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >  typedef typename _Iterator::difference_type   difference_type;
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >  typedef typename _Iterator::pointer           pointer;
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >  typedef typename _Iterator::reference         reference;
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >};
+</span></p><p style="background: #f7f9fa;"     >&nbsp;
+&nbsp;</p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >// specialize for _Tp*, 特化为一个指针
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >template &lt;class _Tp&gt;
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >struct iterator_traits&lt;_Tp*&gt; {
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >  typedef random_access_iterator_tag iterator_category;
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >  typedef _Tp                         value_type;
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >  typedef ptrdiff_t                   difference_type;
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >  typedef _Tp*                        pointer;
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >  typedef _Tp&amp;                        reference;
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >};
+</span></p><p style="background: #f7f9fa;"     >&nbsp;
+&nbsp;</p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >// specialize for const _Tp*，特化为一个const 指针。
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >template &lt;class _Tp&gt;
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >struct iterator_traits&lt;const _Tp*&gt; {
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >  typedef random_access_iterator_tag iterator_category;
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >  typedef _Tp                         value_type;
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >  typedef ptrdiff_t                   difference_type;
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >  typedef const _Tp*                  pointer;
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >  typedef const _Tp&amp;                  reference;
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >};
+</span></p><p style="background: #f8fcff;"     ><span style="color:black; font-size:12pt;"     ><span style="font-family:宋体;"     >一个完整的特化例子</span><span style="font-family:Lucida Bright;"     >
+</span></span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >#include &lt;iostream&gt;
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >using namespace std;
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >#include &lt;string&gt;
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >#include &lt;vector&gt;
+</span></p><p style="background: #f7f9fa;"     >&nbsp;
+&nbsp;</p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >// 一个简单的加法模板
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >template&lt;class T&gt;
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >class Addition
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >{
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >public:
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >    T fun( T a, T b )
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >    {
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >        return ( a + b );
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >    }
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >};
+</span></p><p style="background: #f7f9fa;"     >&nbsp;
+&nbsp;</p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >/*
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >** 特化1
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >** 类模板特化（specialization）
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >** 特化之前需要有类模板的声明
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >*/
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >template&lt;&gt;
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >class Addition&lt;char *&gt;
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >{
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >public:
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >    /*
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >    ** 对每个函数和变量进行特化
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >    ** 当然这里只有一个函数，哈
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >    */
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >    char * fun( char * a, char * b )
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >    {
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >        /*
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >        ** OMG，正式的代码可不能这样写
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >        ** 这儿只是个例子，将就，将就
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >        */
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >        strcat_s( a, 11, b );
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >        return a;
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >    }
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >};
+</span></p><p style="background: #f7f9fa;"     >&nbsp;
+&nbsp;</p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >/*
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >** 特化2
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >** 特化为引用，指针类型
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >** 这样的特化其实是一种"偏特化"
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >** 偏特化，半特化，局部特化，部分特化……翻译五花八门
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >** 还是记住英文比较好：partial specialization
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >** 在编码时，总纠结着是指针好呢，还是引用好呢，要加const乎？
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >** 有了这样的特化，确实方便甚多。
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >*/
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >template&lt;class T&gt;
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >class Addition&lt;T &amp;&gt;
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >{
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >public:
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >    T &amp; fun( T &amp; a, T &amp; b )
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >    {
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >        a = a + b;
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >        return a;
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >    }
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >};
+</span></p><p style="background: #f7f9fa;"     >&nbsp;
+&nbsp;</p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >/*
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >** 特化3
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >** 还可以这样特化
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >*/
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >template&lt;class T&gt;
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >class Addition&lt; vector&lt;T&gt; &gt;
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >{
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >public:
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >    vector&lt;T&gt; &amp; fun( vector&lt;T&gt; &amp; a, vector&lt;T&gt; &amp; b )
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >    {
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >        /*
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >        ** 假想着两个vector大小一样
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >        */
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >        for ( int i = 0; i &lt; (int)a.size(); ++i )
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >        {
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >            a[i] += b[i];
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >        }
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >        return a;
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >    }
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >};
+</span></p><p style="background: #f7f9fa;"     >&nbsp;
+&nbsp;</p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >int main()
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >{
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >    Addition&lt;int&gt; A;
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >
+<a target="_blank" rel="nofollow" href="http://www.opengroup.org/onlinepubs/009695399/functions/cout.html"     ><span style="color:#002bb8;"     >cout</span></a> &lt;&lt; A.fun( 10, 20 ) &lt;&lt; endl;
+</span></p><p style="background: #f7f9fa;"     >&nbsp;
+&nbsp;</p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >    // 将特化1的代码注释会怎么样？
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >    char str1[11] = "aaaaa";
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >    char str2[] = "BBBBB";
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >    Addition&lt;char *&gt; B;
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >
+<a target="_blank" rel="nofollow" href="http://www.opengroup.org/onlinepubs/009695399/functions/cout.html"     ><span style="color:#002bb8;"     >cout</span></a> &lt;&lt; B.fun( str1, str2 ) &lt;&lt; endl;
+</span></p><p style="background: #f7f9fa;"     >&nbsp;
+&nbsp;</p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >    // 将特化2的代码注释会怎么样？
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >    string cs1 = "sssss";
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >    string cs2 = "ddddd";
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >    Addition&lt;string &amp;&gt; C;
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >
+<a target="_blank" rel="nofollow" href="http://www.opengroup.org/onlinepubs/009695399/functions/cout.html"     ><span style="color:#002bb8;"     >cout</span></a> &lt;&lt; C.fun( cs1, cs2 ) &lt;&lt; endl;
+</span></p><p style="background: #f7f9fa;"     >&nbsp;
+&nbsp;</p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >    // 特化3的例子
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >    vector&lt;int&gt; v1;
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >    v1.push_back( 10 );
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >    v1.push_back( 20 );
+</span></p><p style="background: #f7f9fa;"     >&nbsp;
+&nbsp;</p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >    vector&lt;int&gt; v2;
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >    v2.push_back( 100 );
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >    v2.push_back( 200 );
+</span></p><p style="background: #f7f9fa;"     >&nbsp;
+&nbsp;</p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >    Addition&lt; vector&lt;int&gt; &gt; D;
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >    D.fun( v1, v2 );
+</span></p><p style="background: #f7f9fa;"     >&nbsp;
+&nbsp;</p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >    for ( int i = 0; i &lt; (int)v1.size(); ++i )
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >    {
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >
+<a target="_blank" rel="nofollow" href="http://www.opengroup.org/onlinepubs/009695399/functions/cout.html"     ><span style="color:#002bb8;"     >cout</span></a> &lt;&lt; v1[i] &lt;&lt; " ";
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >    }
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >
+<a target="_blank" rel="nofollow" href="http://www.opengroup.org/onlinepubs/009695399/functions/cout.html"     ><span style="color:#002bb8;"     >cout</span></a> &lt;&lt; endl;
+</span></p><p style="background: #f7f9fa;"     >&nbsp;
+&nbsp;</p><p style="background: #f7f9fa;"     >&nbsp;
+&nbsp;</p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >    return 0;
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >}
+</span></p><p style="background: #f8fcff;"     ><span style="color:black; font-size:12pt;"     ><span style="font-family:宋体;"     >最后，举个例子，有两个文件叫：</span><span style="font-family:Lucida Bright;"     >
+</span></span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >// type_trait.h文件
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >// 声明一个类模板（struct或者class），但没有类实体，类模板没有typename T，只有一个CK_ULONG常量。
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >template&lt;CK_ULONG&gt; struct es_type_trait;
+</span></p><p style="background: #f7f9fa;"     >&nbsp;
+&nbsp;</p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >// 模板"全特化"，这里只相当于特化常量，常量的值为0x00000000 （CKA_CLASS）&nbsp;&nbsp;&nbsp;&nbsp;
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >template&lt;&gt; struct es_type_trait&lt;CKA_CLASS&gt; 
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >{
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >&nbsp;&nbsp;&nbsp;&nbsp;//CK_OBJECT_CLASS(CK_ULONG)
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >&nbsp;&nbsp;&nbsp;&nbsp;typedef u4 data_type;
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >&nbsp;&nbsp;&nbsp;&nbsp;typedef u4* ptr_type;
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >};
+</span></p><p style="background: #f7f9fa;"     >&nbsp;
+&nbsp;</p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >// 模板"全特化"，这里只相当于特化常量，常量的值为0x00000001 （CKA_ TOKEN）
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >template&lt;&gt; struct es_type_trait&lt;CKA_TOKEN&gt; 
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >{
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >&nbsp;&nbsp;&nbsp;&nbsp;//CK_BBOOL
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >&nbsp;&nbsp;&nbsp;&nbsp;typedef u1 data_type;
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >&nbsp;&nbsp;&nbsp;&nbsp;typedef u1* ptr_type;
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >};
+</span></p><p style="background: #f7f9fa;"     >&nbsp;
+&nbsp;</p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >// alg_traits.h文件
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >typedef enum ES_MECH_FUNC_E
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >{
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >&nbsp;&nbsp;&nbsp;&nbsp;ES_MECH_FUNC_ENCRYPT=1,
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >&nbsp;&nbsp;&nbsp;&nbsp;ES_MECH_FUNC_DECRYPT,
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >&nbsp;&nbsp;&nbsp;&nbsp;ES_MECH_FUNC_SIGN,
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >&nbsp;&nbsp;&nbsp;&nbsp;ES_MECH_FUNC_VERIFY,
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >&nbsp;&nbsp;&nbsp;&nbsp;ES_MECH_FUNC_SIGN_RECOVERY,
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >&nbsp;&nbsp;&nbsp;&nbsp;ES_MECH_FUNC_VERIFY_RECOVERY,
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >&nbsp;&nbsp;&nbsp;&nbsp;ES_MECH_FUNC_DIGEST,
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >&nbsp;&nbsp;&nbsp;&nbsp;ES_MECH_FUNC_GEN_KEY,
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >&nbsp;&nbsp;&nbsp;&nbsp;ES_MECH_FUNC_GEN_KEYPAIR,
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >&nbsp;&nbsp;&nbsp;&nbsp;ES_MECH_FUNC_WRAP,
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >&nbsp;&nbsp;&nbsp;&nbsp;ES_MECH_FUNC_UNWRAP,
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >&nbsp;&nbsp;&nbsp;&nbsp;ES_MECH_FUNC_DERIVE,
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >&nbsp;&nbsp;&nbsp;&nbsp;ES_MECH_FUNC_IMPORT_KEY,
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >}ES_MECH_FUNC_E;
+</span></p><p style="background: #f7f9fa;"     >&nbsp;
+&nbsp;</p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >// 声明一个类模板（struct或者class），但没有类实体，类模板没有typename T，只有一个枚举常量
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >template&lt;ES_MECH_FUNC_E&gt;struct AlgTrait;
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >// 模板"全特化"，这里只相当于特化常量，常量的值为ES_MECH_FUNC_ENCRYPT枚举值。
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >template&lt;&gt; struct AlgTrait&lt;ES_MECH_FUNC_ENCRYPT&gt; 
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >{
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >&nbsp;&nbsp;&nbsp;&nbsp;typedef AlgMultiPart interface_type;
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >};
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >// 模板"全特化"，这里只相当于特化常量，常量的值为ES_MECH_FUNC_GEN_KEYPAIR枚举值。
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >template&lt;&gt; struct AlgTrait&lt;ES_MECH_FUNC_GEN_KEYPAIR&gt;
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >{
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >&nbsp;&nbsp;&nbsp;&nbsp;typedef AlgGenerateKeyPair interface_type;
+</span></p><p style="background: #f7f9fa;"     ><span style="color:black; font-family:宋体; font-size:9pt;"     >};
+</span></p><p style="background: #f8fcff;"     ><span style="color:black; font-size:12pt;"     ><span style="font-family:宋体;"     >特化的目的是为了让编译器精确匹配。每种特化的结构体里的</span><span style="font-family:Lucida Bright;"     >typedef</span><span style="font-family:宋体;"     >都可能不一样。这样，在编译器这一层面上，就能实现一种多态的效果</span><span style="font-family:Lucida Bright;"     >,</span><span style="font-family:宋体;"     >这种编程叫做模板元编程</span><span style="font-family:Lucida Bright;"     >,</span><span style="font-family:宋体;"     >可以参考《</span><span style="font-family:Lucida Bright;"     >Boost </span><span style="font-family:宋体;"     >程序库探秘》第一章。</span><span style="font-family:Lucida Bright;"     >
+</span></span></p>
+</body></html>

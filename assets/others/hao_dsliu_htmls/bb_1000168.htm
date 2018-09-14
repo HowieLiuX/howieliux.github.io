@@ -1,0 +1,10 @@
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=utf8"><title>163 blogs的博客：[转] Eclipse代码自动提示</title>
+<style type="text/css">
+a{color: #000000;text-decoration : none;font-size: 10pt;}
+a:hover {color: red;text-decoration : underline;}
+.replyBox{padding:4px;border:1px solid #D8D8D8;}
+</style></head><body><h2>[转] Eclipse代码自动提示</h2>
+<p align="right">发布时间：2012-4-10 14:46
+<br>分类名称：Android</p><br>
+<br>转自：http://www.2cto.com/px/201007/51893.html<br><br>　　Eclipse中默认是输入"."后出现自动提示，用于类成员的自动提示，可是有时候我们希望它能在我们输入类的首字母后就出现自动提示，可以节省大量的输入时间（虽然按alt + /会出现提示，但还是要多按一次按键，太麻烦了）。<br>　 　从Window -&gt; preferences -&gt; Java -&gt; Editor -&gt; Content assist  -&gt; Auto-Activation下，我们可以在"."号后面加入我们需要自动提示的首字幕，比如"ahiz"。<br>　　然后我们回到Eclipse的开发环境，输入"a"，提示就出现了。<br>　　但是我们可以发现，这个Auto-Activation下的输入框里最多只能输入5个字母，也许是Eclipse的开发人员担心我们输入的太多会影响性能，但计算机的性能不用白不用，所以我们要打破这个限制。<br>　　其实上面都是铺垫，制造一下气氛，以显得我们下面要做的事情很牛似的，其实不然，一切都很简单。嘿嘿<br>　　在"."后面随便输入几个字符，比如"abij"，然后回到开发环境，File -&gt; export -&gt; general -&gt; preferences -&gt; 选一个地方保存你的首选项，比如C:a.epf<br>　 　用任何文本编辑器打开a.epf，查找字符串“abij”，找到以后，替换成“abcdefghijklmnopqrstuvwxyz”，总之就是你想 怎样就怎样！！然后回到Eclipse，File -&gt; import -&gt; general -&gt; preferences  -&gt; 导入刚才的a.epf文件。此时你会发现输入任何字幕都可以得到自动提示了。爽！！！<br>　　最后：自动提示弹出的时间最好改成100毫秒以下，这样会比较爽一点，不然你都完事了，自动提示才弹出来:)，不过也要看机器性能。
+</body></html>

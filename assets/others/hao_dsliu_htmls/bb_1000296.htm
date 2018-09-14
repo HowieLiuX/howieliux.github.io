@@ -1,0 +1,55 @@
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=utf8"><title>163 blogs的博客：Vista中的UAC : 用户帐户控制</title>
+<style type="text/css">
+a{color: #000000;text-decoration : none;font-size: 10pt;}
+a:hover {color: red;text-decoration : underline;}
+.replyBox{padding:4px;border:1px solid #D8D8D8;}
+</style></head><body><h2>Vista中的UAC : 用户帐户控制</h2>
+<p align="right">发布时间：2010-4-23 17:59
+<br>分类名称：Private</p><br>
+<p>　　UAC(User Account Control : 用户帐户控制)是微软为提高系统安全而在Windows 
+Vista中引入的新技术，它要求所有用户在标准账号模式下运行程序和任务，阻止未认证的程序安装，并阻止标准用户进行不当的系统设置改变。</p>
+<p>　　在最初的时候，这个功能曾被称为User Account Protection(用户帐户保护)，后来才更名为目前的User Account 
+Control(用户帐户控制)。</p>
+<h3>以前版本Windows中的安全控制</h3>
+<p>　　对Windows 9x而言，其安全性是十分薄弱的，几乎可以说是不设防的系统。在Windows 
+2000之后，微软才逐步在系统中引入用户权限的控制。从宽泛的角度看，Windows 2000 /Xp 
+/2003在安全方面的实现机制大致相同，下面以Windows Xp为例说明一下在Windows Vista之前版本系统中的安全控制。</p>
+<p>　　当Windows Xp安装完成后，系统内所有用户的凭据信息(也就是用户名和密码)都被保存在SAM(Security Accounts Manager 
+: 安全帐户管理器)数据库中。这样，当用户登录系统时，首先要输入用户名和密码，这些信息由winlogon进程获取，并由LSA(Local Security 
+Authority : 本地安全验证)子系统在SAM数据库中进行验证。如果SAM数据库中有符合条件的记录，那么LSA子系统就会生成一个访问令牌 (Access 
+Token)，并传递给用户。当该用户需要运行程序或者访问资源的时候，系统首先会从用户持有的访问令牌中找到用户的权限信息，然后和想要进行的操作所需要具有的权限进行比较，如果权限足够大，那么就可以进行相应的操作;而如果权限不足，操作则会被禁止。</p>
+<p>　　比如说，在Windows 
+Xp下，当我们试图启动一个程序的时候，系统会使用我们的访问令牌来启动程序，这样这个程序就拥有了和本人一样的权限。(我们可以打开Windows任务管理器的进程选项卡。该选项卡下列出了当前系统中的所有进程，每个进程在“用户名”一栏就显示了该进程的“身份”。)因为不同的进程使用不同的访问令牌(也就是用户身份)，其权限也就会相应地有所不同。<span></span></p>
+<p>　　乍看起来，这是一套相当安全并且方便的机制，因为只要在登录系统的时候输入一次用户名和密码，就可以在整个登录过程中直接执行任何具有权限的操作。同时只要保护好SAM数据库，也就不用担心系统的安全问题。然而事实远非如此，这样的做法虽然方便，不过却相当不安全。比如说，当使用管理员帐户登录系统后，所运行的任何程序自然也将具有管理员权限，这时候如果不小心运行了网上下载的含有恶意程序的程序，将会使用当前用户的访问凭据，也就是说程序的进程也具有了管理员权限，进而该进程可以对系统进行任何操作。这之中所蕴含的风险是不言而喻的。</p>
+<p>　　这也是为什么很多介绍系统安全的文章都会建议，平时使用计算机的时候最好不要用管理员帐户登录，而是用权限小一些的帐户，只有在偶尔需要进行维护或者其他必要操作的时候才使用管理员帐户，或者临时使用Runas命令，赋予当前帐户管理员权限，这样才能保证系统安全。</p>
+<p>　　但一般说来，为操作中的便易，相当多的Windows 
+Xp用户日常使用的是对机器有绝对控制权的账号，这样固然省事，但是，自己方便了，对于敌人，恶意软件和病毒，也一样对系统可以为所欲为。</p><p></p><p>　　为解决上文提到的Windows旧版本中安全控制的缺陷，改善Windows一贯被人诟病不够安全的局面，Windows 
+Vista中纳入了UAC，对授权进程要求所有用户以标准用户模式运行，并且限制管理员的权限，用以限制恶意软件对电脑所带来的损害。如果一名用户希望安装新的软件，或者更该系统设置，他们需要输入凭证并验证该进程。当然，这也不是微软独创的全新技术，事实上，类似在机制在竞争对手如Mac 
+OS X或Linux上已经应用了多年。</p>
+<p>　　在启用UAC的Windows Vista中，我们仍然可以使用管理员帐户登录系统，不过，这时的管理员帐户只是“protected 
+admin”，受保护的管理员模式，这样，当我们运行程序的时候，程序所能得到的权限将只相当于一般的用户权限，不足以对关键的系统设置进行修改，这样的机制类似于在系统与恶意软件间加入了一个隔离层保护，从而最终提高系统的安全。</p>
+<h3>UAC的运作流程</h3>
+<p>　　一般说来，在Windows 
+Vista系统中，安装新的应用程度、更改系统日期或时间以及大部分控制面板中的设置项都需要管理员级别的权限，也就是说，针对这些的操作要受到UAC的控制。</p>
+<p align="center"   ><img title="Vista中的UAC : 用户帐户控制 - Dsliu - Dspace"   alt="Windows Vista UAC"   src="http://windows-vista.highdiy.com/wp-content/uploads/2006/07/vista_uac_1.gif"   ></p>
+<p>　　受UAC保护的任务或选项在其名称前都会有一个彩色的小盾牌(如上图)，如果点击类似这样的项目，系统将会召唤UAC进程，需要确认权限之后才可以设置，这时，UAC窗口弹出，显示该操作的程序的名称，以及将要进行的操作，与此同时屏幕上的其他内容都会变暗，无法操作。</p>
+<p>　　如果当前登录的帐户具有更改系统设置所需的权限即为管理员，那么Windows 
+Vista会显示一个警告对话框，询问我们是否继续，只有选择继续，才可以进行设置。(如下图)</p>
+<p align="center"   ><img title="Vista中的UAC : 用户帐户控制 - Dsliu - Dspace"   alt="Windows Vista UAC"   src="http://windows-vista.highdiy.com/wp-content/uploads/2006/07/vista_uac_2.gif"   ></p>
+<p>　　如果当前登录系统的帐户不具有相应的权限，Windows 
+Vista首先将会显示一个对话框，要求用户输入一个具有权限的帐户的用户名和密码，如果输入的信息是正确的，则可以完成操作，否则将会被拒绝。(如下图)</p>
+<p align="center"   ><img title="Vista中的UAC : 用户帐户控制 - Dsliu - Dspace"   alt="Windows Vista UAC"   src="http://windows-vista.highdiy.com/wp-content/uploads/2006/07/Vista_uac_3.gif"   ></p><p align="center"   ></p><p style="text-align: left;"   ><br></p><p style="text-align: left;"   >　　毋庸置疑，UAC在很大程度上提高了Windows 
+Vista的安全性，但是，也极大的增加了操作中的繁琐程度。很多用户甚至更希望关闭UAC来减少鼠标点击的频次。</p>
+<p style="text-align: left;"   >　　事实上，在很多用户看来，UAC在目前发布的Windows 
+Vista版本中的运行情况很难称得上理想，甚至在进行如删除桌面快捷方式的简单操作时，也会遇到看似无尽的验证提示。而在没有回答UAC提示的情况下禁止一切系统交互，则更增加了客户的使用障碍。</p>
+<p style="text-align: left;"   >　　最近网上流传的一个看似搞笑的在UAC下删除桌面快捷方式的步骤将这种繁琐表现得淋漓尽致：</p>
+<ol>
+<li style="text-align: left;"   >拥有一个不需要的快捷方式－－如“Microsoft Beta Client” 
+</li><li style="text-align: left;"   >右键点击，删除－－Vista会询问你是否确定 
+</li><li style="text-align: left;"   >垃圾箱拒绝“收货”，Vista要求你再次确认是否要删除 
+</li><li style="text-align: left;"   >Vista表示这一快捷方式来自系统安装，你没有权限。你需要重新确认 
+</li><li style="text-align: left;"   >Vista要求验证你的权限－－当然，你还得点“确认” 
+</li><li style="text-align: left;"   >Vista垃圾箱终于“收货”了－－看来它已回心转意 
+</li><li style="text-align: left;"   >嗯，当你想清空垃圾箱的时候，很不幸，你被汽车撞了，退后两步到第五步，重新走！ </li></ol>
+<p style="text-align: left;"   >　　在波士顿2006年TechED上，微软表示，将在今后的版本中“改进”UAC，以降低终端用户提示的数量，并且将在下一个CTP版本中进一步简化，同时，删除共享桌面快捷方式将不再需要UAC验证，上面的搞笑将成为历史。</p><p></p><p></p>
+</body></html>

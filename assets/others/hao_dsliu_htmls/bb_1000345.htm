@@ -1,0 +1,10 @@
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=utf8"><title>163 blogs的博客：[转] base64编码</title>
+<style type="text/css">
+a{color: #000000;text-decoration : none;font-size: 10pt;}
+a:hover {color: red;text-decoration : underline;}
+.replyBox{padding:4px;border:1px solid #D8D8D8;}
+</style></head><body><h2>[转] base64编码</h2>
+<p align="right">发布时间：2010-2-11 15:02
+<br>分类名称：PKI</p><br>
+<p>Base64编码其实是将3个8位字节转换为4个6位字节,( 3*8 = 4*6 = 24 ) 这4个六位字节其实仍然是8位,只不过高两位被设置为0. 当一个字节只有6位有效时,它的取值空间为0的 2的6次方减1  即63,也就是说被转换的Base64编码的每一个编码的取值空间为(0~63) 。  <br>事实上，0~63之间的ASCII码有许多不可见字符，所以应该再做一个映射，映射表为 <br>‘A‘ ~ ‘Z‘ ? ASCII（0 ~ 25）  <br>‘a’ ~ ‘z‘ ? ASCII（26 ~ 51） <br>‘0’ ~ ‘9‘ ? ASCII（52 ~ 61） <br>‘+‘ ?  ASCII（62） <br>‘/‘ ? ASCII（63） <br>这样就可以将3个8位字节，转换为4个可见字符。  <br>具体的字节拆分方法为：(图（画得不好，领会精神 :-)) <br>aaaaaabb ccccdddd eeffffff <br>~~~~~~~~  ~~~~~~~~ ~~~~~~~~ <br>字节 1 字节 2 字节 3 <br>|| <br>\/ <br>00aaaaaa 00bbcccc  00ddddee 00ffffff</p> <p>注：上面的三个字节位原文，下面四个字节为Base64编码，其前两位均为0。  <br>这样拆分的时候，原文的字节数量应该是3的倍数，当这个条件不能满足时，用全零字节  <br>补足，转化时Base64编码用=号代替，这就是为什么有些Base64编码以一个或两个等号结  <br>束的原因，但等号最多有两个，因为：如果F(origin)代表原文的字节数，F(remain)代 <br>表余数，则 <br>F(remain) =  F(origin) MOD 3 成立。 <br>所以F(remain)的可能取值为0,1,2. <br>如果设 n = [F(origin) –  F(remain)] / 3 <br>当F(remain) = 0 时，恰好转换为4*n个字节的Base64编码。 <br>当F(remain) = 1  时，由于一个原文字节可以拆分为属于两个Base64编码的字节，为了让Base64编码是4的倍数，所以应该为补2个等号。 <br>当F(remain)  = 2 时，由于两个原文字节可以拆分为属于3个Base64编码的字节，同理， 应该补上一个等号。</p>
+</body></html>

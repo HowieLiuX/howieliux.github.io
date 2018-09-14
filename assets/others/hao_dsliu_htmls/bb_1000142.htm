@@ -1,0 +1,10 @@
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=utf8"><title>163 blogs的博客：FS:0与FS:[0]</title>
+<style type="text/css">
+a{color: #000000;text-decoration : none;font-size: 10pt;}
+a:hover {color: red;text-decoration : underline;}
+.replyBox{padding:4px;border:1px solid #D8D8D8;}
+</style></head><body><h2>FS:0与FS:[0]</h2>
+<p align="right">发布时间：2012-7-3 16:20
+<br>分类名称：Debug_Crack</p><br>
+FS:0指向线程环境块TEB；<br>FS:[0]指向当前线程的结构化异常处理结构(SEH)；<p>FS:0指向TEB的理解应该是:<br>TEB结构存放于FS段从0开始的位置，整个TEB结构数据在FS段中；</p><p>FS:[0]指向当前线程的结构化异常处理结构的理解应该是:<br>在FS:0所指向的TEB结构中，第一个元素指向当前线程的结构化异常处理结构，而这个结构存在与DS段中；</p><p>部分TEB如下：</p><p><br>ntdll!_TEB<br>struct _TEB, 66 elements, 0xfb8 bytes<br>&nbsp;&nbsp;  +0x000 NtTib&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  : struct _NT_TIB, 8 elements, 0x1c bytes<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  +0x000 ExceptionList&nbsp;&nbsp;&nbsp;  : Ptr32 to struct _EXCEPTION_REGISTRATION_RECORD,2 elements, 0x8 bytes<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  +0x000 Next&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  : Ptr32 to struct _EXCEPTION_REGISTRATION_RECORD, 2 elements, 0x8 bytes<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  +0x004 Handler&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  : Ptr32 to&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  _EXCEPTION_DISPOSITION <br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  +0x004 StackBase&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  : Ptr32 to Void<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  +0x008 StackLimit&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  : Ptr32 to Void<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  +0x00c SubSystemTib&nbsp;&nbsp;&nbsp;&nbsp;  : Ptr32 to Void<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  +0x010 FiberData&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  : Ptr32 to Void<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  +0x010 Version&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  : Uint4B<br>...........................................<br>............................................<br>而下面两条指令可以看出其差异吧：</p><p>MOV EAX,FS:0==&gt;EAX=0(SoftICE中)<br>MOV EAX,FS:[0]==&gt;EAX=指向SEH的指针，如0x0012FFB0</p>
+</body></html>

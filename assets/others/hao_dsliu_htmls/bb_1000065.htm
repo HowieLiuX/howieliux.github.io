@@ -1,0 +1,48 @@
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=utf8"><title>163 blogs的博客：[转] SSDT索引号的获取</title>
+<style type="text/css">
+a{color: #000000;text-decoration : none;font-size: 10pt;}
+a:hover {color: red;text-decoration : underline;}
+.replyBox{padding:4px;border:1px solid #D8D8D8;}
+</style></head><body><h2>[转] SSDT索引号的获取</h2>
+<p align="right">发布时间：2014-2-19 13:08
+<br>分类名称：Debug_Crack</p><br>
+<FONT face="宋体"  >From：<A rel="nofollow" href="http://hi.baidu.com/wjcsharp/item/ee6c159d029c13db1e427168"   >http://hi.baidu.com/wjcsharp/item/ee6c159d029c13db1e427168</A><BR></FONT>
+<P style="TEXT-INDENT: 2em;"   ><FONT face="宋体"  >对于这个问题，困惑了许久，也许是应为很久没弄这个方面的东西了，曾经看过关于Native API 和 SSDT都忘得差不多了。吸取教训，今天把知识记录下来，并时常温故而知新。</FONT></P>
+<P style="TEXT-INDENT: 2em;"   ><FONT face="宋体"  >&nbsp;</FONT></P>
+<P style="TEXT-INDENT: 2em;"   ><FONT face="宋体"  >系统服务描述符表，System Service Dispatch Table，SSDT</FONT></P>
+<P style="TEXT-INDENT: 2em;"   ><FONT face="宋体"  >&nbsp;</FONT></P>
+<P style="TEXT-INDENT: 2em;"   ><FONT face="宋体"  >KeServiceDescriptorTable是由内核导出的表。该表拥有一个指针（其实仅有ntoskrnel一项，没有包含win32k），指向SSDT中包含由Ntoskrnl.exe实现的核心系统服务的相应部分，它是内核的主要组成部分。</FONT></P>
+<P style="TEXT-INDENT: 2em;"   ><FONT face="宋体"  >&nbsp;</FONT></P>
+<P style="TEXT-INDENT: 2em;"   ><FONT face="宋体"  >typedef struct _SystemServiceDescriptorTable</FONT></P>
+<P style="TEXT-INDENT: 2em;"   ><FONT face="宋体"  >{</FONT></P>
+<P style="TEXT-INDENT: 2em;"   ><FONT face="宋体"  >PVOID ServiceTableBase;</FONT></P>
+<P style="TEXT-INDENT: 2em;"   ><FONT face="宋体"  >PULONG ServiceCounterTableBase;</FONT></P>
+<P style="TEXT-INDENT: 2em;"   ><FONT face="宋体"  >ULONG NumberOfService;</FONT></P>
+<P style="TEXT-INDENT: 2em;"   ><FONT face="宋体"  >ULONG ParamTableBase;</FONT></P>
+<P style="TEXT-INDENT: 2em;"   ><FONT face="宋体"  >}SystemServiceDescriptorTable,*PSystemServiceDescriptorTable;</FONT></P>
+<P style="TEXT-INDENT: 2em;"   ><FONT face="宋体"  >&nbsp;</FONT></P>
+<P style="TEXT-INDENT: 2em;"   ><FONT face="宋体"  >其中SSDT包含了所有内核导出函数的地址。每个地址长度为4个字节。所以要获得某个函数在SSDT中的偏移量，可以用：KeServiceDescriptorTable-&gt;ServiceTableBase + 函数ID* 4获取。</FONT></P>
+<P style="TEXT-INDENT: 2em;"   ><FONT face="宋体"  >&nbsp;</FONT></P>
+<P style="TEXT-INDENT: 2em;"   ><FONT face="宋体"  >那么怎么获取函数ID呢？</FONT></P>
+<P style="TEXT-INDENT: 2em;"   ><FONT face="宋体"  >ntoskrnl.exe导出的Zw*函数和Nt*函数，大家肯定都注意到了很多函数都是同名的，只是前缀不同。其实是这样的，Nt*函数是私有函数，其地址列于SSDT中。Zw*函数是由内核为使用设备驱动程序和其他内核组件而导出的函数，目的就在于通过Zw*函数去调用内核的Nt函数。(SSDT中的每一项和每个Zw*函数之间不存在一对一的对应关系)</FONT></P>
+<P style="TEXT-INDENT: 2em;"   ><FONT face="宋体"  >&nbsp;</FONT></P>
+<P style="TEXT-INDENT: 2em;"   ><FONT face="宋体"  >内核中的所有Zw*函数都以操作码mov eax, ULONG起始，其中ULONG是系统调用在SSDT中的索引号。</FONT></P>
+<P style="TEXT-INDENT: 2em;"   ><FONT face="宋体"  >&nbsp;</FONT></P>
+<P style="TEXT-INDENT: 2em;"   ><FONT face="宋体"  >说的具体点，就是每个Zw*号函数的第一行中的 ULONG值 就是其所对应的Nt*函数在SSDT中的索引号。</FONT></P>
+<P style="TEXT-INDENT: 2em;"   ><FONT face="宋体"  >&nbsp;</FONT></P>
+<P style="TEXT-INDENT: 2em;"   ><FONT face="宋体"  >举个例子，如果我现在想获取 NtOpenProcess的ID号，那么就可以在Windbg中运行 u ZwOpenProcess</FONT></P>
+<P style="TEXT-INDENT: 2em;"   ><FONT face="宋体"  >&nbsp;</FONT></P>
+<P style="TEXT-INDENT: 2em;"   ><FONT face="宋体"  >u ZwOpenProcess</FONT></P>
+<P style="TEXT-INDENT: 2em;"   ><FONT face="宋体"  >nt!ZwOpenProcess:</FONT></P>
+<P style="TEXT-INDENT: 2em;"   ><FONT face="宋体"  >805016c4 b87a000000 &nbsp; &nbsp; &nbsp;mov &nbsp; &nbsp; eax,7Ah</FONT></P>
+<P style="TEXT-INDENT: 2em;"   ><FONT face="宋体"  >805016c9 8d542404 &nbsp; &nbsp; &nbsp; &nbsp;lea &nbsp; &nbsp; edx,[esp+4]</FONT></P>
+<P style="TEXT-INDENT: 2em;"   ><FONT face="宋体"  >805016cd 9c &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;pushfd</FONT></P>
+<P style="TEXT-INDENT: 2em;"   ><FONT face="宋体"  >805016ce 6a08 &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;push &nbsp; &nbsp;8</FONT></P>
+<P style="TEXT-INDENT: 2em;"   ><FONT face="宋体"  >805016d0 e88c0d0400 &nbsp; &nbsp; &nbsp;call &nbsp; &nbsp;nt!KiSystemService (80542461)</FONT></P>
+<P style="TEXT-INDENT: 2em;"   ><FONT face="宋体"  >805016d5 c21000 &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;ret &nbsp; &nbsp; 10h</FONT></P>
+<P style="TEXT-INDENT: 2em;"   ><FONT face="宋体"  >获取到的7Ah就是NtOpenProcess在SSDT中的ID号了。</FONT></P>
+<P style="TEXT-INDENT: 2em;"   ><FONT face="宋体"  ></FONT>&nbsp;</P>
+<P style="TEXT-INDENT: 2em;"   ><FONT face="宋体"  >补充:</FONT></P>
+<P style="TEXT-INDENT: 2em;"   ><FONT face="宋体"  >类似的代码有:</FONT></P>
+<P style="TEXT-INDENT: 2em;"   ><FONT face="宋体"  >#define GetSystemFunc(FuncName) KeServiceDescriptorTable.ServiceTableBase[*(PULONG)((PUCHAR)FuncName+1)]</FONT></P><BR><WBR>
+</body></html>

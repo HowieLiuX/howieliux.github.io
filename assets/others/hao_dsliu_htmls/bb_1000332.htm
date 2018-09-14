@@ -1,0 +1,45 @@
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=utf8"><title>163 blogs的博客：CString与BSTR之间的转换</title>
+<style type="text/css">
+a{color: #000000;text-decoration : none;font-size: 10pt;}
+a:hover {color: red;text-decoration : underline;}
+.replyBox{padding:4px;border:1px solid #D8D8D8;}
+</style></head><body><h2>CString与BSTR之间的转换</h2>
+<p align="right">发布时间：2010-2-11 16:09
+<br>分类名称：COM</p><br>
+<font size="2" color="#ff0000">
+<p style="text-align: left; text-indent: -21pt; margin: 0cm 0cm 0pt 21pt;" align="left"><span style="color: red; font-size: 10pt;">?</span><span style="color: red; font-size: 10pt;"><span style=""> </span></span><span style="color: red; font-size: 10pt;">CString------&gt;BSTR</span></p>
+<p style="text-align: left; margin: 0cm 0cm 0pt 21pt;" align="left"><span style="font-size: 10pt;"><font color="#000000">CString sName = _T("Hello");</font></span></p>
+<p style="text-align: left; margin: 0cm 0cm 0pt 21pt;" align="left"><span style="font-size: 10pt;"><font color="#000000">BSTR bsName = sName.AllocSysString();</font></span></p>
+<p style="text-align: left; margin: 0cm 0cm 0pt 21pt;" align="left"><span style="font-size: 10pt;"><font color="#000000">SysFreeString(bsName);</font></span></p>
+
+<p style="text-align: left; text-indent: -21pt; margin: 0cm 0cm 0pt 21pt;" align="left"><span style="color: red; font-size: 10pt;">?</span><span style="color: red; font-size: 10pt;"><span style=""> </span></span><span style="color: red; font-size: 10pt;">CString------&gt;CComBSTR</span></p>
+<p style="text-align: left; margin: 0cm 0cm 0pt 21pt;" align="left"><font color="#000000"><span style="font-size: 10pt;">CComBSTR cbsName(sName); 
+//UNICODE</span><span style="font-size: 10pt;">：</span><span style="font-size: 10pt;">调用构造函数</span><span style="font-size: 10pt;">CComBSTR(LPCOLESTR 
+pSrc)</span></font></p>
+<p style="text-align: left; margin: 0cm 0cm 0pt 21pt;" align="left"><font color="#000000"><span style="font-size: 10pt;"><span style="">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span>//MBCS</span><span style="font-size: 10pt;">：<span><span style="">&nbsp;&nbsp; </span></span></span><span style="font-size: 10pt;">调用构造函数</span><span style="font-size: 10pt;">CComBSTR(LPCSTR pSrc)</span></font></p>
+<p style="text-align: left; margin: 0cm 0cm 0pt 21pt;" align="left"><font color="#000000"><span style="font-size: 10pt;">CComBSTR cbsName1 = sName; 
+//</span><span style="font-size: 10pt;">行为与上行一样</span></font></p>
+<p style="text-align: left; margin: 0cm 0cm 0pt 21pt;" align="left"><font color="#000000"><span style="font-size: 10pt;">在变量声明中的赋值操作只会调用构造函数</span><span style="font-size: 10pt;">，</span><span style="font-size: 10pt;">而其他赋值操作则只调用</span><span style="font-size: 10pt;">operator=()</span><span style="font-size: 10pt;">方法</span><span style="font-size: 10pt;">，</span></font></p>
+<p style="text-align: left; margin: 0cm 0cm 0pt 21pt;" align="left"><font color="#000000"><span style="font-size: 10pt;">例如</span><span style="font-size: 10pt;">UNICODE</span><span style="font-size: 10pt;">环境下</span><span style="font-size: 10pt;">：</span></font></p>
+<p style="text-align: left; margin: 0cm 0cm 0pt 21pt;" align="left"><font color="#000000"><span style="font-size: 10pt;">cbsName1 = sName;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //</span><span style="font-size: 10pt;">调用</span><span style="font-size: 10pt;">CComBSTR&amp; operator=(LPCOLESTR 
+pSrc)</span></font></p>
+
+<p style="text-align: left; text-indent: -21pt; margin: 0cm 0cm 0pt 21pt;" align="left"><span style="color: red; font-size: 10pt;">?<span style=""> </span></span><span style="color: red; font-size: 10pt;">BSTR------&gt;CString</span></p>
+<p style="text-align: left; text-indent: -21pt; margin: 0cm 0cm 0pt 42pt;" align="left"><span style="font-size: 10pt;"><span style=""><font face="Times New Roman"><font color="#000000">1.<span style="font: 7pt Times New Roman;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 
+</span></font></font></span></span><font color="#ff00ff"><span style="font-size: 10pt;">使用宏</span><span style="font-size: 10pt;"><font face="Times New Roman">COLE2T</font></span></font></p>
+<p style="text-align: left; margin: 0cm 0cm 0pt 42pt;" align="left"><font color="#000000"><span style="font-size: 10pt;">BSTR bStr = 
+SysAllocStringLen(OLESTR(</span><span style="font-size: 10pt;"><font face="Times New Roman">“</font></span><span style="font-size: 10pt;">XXX\0YYY</span><span style="font-size: 10pt;"><font face="Times New Roman">”</font></span><span style="font-size: 10pt;">), 7);</span></font></p>
+<p style="text-align: left; text-indent: -10.5pt; margin: 0cm 0cm 0pt 52.5pt;" align="left"><font color="#000000"><span style="font-size: 10pt;">CString s = COLE2T(bStr);<span style="">&nbsp;&nbsp; </span>//</span><span style="font-size: 10pt;">将</span><span style="font-size: 10pt;">BSTR</span><span style="font-size: 10pt;">转换为</span><span style="font-size: 10pt;">LPTSTR</span><span style="font-size: 10pt;">，</span><span style="font-size: 10pt;">不可使用</span><span style="font-size: 10pt;">OLE2T</span></font></p>
+<p style="text-align: left; text-indent: -10.5pt; margin: 0cm 0cm 0pt 52.5pt;" align="left"><font color="#000000"><span style="font-size: 10pt;">或者</span></font></p>
+<p style="text-align: left; text-indent: -10.5pt; margin: 0cm 0cm 0pt 52.5pt;" align="left"><font color="#000000"><span style="font-size: 10pt;">CString s = COLE2CT(bStr);<span style=""> </span>//</span><span style="font-size: 10pt;">将</span><span style="font-size: 10pt;">BSTR</span><span style="font-size: 10pt;">转换为</span><span style="font-size: 10pt;">LPCTSTR</span><span style="font-size: 10pt;">，</span><span style="font-size: 10pt;">不可使用</span><span style="font-size: 10pt;">OLE2CT</span></font></p>
+<p style="text-align: left; text-indent: -10.5pt; margin: 0cm 0cm 0pt 52.5pt;" align="left"><span style="font-size: 10pt;"><font color="#000000">SysFreeString(bStr);</font></span></p>
+<p style="text-align: left; text-indent: -21pt; margin: 0cm 0cm 0pt 42pt;" align="left"><font color="#000000"><span style="font-size: 10pt;"><span style="">2.</span></span><span style="font-size: 10pt;"> </span></font><font color="#ff00ff"><span style="font-size: 10pt;">使用中间类<span>_bstr_t</span></span></font></p>
+<p style="text-align: left; margin: 0cm 0cm 0pt 21pt;" align="left"><font color="#000000"><span style="font-size: 10pt;"><span style="">&nbsp;&nbsp;&nbsp;&nbsp;</span>_bstr_t t(bStr, FALSE);</span></font></p>
+<p style="text-align: left; margin: 0cm 0cm 0pt 42pt;" align="left"><font color="#000000"><span style="font-size: 10pt;">s = t;</span></font></p>
+<p style="text-align: left; text-indent: -10.5pt; margin: 0cm 0cm 0pt 31.5pt;" align="left"><font color="#000000"><span style="font-size: 10pt;">由于BSTR的实际长度是由字符串之前的4个字节指定的，所以它可以包含NULL字符，转换为CString之后最后的那四个字符"\0YYY"丢失了。</span></font></p>
+
+<p style="text-align: left; text-indent: -21pt; margin: 0cm 0cm 0pt 21pt;" align="left"><span style="color: red; font-size: 10pt;">?<span style=""> </span></span><span style="color: red; font-size: 10pt;">CComBSTR------&gt;CString</span></p>
+<p style="margin: 0cm 0cm 0pt;"><font color="#000000"><span style="font-size: 10pt;"><span style="">&nbsp;&nbsp;&nbsp; 
+</span></span><span style="font-size: 10pt;">因为</span><span style="font-size: 10pt;">CComBSTR</span><span style="font-size: 10pt;">重载了</span><span style="font-size: 10pt;">operator BSTR</span><span style="font-size: 10pt;">，</span><span style="font-size: 10pt;">所以上面对</span><span style="font-size: 10pt;">BSTR</span><span style="font-size: 10pt;">使用的方法也完全适用于</span><span style="font-size: 10pt;">CComBSTR</span><span style="font-size: 10pt;">。</span></font></p>
+<p><br></p></font>
+</body></html>

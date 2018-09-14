@@ -1,0 +1,86 @@
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=utf8"><title>163 blogs的博客：[原] 智能指针 对比</title>
+<style type="text/css">
+a{color: #000000;text-decoration : none;font-size: 10pt;}
+a:hover {color: red;text-decoration : underline;}
+.replyBox{padding:4px;border:1px solid #D8D8D8;}
+</style></head><body><h2>[原] 智能指针 对比</h2>
+<p align="right">发布时间：2014-6-4 12:09
+<br>分类名称：Boost</p><br>
+<div><table style="border-collapse:collapse;"   border="0"   ><colgroup><col style="width:302px;"   /><col style="width:274px;"   /><col style="width:312px;"   /><tbody valign="top"   ><tr style="height: 43px; background: #4472c4;"   ><td style="padding-left: 7px; padding-right: 7px; border-top:  solid #4472c4 0.5pt; border-left:  solid #4472c4 0.5pt; border-bottom:  solid #4472c4 0.5pt; border-right:  none;"   ><p><span style="color:white; font-family:宋体; font-size:20pt;"   ><strong>auto_ptr</strong></span></p></td><td style="padding-left: 7px; padding-right: 7px; border-top:  solid #4472c4 0.5pt; border-left:  none; border-bottom:  solid #4472c4 0.5pt; border-right:  none;"   ><p><span style="color:white; font-family:宋体; font-size:20pt;"   ><strong>scoped_ptr</strong></span></p></td><td style="padding-left: 7px; padding-right: 7px; border-top:  solid #4472c4 0.5pt; border-left:  none; border-bottom:  solid #4472c4 0.5pt; border-right:  solid #4472c4 0.5pt;"   ><p><span style="color:white; font-family:宋体; font-size:20pt;"   ><strong>shared_ptr</strong></span></p></td></tr><tr style="height: 43px; background: #d9e2f3;"   ><td style="padding-left: 7px; padding-right: 7px; border-top:  none; border-left:  solid #8eaadb 0.5pt; border-bottom:  solid #8eaadb 0.5pt; border-right:  solid #8eaadb 0.5pt;"   ><p><span style="font-family:宋体;"   >无引用计数</span></p></td><td style="padding-left: 7px; padding-right: 7px; border-top:  none; border-left:  none; border-bottom:  solid #8eaadb 0.5pt; border-right:  solid #8eaadb 0.5pt;"   ><p><span style="font-family:宋体;"   >无引用计数</span></p></td><td style="padding-left: 7px; padding-right: 7px; border-top:  none; border-left:  none; border-bottom:  solid #8eaadb 0.5pt; border-right:  solid #8eaadb 0.5pt;"   ><p><span style="font-family:宋体;"   >有引用计数</span></p></td></tr><tr style="height: 43px;"   ><td style="padding-left: 7px; padding-right: 7px; border-top:  none; border-left:  solid #8eaadb 0.5pt; border-bottom:  solid #8eaadb 0.5pt; border-right:  solid #8eaadb 0.5pt;"   ><p><span style="font-family:宋体;"   >不同auto_ptr引用一个指针，导致多次析构而崩溃
+</span></p><p>
+&nbsp;</p><p><span style="font-family:宋体;"   >int* p = new int(0);
+</span></p><p><span style="font-family:宋体;"   >auto_ptr&lt;int&gt; ap1(p);
+</span></p><p><span style="font-family:宋体;"   >auto_ptr&lt;int&gt; ap2(p);
+</span></p><p>
+&nbsp;</p><p><span style="font-family:宋体;"   >一个指针被多个auto_ptr引用，导致多次析构，程序崩溃。</span></p></td><td style="padding-left: 7px; padding-right: 7px; border-top:  none; border-left:  none; border-bottom:  solid #8eaadb 0.5pt; border-right:  solid #8eaadb 0.5pt;"   ><p><span style="font-family:宋体;"   >同auto_ptr
+</span></p><p><span style="font-family:宋体;"   >预防的方式为：
+</span></p><p><span style="font-family:宋体;"   >将new 操作直接作为参数传入，等于建立一个临时变量：
+</span></p><p><span style="font-family:宋体;"   >scopted_ptr&lt;int&gt; sp(new int(0));
+</span></p><p><span style="font-family:宋体;"   >这样，从语言层以后就无法再次引用。
+</span></p><p>
+&nbsp;</p><p><span style="font-family:宋体;"   >由于构造函数explicit关键字的限制，这些智能指针只能在定义的时候初始化，以后不能被再次赋值其它指针，如：
+</span></p><p><span style="font-family:宋体;"   >CTest *p = new CTest;
+</span></p><p><span style="font-family:宋体;"   >std::auto_ptr&lt;CTest&gt; ap;
+</span></p><p><span style="font-family:宋体;"   >ap = p; // 错误，编译器报错</span></p></td><td style="padding-left: 7px; padding-right: 7px; border-top:  none; border-left:  none; border-bottom:  solid #8eaadb 0.5pt; border-right:  solid #8eaadb 0.5pt;"   ><p><span style="font-family:宋体;"   >同样也是无法预防，但是在Boost里，有预防此情况的调试机制：
+</span></p><p><span style="font-family:宋体;"   >如果定义了宏BOOST_SP_ENABLE_DEBUG_HOOKS，
+</span></p><p><span style="font-family:宋体;"   >当出现此种情况时，第二次的引用会弹出一个assert调试框。其代码实现在： libs\smart_ptr\src\sp_debug_hooks.cpp中。调试机制提前预防了多次析构的问题，所以在Debug的状态，打开此机制。此调试机制适应于boost中所有智能指针（smart_ptr）</span></p></td></tr><tr style="height: 43px; background: #d9e2f3;"   ><td style="padding-left: 7px; padding-right: 7px; border-top:  none; border-left:  solid #8eaadb 0.5pt; border-bottom:  solid #8eaadb 0.5pt; border-right:  solid #8eaadb 0.5pt;"   ><p><span style="font-family:宋体;"   >无法处理动态数组
+</span></p><p><span style="font-family:宋体;"   >int* pa = new int[10];
+</span></p><p><span style="font-family:宋体;"   >auto_ptr&lt;int&gt; ap(pa);
+</span></p><p><span style="font-family:宋体;"   >因为auto_ptr析构删除指针使用的的是delete，而不是delete[]，所以这种用法不正确，程序的运行结果未定。</span></p></td><td style="padding-left: 7px; padding-right: 7px; border-top:  none; border-left:  none; border-bottom:  solid #8eaadb 0.5pt; border-right:  solid #8eaadb 0.5pt;"   ><p><span style="font-family:宋体;"   >scoped_array可以来处理动态数组。
+</span></p><p><span style="font-family:宋体;"   >动态数组最好使用vector代替。</span></p></td><td style="padding-left: 7px; padding-right: 7px; border-top:  none; border-left:  none; border-bottom:  solid #8eaadb 0.5pt; border-right:  solid #8eaadb 0.5pt;"   ><p><span style="font-family:宋体;"   >shared_array来处理动态数组。</span></p></td></tr><tr style="height: 43px;"   ><td style="padding-left: 7px; padding-right: 7px; border-top:  none; border-left:  solid #8eaadb 0.5pt; border-bottom:  solid #8eaadb 0.5pt; border-right:  solid #8eaadb 0.5pt;"   ><p><span style="font-family:宋体;"   >独占，不共享，所有权转移
+</span></p><p><span style="font-family:宋体;"   >因为没有引用计数，所以无法实现多个auto_ptr共享一个指针的目的。所以拷贝和复制操作，需要特殊处理，保证拷贝后，被拷贝的auto_ptr不再有原指针的所有权。（<span style="color:#333333; background-color:#f7fcff;"   >所有权转移</span>）
+</span></p><p>
+&nbsp;</p><p><span style="font-family:宋体;"   >使用没有原指针所有权auto_ptr是很危险的，就如同在操作一个空指针一样。如：
+</span></p><p><span style="font-family:宋体;"   >int* p = new int(0);
+</span></p><p><span style="font-family:宋体;"   >auto_ptr&lt;int&gt; ap1(p);
+</span></p><p><span style="font-family:宋体;"   >auto_ptr&lt;int&gt; ap2 = ap1;
+</span></p><p><span style="font-family:宋体;"   >cout&lt;&lt;*ap1; //错误，此时ap1只剩一个null指针在手了
+</span></p><p>
+&nbsp;</p><p><span style="font-family:宋体;"   >更加隐蔽的：
+</span></p><p><span style="font-family:宋体;"   >void f(auto_ptr&lt;int&gt; ap){cout&lt;&lt;*ap;}
+</span></p><p><span style="font-family:宋体;"   >auto_ptr&lt;int&gt; ap1(new int(0));
+</span></p><p><span style="font-family:宋体;"   >f(ap1);
+</span></p><p><span style="font-family:宋体;"   >cout&lt;&lt;*ap1; //错误，经过f(ap1)函数调用，ap1已经不再拥有任何对象了。
+</span></p><p>
+&nbsp;</p><p><span style="font-family:宋体;"   >独占的特性导致了它的危险性。</span></p></td><td style="padding-left: 7px; padding-right: 7px; border-top:  none; border-left:  none; border-bottom:  solid #8eaadb 0.5pt; border-right:  solid #8eaadb 0.5pt;"   ><p><span style="font-family:宋体;"   >独占，不共享，不过无法转移：
+</span></p><p><span style="font-family:宋体;"   >不能转移的技术：
+</span></p><p><span style="font-family:宋体;"   >将能拷贝和赋值构造函数都声明为私有。
+</span></p><p><span style="font-family:宋体;"   >private:
+</span></p><p><span style="font-family:宋体;"   >scoped_ptr(scoped_ptr const &amp;);
+</span></p><p><span style="font-family:宋体;"   >scoped_ptr &amp; operator= (scoped_ptr const &amp;);
+</span></p><p><span style="font-family:宋体;"   >void operator==( scoped_ptr const&amp; ) const;
+</span></p><p><span style="font-family:宋体;"   >void operator!=( scoped_ptr const&amp; ) const;
+</span></p><p>
+&nbsp;</p><p><span style="font-family:宋体;"   >此接口保证功能最小，主要起自动释放的作用。</span></p></td><td style="padding-left: 7px; padding-right: 7px; border-top:  none; border-left:  none; border-bottom:  solid #8eaadb 0.5pt; border-right:  solid #8eaadb 0.5pt;"   ><p><span style="font-family:宋体;"   >共享，通过引用计数来维护指针
+</span></p><p>
+&nbsp;</p><p><span style="font-family:宋体;"   >由于有引用计数，多个share_ptr可以引用一个指针。使用起来，和实际的指针基本上是一模一样。</span></p></td></tr><tr style="height: 43px; background: #d9e2f3;"   ><td style="padding-left: 7px; padding-right: 7px; border-top:  none; border-left:  solid #8eaadb 0.5pt; border-bottom:  solid #8eaadb 0.5pt; border-right:  solid #8eaadb 0.5pt;"   ><p><span style="font-family:宋体;"   >不具有值语义(value semantic)
+</span></p><p><span style="font-family:宋体;"   >因为具有所有权转移特性
+</span></p><p><span style="font-family:宋体;"   >不能被用在STL标准容器中</span></p></td><td style="padding-left: 7px; padding-right: 7px; border-top:  none; border-left:  none; border-bottom:  solid #8eaadb 0.5pt; border-right:  solid #8eaadb 0.5pt;"   ><p><span style="font-family:宋体;"   >不具有值语义(value semantic)
+</span></p><p><span style="font-family:宋体;"   >因为不支持拷贝，赋值等操作
+</span></p><p><span style="font-family:宋体;"   >不能被用在STL标准容器中</span></p></td><td style="padding-left: 7px; padding-right: 7px; border-top:  none; border-left:  none; border-bottom:  solid #8eaadb 0.5pt; border-right:  solid #8eaadb 0.5pt;"   ><p><span style="font-family:宋体;"   >就有值语意
+</span></p><p><span style="font-family:宋体;"   >可以用在容器中。</span></p></td></tr><tr style="height: 43px;"   ><td style="padding-left: 7px; padding-right: 7px; border-top:  none; border-left:  solid #8eaadb 0.5pt; border-bottom:  solid #8eaadb 0.5pt; border-right:  solid #8eaadb 0.5pt;"   ><p><span style="font-family:宋体;"   >辅助函数
+</span></p><p><span style="font-family:宋体;"   >get函数，获取原始指针。
+</span></p><p><span style="font-family:宋体;"   >release 函数，转移所有权（不释放，只是清零）
+</span></p><p><span style="color:#333333; font-family:宋体; background-color:#f7fcff;"   >reset函数，用来接收所有权，如果接收所有权的auto_ptr如果已经拥有某对象， 必须先释放该对象。
+</span></p><p><span style="color:black; font-family:宋体; font-size:12pt;"   >operator bool()</span></p></td><td style="padding-left: 7px; padding-right: 7px; border-top:  none; border-left:  none; border-bottom:  solid #8eaadb 0.5pt; border-right:  solid #8eaadb 0.5pt;"   ><p><span style="font-family:宋体;"   >辅助函数
+</span></p><p><span style="font-family:宋体;"   >get函数，获取原始指针。
+</span></p><p><span style="font-family:宋体;"   >reset函数，用来接收所有权，如果接收所有权的auto_ptr如果已经拥有某对象， 必须先释放该对象。
+</span></p><p></p><pre><code><span style="color:black;"   >operator bool()
+</span></code></pre></td><td style="padding-left: 7px; padding-right: 7px; border-top:  none; border-left:  none; border-bottom:  solid #8eaadb 0.5pt; border-right:  solid #8eaadb 0.5pt;"   ><p><span style="font-family:宋体;"   >辅助函数
+</span></p><p><span style="font-family:宋体;"   >reset，引用计数减1，停止对指针共享，如果引用计数为零，释放对象
+</span></p><p><span style="font-family:宋体;"   >get，获取原始指针
+</span></p><p><span style="font-family:宋体;"   >unique，判断引用计数是否为1.
+</span></p><p><span style="font-family:宋体;"   >use_count，获取当前引用计数。
+</span></p><p><span style="font-family:宋体;"   >operator bool() 
+</span></p><p><span style="font-family:宋体;"   >make_shared,工厂函数
+</span></p><p>
+&nbsp;</p><p><span style="font-family:宋体;"   >转换辅助函数
+</span></p><p><span style="font-family:宋体;"   >static_pointer_cast
+</span></p><p><span style="font-family:宋体;"   >dynamic_pointer_cast
+</span></p><p><span style="font-family:宋体;"   >const_pointer_cast
+</span></p><p>
+&nbsp;</p><p><span style="font-family:宋体;"   >定制删除器
+</span></p><p><span style="font-family:宋体;"   >shared_ptr(Y *p, D d),管理任何资源。</span></p></td></tr><tr style="height: 43px; background: #d9e2f3;"   ><td style="padding-left: 7px; padding-right: 7px; border-top:  none; border-left:  solid #8eaadb 0.5pt; border-bottom:  solid #8eaadb 0.5pt; border-right:  solid #8eaadb 0.5pt;"   ><p><span style="font-family:宋体;"   >需要注意的地方颇多，稍不注意就会发生错误，建议只做自动释放的功能，不要做为函数参数，或者赋值转移等操作</span></p></td><td style="padding-left: 7px; padding-right: 7px; border-top:  none; border-left:  none; border-bottom:  solid #8eaadb 0.5pt; border-right:  solid #8eaadb 0.5pt;"   ><p><span style="font-family:宋体;"   >相对auto_ptr做了防御编程，但没有完全防止，建议只做自动释放的功能。</span></p></td><td style="padding-left: 7px; padding-right: 7px; border-top:  none; border-left:  none; border-bottom:  solid #8eaadb 0.5pt; border-right:  solid #8eaadb 0.5pt;"   ><p><span style="font-family:宋体;"   >功能最完善，最像一个正常的指针。需要注意两点：
+</span></p><ol><li><span style="font-family:宋体;"   >防止重复析构，导致资源重复释放
+</span></li><li><span style="font-family:宋体;"   >防止循环引用，导致资源无法释放</span></li></ol></td></tr></table></div>
+</body></html>

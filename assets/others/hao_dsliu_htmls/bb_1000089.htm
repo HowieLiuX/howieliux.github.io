@@ -1,0 +1,265 @@
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=utf8"><title>163 blogs的博客：Matching debug information</title>
+<style type="text/css">
+a{color: #000000;text-decoration : none;font-size: 10pt;}
+a:hover {color: red;text-decoration : underline;}
+.replyBox{padding:4px;border:1px solid #D8D8D8;}
+</style></head><body><h2>Matching debug information</h2>
+<p align="right">发布时间：2013-1-4 13:16
+<br>分类名称：Debug_Crack</p><br>
+
+<P><SPAN style="FONT-SIZE: 8pt; FONT-FAMILY: Verdana; COLOR: black;"   >From:</SPAN> <SPAN style="FONT-SIZE: 8pt; FONT-FAMILY: Verdana; COLOR: black;"   >http://www.debuginfo.com/articles/debuginfomatch.html </SPAN></P>
+<P><SPAN style="FONT-SIZE: 8pt; FONT-FAMILY: Verdana; COLOR: black;"   >Updated: 23.11.2004 </SPAN></P>
+<P><A rel="nofollow" href="http://www.debuginfo.com/articles/debuginfomatch.html"  ><SPAN style="FONT-SIZE: 8pt; FONT-FAMILY: Verdana; COLOR: #53b8dc; TEXT-DECORATION: underline;"   >Introduction</SPAN></A><SPAN style="FONT-SIZE: 8pt; FONT-FAMILY: Verdana; COLOR: black;"   ><BR><A rel="nofollow" href="http://www.debuginfo.com/articles/debuginfomatch.html"  ><SPAN style="COLOR: #53b8dc; TEXT-DECORATION: underline;"   >Debug information in PE executables</SPAN></A><BR><A rel="nofollow" href="http://www.debuginfo.com/articles/debuginfomatch.html"  ><SPAN style="COLOR: #53b8dc; TEXT-DECORATION: underline;"   >DebugDir example</SPAN></A><BR><A rel="nofollow" href="http://www.debuginfo.com/articles/debuginfomatch.html"  ><SPAN style="COLOR: #53b8dc; TEXT-DECORATION: underline;"   >Debug information in a separate file</SPAN></A><BR><A rel="nofollow" href="http://www.debuginfo.com/articles/debuginfomatch.html"  ><SPAN style="COLOR: #53b8dc; TEXT-DECORATION: underline;"   >PDB files</SPAN></A><BR><A rel="nofollow" href="http://www.debuginfo.com/articles/debuginfomatch.html"  ><SPAN style="COLOR: #53b8dc; TEXT-DECORATION: underline;"   >DBG files</SPAN></A><BR><A rel="nofollow" href="http://www.debuginfo.com/articles/debuginfomatch.html"  ><SPAN style="COLOR: #53b8dc; TEXT-DECORATION: underline;"   >Matching debug information - the details</SPAN></A><BR><A rel="nofollow" href="http://www.debuginfo.com/articles/debuginfomatch.html"  ><SPAN style="COLOR: #53b8dc; TEXT-DECORATION: underline;"   >When matching is not desirable</SPAN></A><BR><A rel="nofollow" href="http://www.debuginfo.com/articles/debuginfomatch.html"  ><SPAN style="COLOR: #53b8dc; TEXT-DECORATION: underline;"   >ChkMatch tool</SPAN></A> </SPAN></P>
+<P><SPAN style="FONT-SIZE: 9pt; FONT-FAMILY: Tahoma; COLOR: #53b8dc;"   ><STRONG>Introduction <SPAN style="COLOR: #969696;"   ></SPAN></STRONG></SPAN></P>
+<P><SPAN style="FONT-SIZE: 8pt; FONT-FAMILY: Verdana; COLOR: black;"   >We know that debug information (symbols) helps debuggers to analyze the internal layout of the debugged application. In particular, it helps the debugger to locate addresses of variables and functions, display values of variables (including complex structures and classes with nontrivial binary layout), and map raw addresses in the executable to the lines of the source code. (See <A rel="nofollow" href="http://www.debuginfo.com/articles/gendebuginfo.html"  ><SPAN style="COLOR: #53b8dc; TEXT-DECORATION: underline;"   >this article</SPAN></A> for more information about debug information and its contents). </SPAN></P>
+<P><SPAN style="FONT-SIZE: 8pt; FONT-FAMILY: Verdana; COLOR: black;"   >When we modify the source code and rebuild the executable, its internal layout changes. Some functions and variables can move to other locations, structures and classes can be extended with new members while some old members can be removed, and so on. These changes should be properly reflected in the debug information, which also must be updated to correctly describe the new layout of the executable. </SPAN></P>
+<P><SPAN style="FONT-SIZE: 8pt; FONT-FAMILY: Verdana; COLOR: black;"   >We also know that debug information is often stored separately from the executable, usually in a PDB or DBG file. Now lets imagine what can happen if the debugger picks up a wrong (or outdated) debug information file and tries to use it to debug the application. In the best case, the user will see that some variables have incorrect values. In the worst case, the debugger will not be able to display variables and step through the source code at all. As a result, effective debugging is not possible, and the reason is that debug information does not match the executable. </SPAN></P>
+<P><SPAN style="FONT-SIZE: 8pt; FONT-FAMILY: Verdana; COLOR: black;"   >It is clear that debuggers should do something to prevent such situations. It is achieved through the concept of "matching debug information". At the time when the executable is built and debug information file is generated, the build tool (linker, for example) assigns a unique identifier to the debug information file. Then this unique identifier is stored in two places – in the executable and in the debug information file. When the debugger starts debugging the executable, it refuses to load a debug information file if its unique identifier is not the same as the identifier stored in the executable. At every subsequent rebuild, the build tool changes the unique identifier, so that an old debug information file cannot be used to debug the new executable, and vice versa. </SPAN></P>
+<P><IMG title="Matching debug information - Howie - Dspace"   alt=""   src="pic/img4.ph.126.net_LhaJETwxC1Rm5lbilPKWhA==_6597930684261403894.jpg"   ><SPAN style="FONT-SIZE: 8pt; FONT-FAMILY: Verdana; COLOR: black;"   > </SPAN></P>
+<P><SPAN style="FONT-SIZE: 8pt; FONT-FAMILY: Verdana; COLOR: black;"   >This is how the process of matching works, in brief. In the remainder of this article, we will explore the details of debug information matching. We will see what kinds of unique identifiers are used, where and how they are stored. We will also discuss situations when matching is not desirable, and see what we can do to disable it if needed. </SPAN></P>
+<P><SPAN style="FONT-SIZE: 9pt; FONT-FAMILY: Tahoma; COLOR: #53b8dc;"   ><STRONG>Debug information in PE executables <SPAN style="COLOR: #969696;"   ></SPAN></STRONG></SPAN></P>
+<P><SPAN style="FONT-SIZE: 8pt; FONT-FAMILY: Verdana; COLOR: black;"   >As usual, lets start with some theory and explore how debug information is stored in a typical PE executable. Fortunately, PE format itself is well documented, so I don't have to talk too much about it here (<A rel="nofollow" href="http://www.microsoft.com/whdc/system/platform/firmware/PECOFF.mspx"  ><SPAN style="COLOR: #53b8dc; TEXT-DECORATION: underline;"   >PE specification</SPAN></A> and Matt Pietrek's <A rel="nofollow" href="http://msdn.microsoft.com/msdnmag/issues/02/02/PE/default.aspx"  ><SPAN style="COLOR: #53b8dc; TEXT-DECORATION: underline;"   >articles</SPAN></A> are good sources of information ). In brief, a typical PE file starts with a set of headers that contain various important information about the layout and characteristics of the executable. Headers are followed by a set of contiguous data blocks, called "sections", which contain the actual code and data of the executable. At the end of the file, after the sections, other arbitrary data can be placed. </SPAN></P>
+<P><IMG title="Matching debug information - Howie - Dspace"   alt=""   src="pic/img5.ph.126.net_rKjpR5_9k97KA0NMaPehjw==_1559371370994980275.jpg"   ><SPAN style="FONT-SIZE: 8pt; FONT-FAMILY: Verdana; COLOR: black;"   > </SPAN></P>
+<P><SPAN style="FONT-SIZE: 8pt; FONT-FAMILY: Verdana; COLOR: black;"   >When an executable is built with debug information, the debug information has to be stored somewhere. Some debug information formats (COFF and CodeView) assume that the debug information is stored in the executable. Other formats (Program Database, and also CodeView) allow storing debug information in a separate file. But even in the latter case, the executable still contains a small piece of debug information that tells the debugger that a separate file exists, and helps to find that file. </SPAN></P>
+<P><SPAN style="FONT-SIZE: 8pt; FONT-FAMILY: Verdana; COLOR: black;"   >There is no common agreement between various build tools on the exact place in PE file where debug information should be stored. Some tools put debug information into one of the sections, others append it to the end of the file after all sections. But debuggers do not complain, because every executable contains a "roadmap" that helps to find the place where debug information is stored. </SPAN></P>
+<P><SPAN style="FONT-SIZE: 8pt; FONT-FAMILY: Verdana; COLOR: black;"   >The road to debug information starts in the file's optional header (IMAGE_OPTIONAL_HEADER, see WINNT.H). Needless to say that this header, while called "optional", is always present in PE executables. At the end of the optional header, there is DataDirectory member which serves as the address book of the executable, pointing to various important locations in it. DataDirectory is actually an array of IMAGE_DATA_DIRECTORY structures. </SPAN></P>
+<P><SPAN style="FONT-SIZE: 12pt; FONT-FAMILY: 宋体; COLOR: black;"   >typedef struct _IMAGE_DATA_DIRECTORY { </SPAN></P>
+<P><SPAN style="FONT-SIZE: 12pt; FONT-FAMILY: 宋体; COLOR: black;"   >DWORD VirtualAddress; </SPAN></P>
+<P><SPAN style="FONT-SIZE: 12pt; FONT-FAMILY: 宋体; COLOR: black;"   >DWORD Size; </SPAN></P>
+<P><SPAN style="FONT-SIZE: 12pt; FONT-FAMILY: 宋体; COLOR: black;"   >} IMAGE_DATA_DIRECTORY, *PIMAGE_DATA_DIRECTORY; </SPAN></P>
+<P>&nbsp;</P>
+<P><SPAN style="FONT-SIZE: 12pt; FONT-FAMILY: 宋体; COLOR: black;"   >typedef struct _IMAGE_OPTIONAL_HEADER { </SPAN></P>
+<P><SPAN style="FONT-SIZE: 12pt; FONT-FAMILY: 宋体; COLOR: black;"   >WORD Magic; </SPAN></P>
+<P><SPAN style="FONT-SIZE: 12pt; FONT-FAMILY: 宋体; COLOR: black;"   >… // Many other fields </SPAN></P>
+<P><SPAN style="FONT-SIZE: 12pt; FONT-FAMILY: 宋体; COLOR: black;"   >IMAGE_DATA_DIRECTORY DataDirectory[IMAGE_NUMBEROF_DIRECTORY_ENTRIES]; </SPAN></P>
+<P><SPAN style="FONT-SIZE: 12pt; FONT-FAMILY: 宋体; COLOR: black;"   >} IMAGE_OPTIONAL_HEADER32, *PIMAGE_OPTIONAL_HEADER32; </SPAN></P>
+<P><SPAN style="FONT-SIZE: 8pt; FONT-FAMILY: Verdana; COLOR: black;"   >The entry at index 6 (IMAGE_DIRECTORY_ENTRY_DEBUG) contains the address and size of the executable's debug directory, which is the place where to look for the real location of debug information in the executable file. Debug directory is stored in one of the PE sections, and consists of an array of IMAGE_DEBUG_DIRECTORY structures. </SPAN></P>
+<P><SPAN style="FONT-SIZE: 12pt; FONT-FAMILY: 宋体; COLOR: black;"   >typedef struct _IMAGE_DEBUG_DIRECTORY { </SPAN></P>
+<P><SPAN style="FONT-SIZE: 12pt; FONT-FAMILY: 宋体; COLOR: black;"   >DWORD Characteristics; </SPAN></P>
+<P><SPAN style="FONT-SIZE: 12pt; FONT-FAMILY: 宋体; COLOR: black;"   >DWORD TimeDateStamp; </SPAN></P>
+<P><SPAN style="FONT-SIZE: 12pt; FONT-FAMILY: 宋体; COLOR: black;"   >WORD MajorVersion; </SPAN></P>
+<P><SPAN style="FONT-SIZE: 12pt; FONT-FAMILY: 宋体; COLOR: black;"   >WORD MinorVersion; </SPAN></P>
+<P><SPAN style="FONT-SIZE: 12pt; FONT-FAMILY: 宋体; COLOR: black;"   >DWORD Type; </SPAN></P>
+<P><SPAN style="FONT-SIZE: 12pt; FONT-FAMILY: 宋体; COLOR: black;"   >DWORD SizeOfData; </SPAN></P>
+<P><SPAN style="FONT-SIZE: 12pt; FONT-FAMILY: 宋体; COLOR: black;"   >DWORD AddressOfRawData; </SPAN></P>
+<P><SPAN style="FONT-SIZE: 12pt; FONT-FAMILY: 宋体; COLOR: black;"   >DWORD PointerToRawData; </SPAN></P>
+<P><SPAN style="FONT-SIZE: 12pt; FONT-FAMILY: 宋体; COLOR: black;"   >} IMAGE_DEBUG_DIRECTORY, *PIMAGE_DEBUG_DIRECTORY; </SPAN></P>
+<P><SPAN style="FONT-SIZE: 8pt; FONT-FAMILY: Verdana; COLOR: black;"   >The number of entries in the debug directory can be obtained by dividing the size of the debug directory (as specified in the optional header's data directory entry) by the size of IMAGE_DEBUG_DIRECTORY structure. </SPAN></P>
+<P><SPAN style="FONT-SIZE: 8pt; FONT-FAMILY: Verdana; COLOR: black;"   >The fact that the debug directory is an array clearly shows that an executable can contain more than one kind of debug information at the same time. For example, executables built with Visual C++ 6.0 contain both COFF and CodeView debug information when /debugtype:both linker option is used. </SPAN></P>
+<P><SPAN style="FONT-SIZE: 8pt; FONT-FAMILY: Verdana; COLOR: black;"   >The kind of debug information described by a particular debug directory entry is specified in Type field of IMAGE_DEBUG_DIRECTORY structure. It can have one of the following values (defined in WINNT.H): </SPAN></P>
+<P><SPAN style="FONT-SIZE: 12pt; FONT-FAMILY: 宋体; COLOR: black;"   >#define IMAGE_DEBUG_TYPE_UNKNOWN 0 </SPAN></P>
+<P><SPAN style="FONT-SIZE: 12pt; FONT-FAMILY: 宋体; COLOR: black;"   >#define IMAGE_DEBUG_TYPE_COFF 1 </SPAN></P>
+<P><SPAN style="FONT-SIZE: 12pt; FONT-FAMILY: 宋体; COLOR: black;"   >#define IMAGE_DEBUG_TYPE_CODEVIEW 2 </SPAN></P>
+<P><SPAN style="FONT-SIZE: 12pt; FONT-FAMILY: 宋体; COLOR: black;"   >#define IMAGE_DEBUG_TYPE_FPO 3 </SPAN></P>
+<P><SPAN style="FONT-SIZE: 12pt; FONT-FAMILY: 宋体; COLOR: black;"   >#define IMAGE_DEBUG_TYPE_MISC 4 </SPAN></P>
+<P><SPAN style="FONT-SIZE: 12pt; FONT-FAMILY: 宋体; COLOR: black;"   >#define IMAGE_DEBUG_TYPE_EXCEPTION 5 </SPAN></P>
+<P><SPAN style="FONT-SIZE: 12pt; FONT-FAMILY: 宋体; COLOR: black;"   >#define IMAGE_DEBUG_TYPE_FIXUP 6 </SPAN></P>
+<P><SPAN style="FONT-SIZE: 12pt; FONT-FAMILY: 宋体; COLOR: black;"   >#define IMAGE_DEBUG_TYPE_OMAP_TO_SRC 7 </SPAN></P>
+<P><SPAN style="FONT-SIZE: 12pt; FONT-FAMILY: 宋体; COLOR: black;"   >#define IMAGE_DEBUG_TYPE_OMAP_FROM_SRC 8 </SPAN></P>
+<P><SPAN style="FONT-SIZE: 12pt; FONT-FAMILY: 宋体; COLOR: black;"   >#define IMAGE_DEBUG_TYPE_BORLAND 9 </SPAN></P>
+<P><SPAN style="FONT-SIZE: 12pt; FONT-FAMILY: 宋体; COLOR: black;"   >#define IMAGE_DEBUG_TYPE_RESERVED10 10 </SPAN></P>
+<P><SPAN style="FONT-SIZE: 12pt; FONT-FAMILY: 宋体; COLOR: black;"   >#define IMAGE_DEBUG_TYPE_CLSID 11 </SPAN></P>
+<P><SPAN style="FONT-SIZE: 8pt; FONT-FAMILY: Verdana; COLOR: black;"   >When working with PE executables built by Microsoft tools, we usually have to deal with only a subset of types: </SPAN></P>
+<DIV>
+<TABLE style="BORDER-COLLAPSE: collapse;"   border="0"  >
+<COLGROUP>
+<COL style="WIDTH: 185px;"   >
+<COL style="WIDTH: 511px;"   >
+<TBODY vAlign="top"  >
+<TR>
+<TD style="BORDER-TOP: 0.75pt outset; BORDER-RIGHT: 0.75pt outset; BORDER-BOTTOM: 0.75pt outset; PADDING-BOTTOM: 1px; PADDING-TOP: 1px; PADDING-LEFT: 1px; BORDER-LEFT: 0.75pt outset; PADDING-RIGHT: 1px;"   vAlign="middle"  >
+<P style="TEXT-ALIGN: center;"   ><SPAN style="FONT-SIZE: 8pt; FONT-FAMILY: Tahoma; COLOR: black;"   ><STRONG>Type</STRONG></SPAN></P></TD>
+<TD style="BORDER-TOP: 0.75pt outset; BORDER-RIGHT: 0.75pt outset; BORDER-BOTTOM: 0.75pt outset; PADDING-BOTTOM: 1px; PADDING-TOP: 1px; PADDING-LEFT: 1px; BORDER-LEFT: medium none; PADDING-RIGHT: 1px;"   vAlign="middle"  >
+<P style="TEXT-ALIGN: center;"   ><SPAN style="FONT-SIZE: 8pt; FONT-FAMILY: Tahoma; COLOR: black;"   ><STRONG>Description</STRONG></SPAN></P></TD></TR>
+<TR>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.75pt outset; BORDER-BOTTOM: 0.75pt outset; PADDING-BOTTOM: 5px; PADDING-TOP: 5px; PADDING-LEFT: 5px; BORDER-LEFT: 0.75pt outset; PADDING-RIGHT: 5px;"   vAlign="middle"  >
+<P><SPAN style="FONT-SIZE: 8pt; FONT-FAMILY: Tahoma; COLOR: black;"   >IMAGE_DEBUG_TYPE_COFF</SPAN></P></TD>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.75pt outset; BORDER-BOTTOM: 0.75pt outset; PADDING-BOTTOM: 5px; PADDING-TOP: 5px; PADDING-LEFT: 5px; BORDER-LEFT: medium none; PADDING-RIGHT: 5px;"   vAlign="middle"  >
+<P><SPAN style="FONT-SIZE: 8pt; FONT-FAMILY: Tahoma; COLOR: black;"   >COFF debug information (stored in the executable) </SPAN></P></TD></TR>
+<TR>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.75pt outset; BORDER-BOTTOM: 0.75pt outset; PADDING-BOTTOM: 5px; PADDING-TOP: 5px; PADDING-LEFT: 5px; BORDER-LEFT: 0.75pt outset; PADDING-RIGHT: 5px;"   vAlign="middle"  >
+<P><SPAN style="FONT-SIZE: 8pt; FONT-FAMILY: Tahoma; COLOR: black;"   >IMAGE_DEBUG_TYPE_CODEVIEW</SPAN></P></TD>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.75pt outset; BORDER-BOTTOM: 0.75pt outset; PADDING-BOTTOM: 5px; PADDING-TOP: 5px; PADDING-LEFT: 5px; BORDER-LEFT: medium none; PADDING-RIGHT: 5px;"   vAlign="middle"  >
+<P><SPAN style="FONT-SIZE: 8pt; FONT-FAMILY: Tahoma; COLOR: black;"   >CodeView debug information (stored in the executable) or Program Database debug information (stored in PDB file) </SPAN></P></TD></TR>
+<TR>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.75pt outset; BORDER-BOTTOM: 0.75pt outset; PADDING-BOTTOM: 5px; PADDING-TOP: 5px; PADDING-LEFT: 5px; BORDER-LEFT: 0.75pt outset; PADDING-RIGHT: 5px;"   vAlign="middle"  >
+<P><SPAN style="FONT-SIZE: 8pt; FONT-FAMILY: Tahoma; COLOR: black;"   >IMAGE_DEBUG_TYPE_MISC</SPAN></P></TD>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.75pt outset; BORDER-BOTTOM: 0.75pt outset; PADDING-BOTTOM: 5px; PADDING-TOP: 5px; PADDING-LEFT: 5px; BORDER-LEFT: medium none; PADDING-RIGHT: 5px;"   vAlign="middle"  >
+<P><SPAN style="FONT-SIZE: 8pt; FONT-FAMILY: Tahoma; COLOR: black;"   >CodeView debug information (stored in DBG file) </SPAN></P></TD></TR>
+<TR>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.75pt outset; BORDER-BOTTOM: 0.75pt outset; PADDING-BOTTOM: 5px; PADDING-TOP: 5px; PADDING-LEFT: 5px; BORDER-LEFT: 0.75pt outset; PADDING-RIGHT: 5px;"   vAlign="middle"  >
+<P><SPAN style="FONT-SIZE: 8pt; FONT-FAMILY: Tahoma; COLOR: black;"   >IMAGE_DEBUG_TYPE_FPO</SPAN></P></TD>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.75pt outset; BORDER-BOTTOM: 0.75pt outset; PADDING-BOTTOM: 5px; PADDING-TOP: 5px; PADDING-LEFT: 5px; BORDER-LEFT: medium none; PADDING-RIGHT: 5px;"   vAlign="middle"  >
+<P><SPAN style="FONT-SIZE: 8pt; FONT-FAMILY: Tahoma; COLOR: black;"   >Frame pointer omission information, which helps debug optimised executables </SPAN></P></TD></TR></TABLE></DIV>
+<P><SPAN style="FONT-SIZE: 8pt; FONT-FAMILY: Verdana; COLOR: black;"   >FileOffset and Size members of IMAGE_DEBUG_DIRECTORY structure specify the actual location of the debug information of the given type in the executable file. </SPAN></P>
+<P><SPAN style="FONT-SIZE: 8pt; FONT-FAMILY: Verdana; COLOR: black;"   >To summarize, when a debugger wants to find debug information for an executable, it performs the following steps: </SPAN></P>
+<P><SPAN style="FONT-SIZE: 8pt; FONT-FAMILY: Verdana; COLOR: black;"   >1. Read the optional header's data directory entry which describes the debug information (IMAGE_OPTIONAL_HEADER.DataDirectory[IMAGE_DIRECTORY_ENTRY_DEBUG]) and determine the location and size of the executable's debug directory. </SPAN></P>
+<P><SPAN style="FONT-SIZE: 8pt; FONT-FAMILY: Verdana; COLOR: black;"   >2. Read debug directory entries and pick up the ones the debugger is interested in. Use FileOffset and Size members of the corresponding IMAGE_DEBUG_DIRECTORY structure to determine the actual location and size of the debug information. </SPAN></P>
+<P><SPAN style="FONT-SIZE: 8pt; FONT-FAMILY: Verdana; COLOR: black;"   >3. Read the debug information. (If the main part of debug information is stored in a separate file, read the file name from the debug information stored in the executable, and load that file). </SPAN></P>
+<P><IMG title="Matching debug information - Howie - Dspace"   alt=""   src="pic/img1.ph.126.net_9aCBUT8BvAR4hu_vrQ75ew==_1573163644853778461.jpg"   ><SPAN style="FONT-SIZE: 8pt; FONT-FAMILY: Verdana; COLOR: black;"   > </SPAN></P>
+<P><SPAN style="FONT-SIZE: 9pt; FONT-FAMILY: Tahoma; COLOR: #53b8dc;"   ><STRONG>DebugDir example <SPAN style="COLOR: #969696;"   ></SPAN></STRONG></SPAN></P>
+<P><SPAN style="FONT-SIZE: 8pt; FONT-FAMILY: Verdana; COLOR: black;"   >DebugDir <A rel="nofollow" href="http://www.debuginfo.com/examples/debugdir.html"  ><SPAN style="COLOR: #53b8dc; TEXT-DECORATION: underline;"   >example</SPAN></A> shows the process of finding the location of debug information in an executable in details. </SPAN></P>
+<P><SPAN style="FONT-SIZE: 9pt; FONT-FAMILY: Tahoma; COLOR: #53b8dc;"   ><STRONG>Debug information in a separate file <SPAN style="COLOR: #969696;"   ></SPAN></STRONG></SPAN></P>
+<P><SPAN style="FONT-SIZE: 8pt; FONT-FAMILY: Verdana; COLOR: black;"   >Now I have to remind myself that I was actually going to discuss matching debug information. Thus, while it could be interesting to talk about all possible formats of debug information that we can find in a PE file, there is no sense in doing it here. This is because if the whole debug information is stored in the executable, it is always matched. So lets focus only on the cases where debug information is stored in a separate file. At the time being, there are only two such cases: </SPAN></P>
+<UL>
+<LI>
+<DIV style="TEXT-ALIGN: justify;"   ><SPAN style="FONT-SIZE: 8pt; FONT-FAMILY: Tahoma; COLOR: black;"   >Debug information stored in PDB file (with two existing formats – PDB 2.0 and PDB 7.0) </SPAN></DIV>
+</LI><LI>
+<DIV style="TEXT-ALIGN: justify;"   ><SPAN style="FONT-SIZE: 8pt; FONT-FAMILY: Tahoma; COLOR: black;"   >Debug information stored in DBG file </SPAN></DIV></LI></UL>
+<P><SPAN style="FONT-SIZE: 9pt; FONT-FAMILY: Tahoma; COLOR: #53b8dc;"   ><STRONG>PDB files <SPAN style="COLOR: #969696;"   ></SPAN></STRONG></SPAN></P>
+<P><SPAN style="FONT-SIZE: 8pt; FONT-FAMILY: Verdana; COLOR: black;"   >When debug information for an executable is stored in PDB file, the executable's debug directory contains an entry of type IMAGE_DEBUG_TYPE_CODEVIEW. This entry points to a small data block, which tells the debugger where to look for the PDB file. But before we proceed to the details of the data stored in this block, a word about CodeView debug information in general should be said. </SPAN></P>
+<P><SPAN style="FONT-SIZE: 8pt; FONT-FAMILY: Verdana; COLOR: black;"   >If we look at CodeView format specification (available in older versions of MSDN), we can notice that several kinds of CodeView information exist. Since all of them are called "CodeView" and use the same type of debug directory entry (IMAGE_DEBUG_TYPE_CODEVIEW), debuggers must be given a way to determine which CodeView format is actually used. This is achieved with the help of a DWORD-sized signature, which is always placed at the beginning of CodeView debug information. The most known signatures for CodeView debug information stored in the executable are "NB09" (CodeView 4.10) and "NB11" (CodeView 5.0). When CodeView information refers to a PDB file, the signature can be "NB10" (which is used with PDB 2.0 files) or "RSDS" (for PDB 7.0 files). </SPAN></P>
+<P><SPAN style="FONT-SIZE: 8pt; FONT-FAMILY: Verdana; COLOR: black;"   >In most kinds of CodeView information, the signature is followed by another DWORD-sized value, Offset, which specifies the offset to the start of the actual debug information from the beginning of the CodeView data. CodeView signature and offset together are sometimes described as CV_HEADER structure: </SPAN></P>
+<P><SPAN style="FONT-SIZE: 12pt; FONT-FAMILY: 宋体; COLOR: black;"   >struct CV_HEADER </SPAN></P>
+<P><SPAN style="FONT-SIZE: 12pt; FONT-FAMILY: 宋体; COLOR: black;"   >{ </SPAN></P>
+<P><SPAN style="FONT-SIZE: 12pt; FONT-FAMILY: 宋体; COLOR: black;"   >DWORD Signature; </SPAN></P>
+<P><SPAN style="FONT-SIZE: 12pt; FONT-FAMILY: 宋体; COLOR: black;"   >DWORD Offset; </SPAN></P>
+<P><SPAN style="FONT-SIZE: 12pt; FONT-FAMILY: 宋体; COLOR: black;"   >}; </SPAN></P>
+<P><SPAN style="FONT-SIZE: 8pt; FONT-FAMILY: Verdana; COLOR: black;"   >Now lets discuss the exact format of CodeView data block that refers to a PDB 2.0 file. It can be represented with the following structure: </SPAN></P>
+<P><SPAN style="FONT-SIZE: 12pt; FONT-FAMILY: 宋体; COLOR: black;"   >struct CV_INFO_PDB20 </SPAN></P>
+<P><SPAN style="FONT-SIZE: 12pt; FONT-FAMILY: 宋体; COLOR: black;"   >{ </SPAN></P>
+<P><SPAN style="FONT-SIZE: 12pt; FONT-FAMILY: 宋体; COLOR: black;"   >CV_HEADER CvHeader; </SPAN></P>
+<P><SPAN style="FONT-SIZE: 12pt; FONT-FAMILY: 宋体; COLOR: black;"   >DWORD Signature; </SPAN></P>
+<P><SPAN style="FONT-SIZE: 12pt; FONT-FAMILY: 宋体; COLOR: black;"   >DWORD Age; </SPAN></P>
+<P><SPAN style="FONT-SIZE: 12pt; FONT-FAMILY: 宋体; COLOR: black;"   >BYTE PdbFileName[]; </SPAN></P>
+<P><SPAN style="FONT-SIZE: 12pt; FONT-FAMILY: 宋体; COLOR: black;"   >}; </SPAN></P>
+<P><SPAN style="FONT-SIZE: 8pt; FONT-FAMILY: Verdana; COLOR: black;"   >Members of this structure are described in the following table: </SPAN></P>
+<DIV>
+<TABLE style="BORDER-COLLAPSE: collapse;"   border="0"  >
+<COLGROUP>
+<COL style="WIDTH: 114px;"   >
+<COL style="WIDTH: 582px;"   >
+<TBODY vAlign="top"  >
+<TR>
+<TD style="BORDER-TOP: 0.75pt outset; BORDER-RIGHT: 0.75pt outset; BORDER-BOTTOM: 0.75pt outset; PADDING-BOTTOM: 1px; PADDING-TOP: 1px; PADDING-LEFT: 1px; BORDER-LEFT: 0.75pt outset; PADDING-RIGHT: 1px;"   vAlign="middle"  >
+<P style="TEXT-ALIGN: center;"   ><SPAN style="FONT-SIZE: 8pt; FONT-FAMILY: Tahoma; COLOR: black;"   ><STRONG>Member</STRONG></SPAN></P></TD>
+<TD style="BORDER-TOP: 0.75pt outset; BORDER-RIGHT: 0.75pt outset; BORDER-BOTTOM: 0.75pt outset; PADDING-BOTTOM: 1px; PADDING-TOP: 1px; PADDING-LEFT: 1px; BORDER-LEFT: medium none; PADDING-RIGHT: 1px;"   vAlign="middle"  >
+<P style="TEXT-ALIGN: center;"   ><SPAN style="FONT-SIZE: 8pt; FONT-FAMILY: Tahoma; COLOR: black;"   ><STRONG>Description</STRONG></SPAN></P></TD></TR>
+<TR>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.75pt outset; BORDER-BOTTOM: 0.75pt outset; PADDING-BOTTOM: 5px; PADDING-TOP: 5px; PADDING-LEFT: 5px; BORDER-LEFT: 0.75pt outset; PADDING-RIGHT: 5px;"   vAlign="middle"  >
+<P><SPAN style="FONT-SIZE: 8pt; FONT-FAMILY: Tahoma; COLOR: black;"   >CvHeader.Signature</SPAN></P></TD>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.75pt outset; BORDER-BOTTOM: 0.75pt outset; PADDING-BOTTOM: 5px; PADDING-TOP: 5px; PADDING-LEFT: 5px; BORDER-LEFT: medium none; PADDING-RIGHT: 5px;"   vAlign="middle"  >
+<P><SPAN style="FONT-SIZE: 8pt; FONT-FAMILY: Tahoma; COLOR: black;"   >CodeView signature, equal to "NB10" </SPAN></P></TD></TR>
+<TR>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.75pt outset; BORDER-BOTTOM: 0.75pt outset; PADDING-BOTTOM: 5px; PADDING-TOP: 5px; PADDING-LEFT: 5px; BORDER-LEFT: 0.75pt outset; PADDING-RIGHT: 5px;"   vAlign="middle"  >
+<P><SPAN style="FONT-SIZE: 8pt; FONT-FAMILY: Tahoma; COLOR: black;"   >CvHeader.Offset</SPAN></P></TD>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.75pt outset; BORDER-BOTTOM: 0.75pt outset; PADDING-BOTTOM: 5px; PADDING-TOP: 5px; PADDING-LEFT: 5px; BORDER-LEFT: medium none; PADDING-RIGHT: 5px;"   vAlign="middle"  >
+<P><SPAN style="FONT-SIZE: 8pt; FONT-FAMILY: Tahoma; COLOR: black;"   >CodeView offset. Set to 0, because debug information is stored in a separate file. </SPAN></P></TD></TR>
+<TR>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.75pt outset; BORDER-BOTTOM: 0.75pt outset; PADDING-BOTTOM: 5px; PADDING-TOP: 5px; PADDING-LEFT: 5px; BORDER-LEFT: 0.75pt outset; PADDING-RIGHT: 5px;"   vAlign="middle"  >
+<P><SPAN style="FONT-SIZE: 8pt; FONT-FAMILY: Tahoma; COLOR: black;"   >Signature</SPAN></P></TD>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.75pt outset; BORDER-BOTTOM: 0.75pt outset; PADDING-BOTTOM: 5px; PADDING-TOP: 5px; PADDING-LEFT: 5px; BORDER-LEFT: medium none; PADDING-RIGHT: 5px;"   vAlign="middle"  >
+<P><SPAN style="FONT-SIZE: 8pt; FONT-FAMILY: Tahoma; COLOR: black;"   >The time when debug information was created (in seconds since 01.01.1970) </SPAN></P></TD></TR>
+<TR>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.75pt outset; BORDER-BOTTOM: 0.75pt outset; PADDING-BOTTOM: 5px; PADDING-TOP: 5px; PADDING-LEFT: 5px; BORDER-LEFT: 0.75pt outset; PADDING-RIGHT: 5px;"   vAlign="middle"  >
+<P><SPAN style="FONT-SIZE: 8pt; FONT-FAMILY: Tahoma; COLOR: black;"   >Age</SPAN></P></TD>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.75pt outset; BORDER-BOTTOM: 0.75pt outset; PADDING-BOTTOM: 5px; PADDING-TOP: 5px; PADDING-LEFT: 5px; BORDER-LEFT: medium none; PADDING-RIGHT: 5px;"   vAlign="middle"  >
+<P><SPAN style="FONT-SIZE: 8pt; FONT-FAMILY: Tahoma; COLOR: black;"   >Ever-incrementing value, which is initially set to 1 and incremented every time when a part of the PDB file is updated without rewriting the whole file. </SPAN></P></TD></TR>
+<TR>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.75pt outset; BORDER-BOTTOM: 0.75pt outset; PADDING-BOTTOM: 5px; PADDING-TOP: 5px; PADDING-LEFT: 5px; BORDER-LEFT: 0.75pt outset; PADDING-RIGHT: 5px;"   vAlign="middle"  >
+<P><SPAN style="FONT-SIZE: 8pt; FONT-FAMILY: Tahoma; COLOR: black;"   >PdbFileName</SPAN></P></TD>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.75pt outset; BORDER-BOTTOM: 0.75pt outset; PADDING-BOTTOM: 5px; PADDING-TOP: 5px; PADDING-LEFT: 5px; BORDER-LEFT: medium none; PADDING-RIGHT: 5px;"   vAlign="middle"  >
+<P><SPAN style="FONT-SIZE: 8pt; FONT-FAMILY: Tahoma; COLOR: black;"   >Null-terminated name of the PDB file. It can also contain full or partial path to the file. </SPAN></P></TD></TR></TABLE></DIV>
+<P><SPAN style="FONT-SIZE: 8pt; FONT-FAMILY: Verdana; COLOR: black;"   >If the CodeView data block refers to a PDB 7.0 file, a different format is used: </SPAN></P>
+<P><SPAN style="FONT-SIZE: 12pt; FONT-FAMILY: 宋体; COLOR: black;"   >struct CV_INFO_PDB70 </SPAN></P>
+<P><SPAN style="FONT-SIZE: 12pt; FONT-FAMILY: 宋体; COLOR: black;"   >{ </SPAN></P>
+<P><SPAN style="FONT-SIZE: 12pt; FONT-FAMILY: 宋体; COLOR: black;"   >DWORD CvSignature; </SPAN></P>
+<P><SPAN style="FONT-SIZE: 12pt; FONT-FAMILY: 宋体; COLOR: black;"   >GUID Signature; </SPAN></P>
+<P><SPAN style="FONT-SIZE: 12pt; FONT-FAMILY: 宋体; COLOR: black;"   >DWORD Age; </SPAN></P>
+<P><SPAN style="FONT-SIZE: 12pt; FONT-FAMILY: 宋体; COLOR: black;"   >BYTE PdbFileName[]; </SPAN></P>
+<P><SPAN style="FONT-SIZE: 12pt; FONT-FAMILY: 宋体; COLOR: black;"   >} ; </SPAN></P>
+<P><SPAN style="FONT-SIZE: 8pt; FONT-FAMILY: Verdana; COLOR: black;"   >Note that the structure does not include Offset field (and thus does not start with CV_HEADER structure), while CodeView signature is still present. The absence of Offset field makes this structure an unusual member of CodeView family. </SPAN></P>
+<P><SPAN style="FONT-SIZE: 8pt; FONT-FAMILY: Verdana; COLOR: black;"   >The members of the structure are described in the following table: </SPAN></P>
+<DIV>
+<TABLE style="BORDER-COLLAPSE: collapse;"   border="0"  >
+<COLGROUP>
+<COL style="WIDTH: 80px;"   >
+<COL style="WIDTH: 617px;"   >
+<TBODY vAlign="top"  >
+<TR>
+<TD style="BORDER-TOP: 0.75pt outset; BORDER-RIGHT: 0.75pt outset; BORDER-BOTTOM: 0.75pt outset; PADDING-BOTTOM: 1px; PADDING-TOP: 1px; PADDING-LEFT: 1px; BORDER-LEFT: 0.75pt outset; PADDING-RIGHT: 1px;"   vAlign="middle"  >
+<P style="TEXT-ALIGN: center;"   ><SPAN style="FONT-SIZE: 8pt; FONT-FAMILY: Tahoma; COLOR: black;"   ><STRONG>Member</STRONG></SPAN></P></TD>
+<TD style="BORDER-TOP: 0.75pt outset; BORDER-RIGHT: 0.75pt outset; BORDER-BOTTOM: 0.75pt outset; PADDING-BOTTOM: 1px; PADDING-TOP: 1px; PADDING-LEFT: 1px; BORDER-LEFT: medium none; PADDING-RIGHT: 1px;"   vAlign="middle"  >
+<P style="TEXT-ALIGN: center;"   ><SPAN style="FONT-SIZE: 8pt; FONT-FAMILY: Tahoma; COLOR: black;"   ><STRONG>Description</STRONG></SPAN></P></TD></TR>
+<TR>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.75pt outset; BORDER-BOTTOM: 0.75pt outset; PADDING-BOTTOM: 5px; PADDING-TOP: 5px; PADDING-LEFT: 5px; BORDER-LEFT: 0.75pt outset; PADDING-RIGHT: 5px;"   vAlign="middle"  >
+<P><SPAN style="FONT-SIZE: 8pt; FONT-FAMILY: Tahoma; COLOR: black;"   >CvSignature</SPAN></P></TD>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.75pt outset; BORDER-BOTTOM: 0.75pt outset; PADDING-BOTTOM: 5px; PADDING-TOP: 5px; PADDING-LEFT: 5px; BORDER-LEFT: medium none; PADDING-RIGHT: 5px;"   vAlign="middle"  >
+<P><SPAN style="FONT-SIZE: 8pt; FONT-FAMILY: Tahoma; COLOR: black;"   >CodeView signature, equal to "RSDS" </SPAN></P></TD></TR>
+<TR>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.75pt outset; BORDER-BOTTOM: 0.75pt outset; PADDING-BOTTOM: 5px; PADDING-TOP: 5px; PADDING-LEFT: 5px; BORDER-LEFT: 0.75pt outset; PADDING-RIGHT: 5px;"   vAlign="middle"  >
+<P><SPAN style="FONT-SIZE: 8pt; FONT-FAMILY: Tahoma; COLOR: black;"   >Signature</SPAN></P></TD>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.75pt outset; BORDER-BOTTOM: 0.75pt outset; PADDING-BOTTOM: 5px; PADDING-TOP: 5px; PADDING-LEFT: 5px; BORDER-LEFT: medium none; PADDING-RIGHT: 5px;"   vAlign="middle"  >
+<P><SPAN style="FONT-SIZE: 8pt; FONT-FAMILY: Tahoma; COLOR: black;"   >A unique identifier, which changes with every rebuild of the executable and PDB file. </SPAN></P></TD></TR>
+<TR>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.75pt outset; BORDER-BOTTOM: 0.75pt outset; PADDING-BOTTOM: 5px; PADDING-TOP: 5px; PADDING-LEFT: 5px; BORDER-LEFT: 0.75pt outset; PADDING-RIGHT: 5px;"   vAlign="middle"  >
+<P><SPAN style="FONT-SIZE: 8pt; FONT-FAMILY: Tahoma; COLOR: black;"   >Age</SPAN></P></TD>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.75pt outset; BORDER-BOTTOM: 0.75pt outset; PADDING-BOTTOM: 5px; PADDING-TOP: 5px; PADDING-LEFT: 5px; BORDER-LEFT: medium none; PADDING-RIGHT: 5px;"   vAlign="middle"  >
+<P><SPAN style="FONT-SIZE: 8pt; FONT-FAMILY: Tahoma; COLOR: black;"   >Ever-incrementing value, which is initially set to 1 and incremented every time when a part of the PDB file is updated without rewriting the whole file. </SPAN></P></TD></TR>
+<TR>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.75pt outset; BORDER-BOTTOM: 0.75pt outset; PADDING-BOTTOM: 5px; PADDING-TOP: 5px; PADDING-LEFT: 5px; BORDER-LEFT: 0.75pt outset; PADDING-RIGHT: 5px;"   vAlign="middle"  >
+<P><SPAN style="FONT-SIZE: 8pt; FONT-FAMILY: Tahoma; COLOR: black;"   >PdbFileName</SPAN></P></TD>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.75pt outset; BORDER-BOTTOM: 0.75pt outset; PADDING-BOTTOM: 5px; PADDING-TOP: 5px; PADDING-LEFT: 5px; BORDER-LEFT: medium none; PADDING-RIGHT: 5px;"   vAlign="middle"  >
+<P><SPAN style="FONT-SIZE: 8pt; FONT-FAMILY: Tahoma; COLOR: black;"   >Null-terminated name of the PDB file. It can also contain full or partial path to the file. </SPAN></P></TD></TR></TABLE></DIV>
+<P><SPAN style="FONT-SIZE: 9pt; FONT-FAMILY: Tahoma; COLOR: #53b8dc;"   ><STRONG>DBG files <SPAN style="COLOR: #969696;"   ></SPAN></STRONG></SPAN></P>
+<P><SPAN style="FONT-SIZE: 8pt; FONT-FAMILY: Verdana; COLOR: black;"   >When debug information for an executable is stored in a DBG file, the executable's debug directory contains an entry of type IMAGE_DEBUG_TYPE_MISC. This entry points to a small block of data, which tells the debugger where to look for the DBG file. This data block has the following format (defined in WINNT.H): </SPAN></P>
+<P><SPAN style="FONT-SIZE: 12pt; FONT-FAMILY: 宋体; COLOR: black;"   >#define IMAGE_DEBUG_MISC_EXENAME 1 </SPAN></P>
+<P>&nbsp;</P>
+<P><SPAN style="FONT-SIZE: 12pt; FONT-FAMILY: 宋体; COLOR: black;"   >typedef struct _IMAGE_DEBUG_MISC { </SPAN></P>
+<P><SPAN style="FONT-SIZE: 12pt; FONT-FAMILY: 宋体; COLOR: black;"   >DWORD DataType; </SPAN></P>
+<P><SPAN style="FONT-SIZE: 12pt; FONT-FAMILY: 宋体; COLOR: black;"   >DWORD Length; </SPAN></P>
+<P><SPAN style="FONT-SIZE: 12pt; FONT-FAMILY: 宋体; COLOR: black;"   >BOOLEAN Unicode; </SPAN></P>
+<P><SPAN style="FONT-SIZE: 12pt; FONT-FAMILY: 宋体; COLOR: black;"   >BYTE Reserved[ 3 ]; </SPAN></P>
+<P><SPAN style="FONT-SIZE: 12pt; FONT-FAMILY: 宋体; COLOR: black;"   >BYTE Data[ 1 ]; </SPAN></P>
+<P><SPAN style="FONT-SIZE: 12pt; FONT-FAMILY: 宋体; COLOR: black;"   >} IMAGE_DEBUG_MISC, *PIMAGE_DEBUG_MISC; </SPAN></P>
+<P><SPAN style="FONT-SIZE: 8pt; FONT-FAMILY: Verdana; COLOR: black;"   >The members of this structure are described in the following table: </SPAN></P>
+<DIV>
+<TABLE style="BORDER-COLLAPSE: collapse;"   border="0"  >
+<COLGROUP>
+<COL style="WIDTH: 63px;"   >
+<COL style="WIDTH: 402px;"   >
+<TBODY vAlign="top"  >
+<TR>
+<TD style="BORDER-TOP: 0.75pt outset; BORDER-RIGHT: 0.75pt outset; BORDER-BOTTOM: 0.75pt outset; PADDING-BOTTOM: 1px; PADDING-TOP: 1px; PADDING-LEFT: 1px; BORDER-LEFT: 0.75pt outset; PADDING-RIGHT: 1px;"   vAlign="middle"  >
+<P style="TEXT-ALIGN: center;"   ><SPAN style="FONT-SIZE: 8pt; FONT-FAMILY: Tahoma; COLOR: black;"   ><STRONG>Member</STRONG></SPAN></P></TD>
+<TD style="BORDER-TOP: 0.75pt outset; BORDER-RIGHT: 0.75pt outset; BORDER-BOTTOM: 0.75pt outset; PADDING-BOTTOM: 1px; PADDING-TOP: 1px; PADDING-LEFT: 1px; BORDER-LEFT: medium none; PADDING-RIGHT: 1px;"   vAlign="middle"  >
+<P style="TEXT-ALIGN: center;"   ><SPAN style="FONT-SIZE: 8pt; FONT-FAMILY: Tahoma; COLOR: black;"   ><STRONG>Description</STRONG></SPAN></P></TD></TR>
+<TR>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.75pt outset; BORDER-BOTTOM: 0.75pt outset; PADDING-BOTTOM: 5px; PADDING-TOP: 5px; PADDING-LEFT: 5px; BORDER-LEFT: 0.75pt outset; PADDING-RIGHT: 5px;"   vAlign="middle"  >
+<P><SPAN style="FONT-SIZE: 8pt; FONT-FAMILY: Tahoma; COLOR: black;"   >DataType</SPAN></P></TD>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.75pt outset; BORDER-BOTTOM: 0.75pt outset; PADDING-BOTTOM: 5px; PADDING-TOP: 5px; PADDING-LEFT: 5px; BORDER-LEFT: medium none; PADDING-RIGHT: 5px;"   vAlign="middle"  >
+<P><SPAN style="FONT-SIZE: 8pt; FONT-FAMILY: Tahoma; COLOR: black;"   >Type of the data. Always set to 1 (IMAGE_DEBUG_MISC_EXENAME) </SPAN></P></TD></TR>
+<TR>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.75pt outset; BORDER-BOTTOM: 0.75pt outset; PADDING-BOTTOM: 5px; PADDING-TOP: 5px; PADDING-LEFT: 5px; BORDER-LEFT: 0.75pt outset; PADDING-RIGHT: 5px;"   vAlign="middle"  >
+<P><SPAN style="FONT-SIZE: 8pt; FONT-FAMILY: Tahoma; COLOR: black;"   >Length</SPAN></P></TD>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.75pt outset; BORDER-BOTTOM: 0.75pt outset; PADDING-BOTTOM: 5px; PADDING-TOP: 5px; PADDING-LEFT: 5px; BORDER-LEFT: medium none; PADDING-RIGHT: 5px;"   vAlign="middle"  >
+<P><SPAN style="FONT-SIZE: 8pt; FONT-FAMILY: Tahoma; COLOR: black;"   >Total length of the data block, multiple of four. </SPAN></P></TD></TR>
+<TR>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.75pt outset; BORDER-BOTTOM: 0.75pt outset; PADDING-BOTTOM: 5px; PADDING-TOP: 5px; PADDING-LEFT: 5px; BORDER-LEFT: 0.75pt outset; PADDING-RIGHT: 5px;"   vAlign="middle"  >
+<P><SPAN style="FONT-SIZE: 8pt; FONT-FAMILY: Tahoma; COLOR: black;"   >Unicode</SPAN></P></TD>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.75pt outset; BORDER-BOTTOM: 0.75pt outset; PADDING-BOTTOM: 5px; PADDING-TOP: 5px; PADDING-LEFT: 5px; BORDER-LEFT: medium none; PADDING-RIGHT: 5px;"   vAlign="middle"  >
+<P><SPAN style="FONT-SIZE: 8pt; FONT-FAMILY: Tahoma; COLOR: black;"   >If TRUE, subsequent data is Unicode string; if FALSE, the data is ANSI string. </SPAN></P></TD></TR>
+<TR>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.75pt outset; BORDER-BOTTOM: 0.75pt outset; PADDING-BOTTOM: 5px; PADDING-TOP: 5px; PADDING-LEFT: 5px; BORDER-LEFT: 0.75pt outset; PADDING-RIGHT: 5px;"   vAlign="middle"  >
+<P><SPAN style="FONT-SIZE: 8pt; FONT-FAMILY: Tahoma; COLOR: black;"   >Reserved</SPAN></P></TD>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.75pt outset; BORDER-BOTTOM: 0.75pt outset; PADDING-BOTTOM: 5px; PADDING-TOP: 5px; PADDING-LEFT: 5px; BORDER-LEFT: medium none; PADDING-RIGHT: 5px;"   vAlign="middle"  >
+<P><SPAN style="FONT-SIZE: 8pt; FONT-FAMILY: Tahoma; COLOR: black;"   >Reserved and unused. </SPAN></P></TD></TR>
+<TR>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.75pt outset; BORDER-BOTTOM: 0.75pt outset; PADDING-BOTTOM: 5px; PADDING-TOP: 5px; PADDING-LEFT: 5px; BORDER-LEFT: 0.75pt outset; PADDING-RIGHT: 5px;"   vAlign="middle"  >
+<P><SPAN style="FONT-SIZE: 8pt; FONT-FAMILY: Tahoma; COLOR: black;"   >Data</SPAN></P></TD>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.75pt outset; BORDER-BOTTOM: 0.75pt outset; PADDING-BOTTOM: 5px; PADDING-TOP: 5px; PADDING-LEFT: 5px; BORDER-LEFT: medium none; PADDING-RIGHT: 5px;"   vAlign="middle"  >
+<P><SPAN style="FONT-SIZE: 8pt; FONT-FAMILY: Tahoma; COLOR: black;"   >The name of the DBG file. </SPAN></P></TD></TR></TABLE></DIV>
+<P><SPAN style="FONT-SIZE: 8pt; FONT-FAMILY: Verdana; COLOR: black;"   >In addition to IMAGE_DEBUG_MISC structure, the executable whose debug information is stored in DBG file also contains IMAGE_FILE_DEBUG_STRIPPED flag set in Characteristics field of the executable's file header (IMAGE_FILE_HEADER.Characteristics). </SPAN></P>
+<P><SPAN style="FONT-SIZE: 9pt; FONT-FAMILY: Tahoma; COLOR: #53b8dc;"   ><STRONG>Matching debug information - the details <SPAN style="COLOR: #969696;"   ></SPAN></STRONG></SPAN></P>
+<P><SPAN style="FONT-SIZE: 8pt; FONT-FAMILY: Verdana; COLOR: black;"   >Now we know enough theory to proceed to the details of debug information matching. Lets recall that the executable and the debug information file are considered matched only when they both contain the same unique identifier. So, what kinds of unique identifiers are used? </SPAN></P>
+<P><SPAN style="FONT-SIZE: 8pt; FONT-FAMILY: Verdana; COLOR: black;"   >In the case of PDB 2.0 debug information, the unique identifier consists of two values – signature and age, which are stored in CV_INFO_PDB20 structure in the executable (CV_INFO_PDB20.Signature and CV_INFO_PDB20.Age fields) and in a special data stream in the PDB file. When the debugger checks whether a PDB file matches the executable, it reads the signature and age from the PDB file and compares them with the values stored in CV_INFO_PDB20 structure in the executable. If the values are not the same, the PDB file is considered unmatched, and the debugger refuses to load it. </SPAN></P>
+<P><SPAN style="FONT-SIZE: 8pt; FONT-FAMILY: Verdana; COLOR: black;"   >PDB 7.0 debug information also uses signature and age to check for the match (CV_INFO_PDB70.Signature and CV_INFO_PDB700.Age, respectively). But the fact that CV_INFO_PDB70.Signature is a GUID makes the identifier much more unique than in the case of timestamp-based PDB 2.0 signature. </SPAN></P>
+<P><SPAN style="FONT-SIZE: 8pt; FONT-FAMILY: Verdana; COLOR: black;"   >DBG files use a similar approach, where the role of the unique identifier is assigned to the executable's timestamp (which is stored in the executable's file header, IMAGE_FILE_HEADER.TimeDateStamp). The same timestamp is stored in the header of the DBG file (IMAGE_SEPARATE_DEBUG_HEADER.TimeDateStamp). When a debugger checks whether a DBG file matches the executable, it reads the timestamp from the DBG file and compares it with the timestamp stored in the executable. If timestamps are not equal, the DBG file is considered unmatched. In addition, Visual Studio debuggers also check for presence of IMAGE_FILE_DEBUG_STRIPPED flag in Characteristics field of the executable's file header (IMAGE_FILE_HEADER.Characteristics), and refuse to load the DBG file if the flag is not set (actually, they check the flag first and do not look for DBG file at all if the flag is not set). WinDbg debugger does not check this flag in the default configuration, and uses only timestamp to verify that the DBG file is matched. </SPAN></P>
+<P><SPAN style="FONT-SIZE: 9pt; FONT-FAMILY: Tahoma; COLOR: #53b8dc;"   ><STRONG>When matching is not desirable <SPAN style="COLOR: #969696;"   ></SPAN></STRONG></SPAN></P>
+<P><SPAN style="FONT-SIZE: 8pt; FONT-FAMILY: Verdana; COLOR: black;"   >While it is usually good that debuggers verify that debug information files and executables are matched (thus saving us from loading a wrong debug information file by mistake), there are situations when such a pedantic approach is not desirable. Consider the situation when our application crashes on the customer's system, and we have to debug a crash dump. Suddenly we realize that something failed in our established CM process, and debug information file for the application is lost. What to do? Can we rebuild the application and produce a new debug information file? Or can we use debug information file from an older build? Of course, we understand that debug information from an older or newer build may not be 100 percent accurate, but it is still better than nothing. We try to load the debug information file and notice that the debugger refuses to load it because…it is unmatched! Yes, the unique identifier, which is used to check for matching, changes with every build. What can we do? How can we ask the debugger to load an unmatched debug information file? </SPAN></P>
+<P><SPAN style="FONT-SIZE: 8pt; FONT-FAMILY: Verdana; COLOR: black;"   >It turns out that with Visual Studio debugger we cannot do much. No Visual Studio 6.0, no Visual Studio.NET debugger allows to load unmatched debug information files. Fortunately, the situation is much better with WinDbg. While by default it also does not allow to load unmatched debug information, .symopt debugger command can change the default behaviour. After we have issued ".symopt+0x40" command, the debugger will happily accept and load unmatched PDB and DBG files. </SPAN></P>
+<P><SPAN style="FONT-SIZE: 9pt; FONT-FAMILY: Tahoma; COLOR: #53b8dc;"   ><STRONG>ChkMatch tool <SPAN style="COLOR: #969696;"   ></SPAN></STRONG></SPAN></P>
+<P><SPAN style="FONT-SIZE: 8pt; FONT-FAMILY: Verdana; COLOR: black;"   >I like WinDbg, but I also like Visual Studio debuggers. And sometimes I need them to load unmatched debug information files. While VS debuggers themselves do not offer a workaround, it is possible to make an executable and debug information file match by reading the unique identifier from the executable and writing it to the proper place in the debug information file. This is exactly what <A rel="nofollow" href="http://www.debuginfo.com/tools/chkmatch.html"  ><SPAN style="COLOR: #53b8dc; TEXT-DECORATION: underline;"   >ChkMatch</SPAN></A> tool does. </SPAN></P>
+<P><SPAN style="FONT-SIZE: 8pt; FONT-FAMILY: Verdana; COLOR: black;"   >When started as "chkmatch –m myapp.exe myapp.pdb", the tool reads the identifier from the executable and writes it to the proper place in the debug information file, thus enforcing the match and allowing VS debugger to load the previously unmatched file. (At the time being, only signature mismatch can be handled for PDB files; age mismatch cannot be handled yet – this is a subject for future research). </SPAN></P>
+<P><SPAN style="FONT-SIZE: 8pt; FONT-FAMILY: Verdana; COLOR: black;"   >Another option allows to check whether an executable and debug information file are matched: "chkmatch –c myapp.exe myapp.pdb". This is accomplished by reading the identifier from the debug information file and comparing it with the identifier stored in the executable. </SPAN></P>
+</body></html>

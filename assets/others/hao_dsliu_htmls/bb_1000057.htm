@@ -1,0 +1,39 @@
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=utf8"><title>163 blogs的博客：驱动代码分页内存控制</title>
+<style type="text/css">
+a{color: #000000;text-decoration : none;font-size: 10pt;}
+a:hover {color: red;text-decoration : underline;}
+.replyBox{padding:4px;border:1px solid #D8D8D8;}
+</style></head><body><h2>驱动代码分页内存控制</h2>
+<p align="right">发布时间：2014-5-6 11:37
+<br>分类名称：Driver</p><br>
+
+<P>有时，驱动程序的某些部分必须驻留内存而另一些可以被分页，这就需要一种能控制代码和数据是否分页的方法。通过指导编译器的段分配可以实现这个目的。在运行时，装入器通过检查驱动程序中的段名把段放到你指定的内存池中。此外在运行时调用内存管理器的例程也能实现这个目的。 </P>
+<P>&nbsp;</P>
+<P>方式： </P>
+<OL>
+<LI>
+<DIV><SPAN style="FONT-SIZE: 14pt;"   ><STRONG>#pragma alloc_text</STRONG></SPAN>，有如下限制： </DIV>
+<OL>
+<LI>该编译指示必须跟在函数声明后面而不能在前面。你可以把驱动程序中的所有函数集中到一个头文件中，并在包含该头文件的源文件中，在#include语句的后面使用alloc_text。 
+</LI><LI>该编译指示仅能用于有C连接形式的函数。即，它不能用于类成员函数或C++源文件中未用extern "C"声明的函数。 </LI></OL>
+<P>例子： </P>
+<P>#ifdef ALLOC_PRAGMA<BR>#pragma alloc_text(PAGE, AddDevice)<BR>#pragma alloc_text(PAGE, DispatchPnp)<BR>...<BR>#endif </P>
+</LI><LI>
+<DIV><SPAN style="FONT-SIZE: 14pt;"   ><STRONG>#pragma code_seg / data_seg </STRONG></SPAN></DIV>
+<P><SPAN style="FONT-SIZE: 14pt;"   >data_seg编译指示使所有在其后声明的静态数据变量进入分页池。这个编译指示与alloc_text完全不同。一个分页段可以从#pragma data_seg("PAGE")出现的地方开始到#pragma data_seg()出现的地方结束。而Alloc_text仅应用于单个函数。 </SPAN></P>
+<P><SPAN style="FONT-SIZE: 14pt;"   >在把数据放到分页段前应该仔细考虑，因为这有可能把事情搞得更坏。最小的页单位大小为PAGE_SIZE长。仅把一点字节放到分页段可能很蠢，因为整个页的内存都会被占用。另外，一个脏页(从磁盘读取后被改变过)在其物理页帧能被重用之前需要写回硬盘。 </SPAN></P>
+<P>&nbsp;</P>
+<P><SPAN style="FONT-SIZE: 14pt;"   >用code_seg编译指示安排代码段更方便，它与data_seg的用法一样，但仅用于代码。你可以象下面这样通知Microsoft编译器把函数放到分页池： </SPAN></P>
+<P><SPAN style="FONT-SIZE: 14pt;"   >#pragma code_seg("PAGE") </SPAN></P>
+<P><SPAN style="FONT-SIZE: 14pt;"   >NTSTATUS AddDevice(...){...} </SPAN></P>
+<P><SPAN style="FONT-SIZE: 14pt;"   >NTSTATUS DispatchPnp(...){...} </SPAN></P>
+<P><SPAN style="FONT-SIZE: 14pt;"   >AddDevice和DispatchPnp函数将进入分页池。为了检测编译器是否是Microsoft的编译器，可以测试预定义宏_MSC_VER是否存在。 </SPAN></P>
+<P><SPAN style="FONT-SIZE: 14pt;"   >加入下面语句，可以恢复到默认的代码段设置安排： </SPAN></P>
+<P><SPAN style="FONT-SIZE: 14pt;"   >#pragma code_seg() </SPAN></P>
+<P><SPAN style="FONT-SIZE: 14pt;"   >类似的，加入下面语句，可以使数据放入通常使用的非分页数据段： </SPAN></P>
+<P><SPAN style="FONT-SIZE: 14pt;"   >#pragma data_seg() </SPAN></P>
+<P><SPAN style="FONT-SIZE: 14pt;"   >顺便提一下，如果某些代码在驱动程序完成初始化后不再需要，可以直接把它插入到INIT段。例如： </SPAN></P>
+<P><SPAN style="FONT-SIZE: 14pt;"   >#pragma alloc_text(INIT, DriverEntry) </SPAN></P>
+<P><SPAN style="FONT-SIZE: 14pt;"   >该语句强制DriverEntry函数进入INIT段。当函数返回后，系统将释放掉它占用的内存。这个小的节省并不十分重要，因为WDM的DriverEntry函数没有多少工作要做。以前的Windows NT驱动程序有一个大的DriverEntry函数，用于创建设备对象，定位资源，配置设备，等等。所以对于老式驱动程序，这个特征可以节省一些内存。 </SPAN></P>
+<P><SPAN style="FONT-SIZE: 14pt;"   >使用Microsoft Visual C++中的DUMPBIN工具可以查看驱动程序中有多少分页部分。你的销售人员甚至会吹嘘你们的驱动程序要比竞争对手少使用多少非分页内存。 </SPAN></P></LI></OL>
+</body></html>

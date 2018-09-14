@@ -1,0 +1,20 @@
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=utf8"><title>163 blogs的博客：SendMessage 和 PostMessage有什么区别</title>
+<style type="text/css">
+a{color: #000000;text-decoration : none;font-size: 10pt;}
+a:hover {color: red;text-decoration : underline;}
+.replyBox{padding:4px;border:1px solid #D8D8D8;}
+</style></head><body><h2>SendMessage 和 PostMessage有什么区别</h2>
+<p align="right">发布时间：2010-9-5 16:59
+<br>分类名称：windows</p><br>
+<div style="margin-top: 0in; width: 5.562in; direction: ltr; margin-left: 0in;">
+<p style="margin: 0in; font-size: 17pt;"><span style="font-family: Calibri;" lang="en-US"><br></span></p></div>
+<div style="margin-top: 0.52in; width: 6.5in; direction: ltr; margin-left: 0in;">
+<p style="margin: 0in; font-size: 12pt; font-weight: bold;"><span style="font-family: SimSun;" lang="zh-CN">最重要的区别</span><span style="font-family: Calibri;" lang="en-US">, </span><span style="font-family: SimSun;" lang="zh-CN">一个是发送到窗口过程中</span><span style="font-family: Calibri;" lang="en-US">,</span><span style="font-family: SimSun;" lang="zh-CN">一个是发送到消息队列中</span><span style="font-family: Calibri;" lang="en-US">.</span></p>
+<p style="margin: 0in; font-size: 12pt;"><span style="font-family: 宋体;" lang="zh-CN">第二个区别是</span><span style="font-family: Calibri;" lang="en-US">PostMessage</span><span style="font-family: 宋体;" lang="zh-CN">完了就返回了</span><span style="font-family: Calibri;" lang="en-US">. 
+</span><span style="font-family: 宋体;" lang="zh-CN">无论消息是否被执行了</span><span style="font-family: Calibri;" lang="en-US">.</span><span style="font-family: 宋体;" lang="zh-CN">所以是个异步的过程</span><span style="font-family: Calibri;" lang="en-US">.</span></p>
+<p style="margin: 0in; font-size: 12pt;"><span style="font-family: 宋体;" lang="zh-CN">而</span><span style="font-family: Calibri;" lang="en-US">SendMessage</span><span style="font-family: 宋体;" lang="zh-CN">要等到消息执行完了</span><span style="font-family: Calibri;" lang="en-US">. 
+</span><span style="font-family: 宋体;" lang="zh-CN">才继续执行</span><span style="font-family: Calibri;" lang="en-US">. </span><span style="font-family: 宋体;" lang="zh-CN">是个顺序执行的过程</span><span style="font-family: Calibri;" lang="en-US">.</span></p></div>
+<div style="margin-top: 0.437in; width: 1.346in; direction: ltr; margin-left: 6.25in;">
+<p style="margin: 0in; font-family: SimSun; font-size: 10pt;">消息队列</p></div>
+<div style="margin-top: 0.027in; width: 7.059in; direction: ltr; margin-left: 0.5in;"><div><img title="2010年09月05日 - Dsliu - Dspace" alt="2010年09月05日 - Dsliu - Dspace" style="margin: 0pt 10px 0pt 0pt;" src="pic/img319.ph.126.net_dpd2M5IwQQgoFxnOgzYISQ==_3826652308381709310.bmp.jpg"></div>&nbsp;</div>
+</body></html>

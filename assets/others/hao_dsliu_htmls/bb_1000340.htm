@@ -1,0 +1,29 @@
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=utf8"><title>163 blogs的博客：[转] 检测硬件设备的变化</title>
+<style type="text/css">
+a{color: #000000;text-decoration : none;font-size: 10pt;}
+a:hover {color: red;text-decoration : underline;}
+.replyBox{padding:4px;border:1px solid #D8D8D8;}
+</style></head><body><h2>[转] 检测硬件设备的变化</h2>
+<p align="right">发布时间：2010-2-11 15:35
+<br>分类名称：windows</p><br>
+<font size="4" face="隶书"><font size="4" face="宋体">WINDOWS平台上的应用程序监视硬件设备的接入和移除，大致有三种方法</font><br><br><font face="黑体">1.响应WM_DEVICECHANGE消息</font></font> 
+<br>当外接设备发生变化时，系统会向所有的top-level窗口发送此广播消息。可使用如下代码响应消息<br><font color="#0000ff"><font color="#000000">BEGIN_MESSAGE_MAP(CHWDetectDlg, 
+CDialog)<br>ON_MESSAGE(WM_DEVICECHANGE, 
+On<wbr>MyDeviceChange)<br>END_MESSAGE_MAP()<br><br>LRESULT 
+CHWDetectDlg::On<wbr>MyDeviceChange(WPARAM wParam, LPARAM 
+lParam)<br>{<br>PDEV_BROADCAST_HDR pHdr = 
+(PDEV_BROADCAST_HDR)lParam;<br>switch(wParam)<br>{<br>case 
+DBT_DEVICEARRIVAL:<br>break;<br>case 
+DBT_DEVICEREMOVECOMPLETE:<br>break;<br>default:<br>break;<br>}<br><br>return 
+0;<br>}</font><br></font><br>注意：<font face="楷体_GB2312"><font color="#ff0000" face="宋体">非top-level的窗口默认是收不到WM_DEVICECHANGE消息的，如果需要接收必须调用RegisterDeviceNotification来注册。另外，<br>驱动器中介质的变化(例如从读卡器中移除SD卡)不会发送该通知</font><br></font><br><font face="黑体">2.用SHChangeNotifyRegister从资源管理器接收通知</font><br><font color="#000000">#define WM_MY_DEVICECHANGED 
+(WM_USER+1203)<br><br>SHChangeNotifyEntry shcnEntry;<br>shcnEntry.fRecursive = 
+TRUE;<br>shcnEntry.pidl = NULL;<br>ULONG uIndex = SHChangeNotifyRegister(hWnd, 
+SHCNRF_InterruptLevel|SHCNRF_ShellLevel|SHCNRF_RecursiveInterrupt,SHCNE_DRIVEADD|SHCNE_DRIVEREMOVED|<br>SHCNE_MEDIAINSERTED|SHCNE_MEDIAREMOVED, 
+WM_MY_DEVICECHANGED, 1, 
+&amp;shcnEntry);<br>//响应方式跟WM_DEVICECHANGE一样<br>SHChangeNotifyDeregister(uIndex);</font> 
+<br><br>注意：<font color="#ff0000">这种方式依赖于Windows Shell(explorer.exe)和“Shell 
+Hardware 
+Detection”服务的运行。如果Shell终止或重启，则监控会失效；<br>如果后面的服务终止或重启，则监控不到光驱中介质的变化和读卡器中卡的拔插</font><br><br><font face="黑体">3.定时检测某些设备是否存在</font><br><font color="#000000">SetTimer(...);<br>afx_msg 
+void On<wbr>Timer(UINT_PTR 
+nIDEvent);</font><br>对于USB设备和光驱，检测函数可选用CreateFile，GetFileAttributes，GetDiskFreeSpaceEx等<br><font color="#000000">CreateFile(_T("\\\\.\\G:")...);<br>GetFileAttributes(_T("G:\\"));<br>GetDiskFreeSpaceEx(_T("G:\\")...);</font><br>调用完检测函数后，立刻取GetLastError的值，如果等于ERROR_PATH_NOT_FOUND则表明设备不存在，如果是ERROR_NOT_READY则表示驱动器(DRIVE)存在但其中没有存储介质(MEDIA)
+</body></html>

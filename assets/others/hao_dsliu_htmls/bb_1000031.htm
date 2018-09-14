@@ -1,0 +1,53 @@
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=utf8"><title>163 blogs的博客：保留PDB，节省调试耗时</title>
+<style type="text/css">
+a{color: #000000;text-decoration : none;font-size: 10pt;}
+a:hover {color: red;text-decoration : underline;}
+.replyBox{padding:4px;border:1px solid #D8D8D8;}
+</style></head><body><h2>保留PDB，节省调试耗时</h2>
+<p align="right">发布时间：2014-12-31 16:06
+<br>分类名称：Debug_Crack</p><br>
+<p style="text-align: left;"   ><strong style="line-height: 42px; font-family: 宋体; font-size: 24px;"   >调试问题</strong></p><p><span style="font-family:宋体; font-size:12pt;"   >我们在解决Bug的时候经常遇到一些难重现的Bug。例如偶尔崩溃的问题，如果错失现场，也许花几天时间也难重现，最后不了了之。在发布后，可能在客户那里重新出现，这种Bug很让人懊恼。 
+</span></p><p><span style="font-family:宋体; font-size:12pt;"   >如果我们能掌握一些Release模式下的调试技巧，事情就会变的简单起来。将调试时间从几天降低到数小时内。一般在程序崩溃后，可以用一些工具（典型 的：WinDbg）将其dump文件获取出来，拿到我们开发机器上进行分析。通常获取的都是Release版本的dump文件，使用 VS2008，Windbg都能打开来分析。初次打开，你会发现崩溃的调用堆栈，但是堆栈都是一堆不可识别的符号，分析难度很大，如果我们保留了模块对应的PDB文件，使用调试软件加载，就能够定位到具体的崩溃位置。</span></p><p><span style="font-family:宋体; font-size:18pt;"   ><strong>PDB知识
+</strong></span></p><p><span style="font-family:宋体; font-size:12pt;"   >PDB文件是微软编译器产生出来的，专门为了调试使用的。微软的操作系统里大部分模块对应的PDB文件，都能通过微软的在线服务器下载得到：<br><a title="http://msdl.microsoft.com/download/symbols" target="_blank" rel="nofollow" href="http://msdl.microsoft.com/download/symbols"   ><span style="color:blue; text-decoration:underline;"   >http://msdl.microsoft.com/download/symbols</span></a>
+</span></p><p><span style="font-family:宋体; font-size:12pt;"   >PDB中包含什么东西都？
+</span></p><ul><li><span style="font-family:宋体; font-size:12pt;"   >Public, private, and static function addresses
+</span></li><li><span style="font-family:宋体; font-size:12pt;"   >Global variable names and addresses
+</span></li><li><span style="font-family:宋体; font-size:12pt;"   >Parameter and local variable names and offsets where to find them on the stack
+</span></li><li><span style="font-family:宋体; font-size:12pt;"   >Type data consisting of class, structure, and data definitions
+</span></li><li><span style="font-family:宋体; font-size:12pt;"   >Frame Pointer Omission (FPO) data, which is the key to native stack walking on x86
+</span></li><li><span style="font-family:宋体; font-size:12pt;"   >Source file names and their lines</span></li></ul><p><span style="font-family:宋体; font-size:13pt;"   ><strong>调试器如何配对正确的PDB？
+</strong></span></p><p><span style="font-family:宋体; font-size:12pt;"   >1. 模块的名字。例如一个模块叫XXX.DLL,调试器就会找XXX.PDB。 2. 如何判断此PDB是否和模块相对应？ 调试器在编译的时候，会给XXX.DLL模块中插入一个GUID，PDB文件中也有一个GUID。这两个GUID只有相同，调试器才会加载此PDB。<br>GUID这个数值和机器，时间等因素有关。即便我们没有更改一行代码，每次重新编译后的此值都会变化。所以，保存当时对应的PDB尤为重要。 
+</span></p><p><span style="font-family:宋体; font-size:12pt;"   >使用VS2008的DUMPBIN.exe工具，你就能够找到这个GUID： 
+</span></p><p><span style="font-family:宋体; font-size:12pt;"   >&gt;&gt;dumpbin.exe /HEADER HelloWorld.exe
+</span></p><p><span style="font-family:宋体; font-size:12pt;"   >Debug Directories 
+</span></p><p><span style="font-family:宋体; font-size:12pt;"   >Time Type Size RVA Pointer 
+</span></p><p><span style="font-family:宋体; font-size:12pt;"   >-------- ------ -------- -------- -------- 
+</span></p><p><span style="font-family:宋体; font-size:12pt;"   >4A03CA66 cv 4A 000025C4 7C4 Format: RSDS, 
+</span></p><p><span style="font-family:宋体; font-size:12pt;"   >  {4B46C704-B6DE-44B2-B8F5-A200A7E541B0}, 1, 
+</span></p><p><span style="font-family:宋体; font-size:12pt;"   >C:\junk\stuff\HelloWorld\obj\Debug\HelloWorld.pdb
+</span></p><p><span style="font-family:宋体; font-size:12pt;"   >Windbg工具包里附带了一个工具：symchk.exe.可以用来检测PDB和模块是否匹配： 
+</span></p><p><span style="font-family:宋体; font-size:12pt;"   >symchk RinjPlay.exe /s .\ 
+</span></p><p>
+&nbsp;</p><p><span style="font-family:宋体; font-size:12pt;"   >如果匹配：
+</span></p><p><span style="font-family:宋体; font-size:12pt;"   >SYMCHK: FAILED files = 0
+</span></p><p><span style="font-family:宋体; font-size:12pt;"   >SYMCHK: PASSED + IGNORED files = 1 
+</span></p><p>
+&nbsp;</p><p><span style="font-family:宋体; font-size:12pt;"   >如果不匹配：
+</span></p><p><span style="font-family:宋体; font-size:12pt;"   >SYMCHK: RinjPlay.exe        FAILED   - RinjPlay.pdb mismatched or not found
+</span></p><p><span style="font-family:宋体; font-size:12pt;"   >SYMCHK: FAILED files = 1
+</span></p><p><span style="font-family:宋体; font-size:12pt;"   >SYMCHK: PASSED + IGNORED files = 0</span></p><p><span style="font-family:宋体; font-size:13pt;"   ><strong>调试器如何查找PDB？
+</strong></span></p><p><span style="font-family:宋体; font-size:13pt;"   ><strong>注：不同编译器查找的顺序可能会不同
+</strong></span></p><ul><li><span style="font-family:宋体; font-size:12pt;"   >第一个地方是模块里面嵌入的绝对路径，如上面的例子：C:\junk\stuff\HelloWorld\obj\Debug\HelloWorld.pdb。（这个绝对路径可以在VS2008中去除掉，只保留pdb文件名）
+</span></li><li><span style="font-family:宋体; font-size:12pt;"   >第二个地方是模块被加载的目录
+</span></li><li><span style="font-family:宋体; font-size:12pt;"   >第三个地方就是调试的Symbol Path的配置路径，windbg下，一般有一个Cache目录和一个在线目录
+</span></li><li><span style="font-family:宋体; font-size:12pt;"   >如果都找不到，宣告失败。
+</span></li></ul><p><span style="font-family:宋体; font-size:12pt;"   >我们平常调试的时候，模块一般在哪儿，都将对应的pdb拷贝到相同目录下。</span></p><p><span style="font-family:宋体; font-size:13pt;"   ><strong>产生PDB文件后，模块也随之变大？
+</strong></span></p><p><span style="font-family:宋体; font-size:12pt;"   >VS2008编译Release版本，默认是不产生PDB文件的。如果要产生PDB文件，需要几个步骤： 
+</span></p><p><span style="font-family:宋体; font-size:12pt;"   >第一步，设置Debug Information Format为Program Database(/Zi)，也就是给cl.exe加/Zi参数。<br></span>
+<img title="保留PDB，节省调试耗时 - Howie - Dspace"   src="pic/img1.ph.126.net_T5Qy-Zr5sc60LzqcChC0JA==_6619276603002964285.jpg"   alt=""   ><span style="font-family:宋体; font-size:12pt;"   >
+</span></p><p><span style="font-family:宋体; font-size:12pt;"   >第二步，给link.exe 加/DEBUG参数：<br><img title="保留PDB，节省调试耗时 - Howie - Dspace"   src="pic/img0.ph.126.net_BYsDEzCNvNY14DIvWYeL4A==_6619194139630883733.jpg"   alt=""   >
+</span></p><p><span style="font-family:宋体; font-size:12pt;"   >经过这两个步骤后，PDB文件就产生出来了，但你会发现我们的模块也随之变大。这是因为我们打开了/DEBUG开关，Link.exe不会做任何优化，编译出的Obj中函数可能有300多个，而我们引用的可能只有5个，但/DEBUG开关打开，300的函数都会被连接进去。所以我们要告诉链接器不要 连接没有被引用的文件：<br>第三步，优化：<br></span>
+<img title="保留PDB，节省调试耗时 - Howie - Dspace"   src="pic/img0.ph.126.net_xLOtTHmwjS62_7DA3LNS4w==_6619194139630883736.jpg"   alt=""   ><span style="font-family:宋体; font-size:12pt;"   ><br>再次编译，模块大小又缩小回去了，甚至比一开始不产生PDB文件时还小。</span></p><p><span style="font-family:宋体; font-size:13pt;"   ><strong>更多内容
+</strong></span></p><p><span style="font-family:宋体; font-size:12pt;"   >关于PDB以及调试技巧的更多知识，参考这里：<br><a title="http://blog.163.com/hao_dsliu/blog/#m=0&amp;t=1&amp;c=fks_084071092095085074092080083095085085080070083094095067092" target="_blank" href="http://blog.163.com/hao_dsliu/blog/"   ><span style="color:blue; text-decoration:underline;"   >http://blog.163.com/hao_dsliu/blog/#m=0&amp;t=1&amp;c=fks_084071092095085074092080083095085085080070083094095067092</span></a>
+</span></p>
+</body></html>

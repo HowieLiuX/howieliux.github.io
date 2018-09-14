@@ -1,0 +1,95 @@
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=utf8"><title>163 blogs的博客：[转] AFX_MANAGE_STATE(AfxGetStaticModuleState())</title>
+<style type="text/css">
+a{color: #000000;text-decoration : none;font-size: 10pt;}
+a:hover {color: red;text-decoration : underline;}
+.replyBox{padding:4px;border:1px solid #D8D8D8;}
+</style></head><body><h2>[转] AFX_MANAGE_STATE(AfxGetStaticModuleState())</h2>
+<p align="right">发布时间：2010-2-11 12:16
+<br>分类名称：windows</p><br>
+<style> <!--    @font-face  {font-family:宋体;  panose-1:2 1 6 0 3 1 1 1 1 1;  mso-font-alt:simsun;  mso-font-charset:134;  mso-generic-font-family:auto;  mso-font-pitch:variable;  mso-font-signature:3 135135232 16 0 262145 0;} @font-face  {font-family:"cambria math";  panose-1:2 4 5 3 5 4 6 3 2 4;  mso-font-charset:0;  mso-generic-font-family:roman;  mso-font-pitch:variable;  mso-font-signature:-1610611985 1107304683 0 0 159 0;} @font-face  {font-family:calibri;  panose-1:2 15 5 2 2 2 4 3 2 4;  mso-font-charset:0;  mso-generic-font-family:swiss;  mso-font-pitch:variable;  mso-font-signature:-1610611985 1073750139 0 0 159 0;} @font-face  {font-family:"@宋体";  panose-1:2 1 6 0 3 1 1 1 1 1;  mso-font-charset:134;  mso-generic-font-family:auto;  mso-font-pitch:variable;  mso-font-signature:3 135135232 16 0 262145 0;}    p.msonormal, li.msonormal, div.msonormal  {mso-style-unhide:no;  mso-style-qformat:yes;  mso-style-parent:"";  margin:0cm;  margin-bottom:.0001pt;  text-align:justify;  text-justify:inter-ideograph;  mso-pagination:none;  font-size:10.5pt;  mso-bidi-font-size:11.0pt;  font-family:"calibri","sans-serif";  mso-fareast-font-family:宋体;  mso-bidi-font-family:"times new roman";  mso-font-kerning:1.0pt;} p  {mso-style-noshow:yes;  mso-style-priority:99;  mso-margin-top-alt:auto;  margin-right:0cm;  mso-margin-bottom-alt:auto;  margin-left:0cm;  mso-pagination:widow-orphan;  font-size:12.0pt;  font-family:宋体;  mso-bidi-font-family:宋体;} .msochpdefault  {mso-style-type:export-on<wbr>ly;  mso-default-props:yes;  font-size:10.0pt;  mso-ansi-font-size:10.0pt;  mso-bidi-font-size:10.0pt;  mso-ascii-font-family:calibri;  mso-fareast-font-family:宋体;  mso-hansi-font-family:calibri;  mso-font-kerning:0pt;}    @page  {mso-page-border-surround-header:no;  mso-page-border-surround-footer:no;} @page section1  {size:612.0pt 792.0pt;  margin:72.0pt 90.0pt 72.0pt 90.0pt;  mso-header-margin:36.0pt;  mso-footer-margin:36.0pt;  mso-paper-source:0;} div.section1  {page:section1;} --> -->-->-->--></style>
+
+<p><strong><span style="font-size: 14pt; font-family: 宋体;">先看一个例子：</span></strong><span style="font-size: 10.5pt;" lang="EN-US"></span></p>
+
+<p><span style="font-size: 10.5pt;" lang="EN-US">1</span><span style="font-size: 10.5pt;">、创建一个动态链接到<span lang="EN-US">MFC
+DLL</span>的规则<span lang="EN-US">DLL</span>，其内部包含一个对话框资源。指定该对话框<span lang="EN-US">ID</span>如下：<span lang="EN-US"><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+#define IDD_DLL_DIALOG <span style="color: red;">2000</span></span></span></p>
+
+<p><span style="font-size: 10.5pt;" lang="EN-US">2</span><span style="font-size: 10.5pt;">、创建一个基于对话框的<span lang="EN-US">mfc</span>应用程序，它包含两个对话框资源，<span lang="EN-US">IDD_UI_DIALOG</span>和<span lang="EN-US">IDD_EXE_DIALOG</span>。并将后者的<span lang="EN-US">ID</span>指定如下：<span lang="EN-US"><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+#define IDD_EXE_DIALOG <span style="color: red;">2000<br>
+</span></span>其中前者是这个应用程序的用户界面，单击上面的按钮，将弹出一个对话框。部分代码如下：<span lang="EN-US"><br>
+// in DLL<br>
+void CDLL::ShowDlg(void)<br>
+{<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; CDialog dlg(IDD_DLL_DIALOG); //</span>打开<span lang="EN-US">ID</span>为<span lang="EN-US">2000</span>的对话框<span lang="EN-US"><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; dlg.DoModal();<br>
+}<br>
+// in EXE<br>
+void CEXE::On<wbr>ButtonClick()<br>
+{<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ShowDlg();<br>
+}<br>
+<br>
+3</span>、单击按钮，弹出的不是期望的<span lang="EN-US">DLL</span>中的对话框<span lang="EN-US">IDD_DLL_DIALOG</span>，而是应用程序中的对话框<span lang="EN-US">IDD_EXE_DIALOG</span>。<span lang="EN-US"><br>
+<br>
+</span></span><strong><span style="font-size: 14pt; font-family: 宋体;">解释：</span></strong><span style="font-size: 10.5pt;" lang="EN-US"><br>
+1</span><span style="font-size: 10.5pt;">、应用程序进程本身及其调用的每个<span lang="EN-US">DLL</span>模块都具有一个全局唯一的<span lang="EN-US">HINSTANCE</span>句柄，它们代表了<span lang="EN-US">EXE</span>或<span lang="EN-US">DLL</span>模块在进程虚拟空间中的起始地址。（进程本身的模块句柄一般为<span lang="EN-US">0x400000</span>，而<span lang="EN-US">DLL</span>模块的缺省句柄为<span lang="EN-US">0x10000000</span>。如果程序同时加载了多个<span lang="EN-US">DLL</span>，则每个<span lang="EN-US">DLL</span>模块都会有不同的<span lang="EN-US">HINSTANCE</span>。应用程序在加载<span lang="EN-US">DLL</span>时对其进行了重定位）。<span lang="EN-US"> <br>
+2</span>、共享<span lang="EN-US">MFC DLL</span>（或<span lang="EN-US">MFC</span>扩展<span lang="EN-US">DLL</span>）的规则<span lang="EN-US">DLL</span>涉及到<span lang="EN-US">HINSTANCE</span>句柄问题，<u><span lang="EN-US">HINSTANCE</span>句柄对于加载资源特别重要</u>。<span lang="EN-US">EXE</span>和<span lang="EN-US">DLL</span>都有其自己的资源，而且这些<u>资源的<span lang="EN-US">ID</span>可能重复</u>，如果应用程序与规则<span lang="EN-US">DLL</span>共享<span lang="EN-US">MFC DLL</span>（或<span lang="EN-US">MFC</span>扩展<span lang="EN-US">DLL</span>），那么将总是<u>默认使用<span lang="EN-US">EXE</span>的资源</u>。<span lang="EN-US"><br>
+3</span>、因此应用程序需要通过资源模块的切换来找到正确的资源。如果应用程序需要来自于<span lang="EN-US">DLL</span>的资源，就应将资源模块句柄指定为<span lang="EN-US">DLL</span>的模块句柄；如果需要<span lang="EN-US">EXE</span>文件中包含的资源，就应将资源模块句柄指定为<span lang="EN-US">EXE</span>的模块句柄。<span lang="EN-US"><br>
+<br>
+</span></span><strong><span style="font-size: 14pt; font-family: 宋体;">解决办法：</span></strong><span style="font-size: 10.5pt;" lang="EN-US"><br>
+<br>
+1</span><span style="font-size: 10.5pt;">、在<span lang="EN-US">DLL</span>中改进：<span lang="EN-US"></span></span></p>
+
+<p><span style="font-size: 10.5pt;">方法<span lang="EN-US">1</span>。<span lang="EN-US"></span></span></p>
+
+<p><span style="font-size: 10.5pt;" lang="EN-US">// in
+DLL<br>
+void CDLL::ShowDlg(void)<br>
+{<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color: red;">AFX_MANAGE_STATE(AfxGetStaticModuleState());</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; CDialog dlg(IDD_DLL_DIALOG); //</span><span style="font-size: 10.5pt;">打开<span lang="EN-US">ID</span>为<span lang="EN-US">2000</span>的对话框<span lang="EN-US"><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; dlg.DoModal();<br>
+}</span></span></p>
+
+<p><span style="font-size: 10.5pt;">注：<span lang="EN-US">AFX_MANAGE_STATE(AfxGetStaticModuleState());</span>一定是作为接口函数的第一条语句。<span lang="EN-US"><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span>其功能是在栈上（这意味着其作用域是局部的）创建一个<span lang="EN-US">AFX_MODULE_STATE</span>类的实例，并将其指<span lang="EN-US">&nbsp;&nbsp; </span>针<span lang="EN-US">pModuleState</span>返回。<span lang="EN-US"><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; AFX_MODULE_STATE</span>类利用其构造函数和析构函数进行存储模块状态现场及恢复现场的工作。<span lang="EN-US"><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span>该宏用于将<span lang="EN-US">pModuleState</span>设置为当前的有效模块状态。当离开该宏的作用域时（也就离开了<span lang="EN-US">pModuleState</span>所指栈上对象的作用域），先前的模块状态将由类<span lang="EN-US">AFX_MODULE_STATE</span>的析构函数恢复。（即自动恢复）<span lang="EN-US"></span></span></p>
+
+<p><span style="font-size: 10.5pt;">方法<span lang="EN-US">2</span>。<span lang="EN-US"></span></span></p>
+
+<p><span style="font-size: 10.5pt;" lang="EN-US">// in
+DLL<br>
+void CDLL::ShowDlg(void)<br>
+{<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color: red;">HINSTANCE
+save_hInstance = AfxGetResourceHandle(); <br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; AfxSetResourceHandle(theApp.m_hInstance); <br>
+</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; CDialog dlg(IDD_DLL_DIALOG); //</span><span style="font-size: 10.5pt;">打开<span lang="EN-US">ID</span>为<span lang="EN-US">2000</span>的对话框<span lang="EN-US"><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; dlg.DoModal();<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span style="color: red;">AfxSetResourceHandle(save_hInstance);</span>&nbsp;&nbsp;&nbsp;&nbsp;
+<br>
+}</span></span></p>
+
+<p><span style="font-size: 10.5pt;">注：<span lang="EN-US">AfxGetResourceHandle</span>：获取当前资源模块句柄；<span lang="EN-US">AfxSetResourceHandle</span>：设置程序目前要使用的资源模块句柄。<span lang="EN-US"><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span>同方法<span lang="EN-US">1</span>比较，方法<span lang="EN-US">2</span>能够灵活地设置程序的资源模块句柄，而方法<span lang="EN-US">1</span>则只能在<span lang="EN-US">DLL</span>接口函数退出的时候才会恢复模块句柄。<span lang="EN-US"></span></span></p>
+
+<p><span style="font-size: 10.5pt;" lang="EN-US">2</span><span style="font-size: 10.5pt;">、在应用程序中改进：<span lang="EN-US"></span></span></p>
+
+<p><span style="font-size: 10.5pt;" lang="EN-US">// in
+EXE<br>
+void CEXE::On<wbr>ButtonClick()<br>
+{<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; HINSTANCE exe_hInstance =
+GetModuleHandle(NULL);<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; HINSTANCE dll_hInstance =
+GetModuleHandle("SharedDll.dll"); <br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; AfxSetResourceHandle(dll_hInstance); //</span><span style="font-size: 10.5pt;">切换状态<span lang="EN-US"> <br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ShowDlg();<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; AfxSetResourceHandle(exe_hInstance); //</span>恢复状态<span lang="EN-US"><br>
+}</span></span></p>
+
+<strong><span style="font-size: 14pt; font-family: 宋体;">注：</span></strong><span style="font-size: 10.5pt; font-family: 宋体;">使用状态切换的情况：当</span><span style="font-size: 10.5pt; font-family: &quot;Calibri&quot;,&quot;sans-serif&quot;;" lang="EN-US">DLL</span><span style="font-size: 10.5pt; font-family: 宋体;">导出函数包含</span><span style="font-size: 10.5pt; font-family: &quot;Calibri&quot;,&quot;sans-serif&quot;;" lang="EN-US">MFC</span><span style="font-size: 10.5pt; font-family: 宋体;">资源、类或者需要创建窗口时。</span>
+</body></html>

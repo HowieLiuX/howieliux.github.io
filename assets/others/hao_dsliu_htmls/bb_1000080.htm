@@ -1,0 +1,69 @@
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=utf8"><title>163 blogs的博客：[转]在内核调试会话中设置用户态断点</title>
+<style type="text/css">
+a{color: #000000;text-decoration : none;font-size: 10pt;}
+a:hover {color: red;text-decoration : underline;}
+.replyBox{padding:4px;border:1px solid #D8D8D8;}
+</style></head><body><h2>[转]在内核调试会话中设置用户态断点</h2>
+<p align="right">发布时间：2013-6-29 23:05
+<br>分类名称：Debug_Crack</p><br>
+<p>From：<a rel="nofollow" href="http://advdbg.org/blogs/advdbg_system/articles/1492.aspx"   >http://advdbg.org/blogs/advdbg_system/articles/1492.aspx</a>
+</p><p>使用内核调试会话也可以执行一些用户态调试任务，比如向位于用户态的模块设置断点。但这样做与使用用户态调试器有什么不同呢？我们就以向NTDLL.dll模块的ZwTerminateProcess函数（Stub）为例谈谈二者的区别。
+</p><p>区别一、在内核调试会话中设置这个断点的"难度"略大些。这是因为NTDLL不属于内核态的模块，所以内核会话通常不会加载这个模块（的符号），因此当执行bp命令时很可能被自动蜕化为bu命令。
+</p><p>0: kd&gt; bp ntdll!ZwTerminateProcess<br>Bp expression 'ntdll!ZwTerminateProcess' could not be resolved, adding deferred bp
+</p><p>恢复执行后，一般的操作也不会触发调试器来加载NTDLL模块和解决这个未决的断点。因此再中断下来，重新加载符号也可能没有用：
+</p><p>2: kd&gt; .reload<br>Connected to Windows Vista 6000 x86 compatible target, ptr64 FALSE<br>Loading Kernel Symbols<br>.............................................................................................................................<br>Loading User Symbols
+</p><p>Loading unloaded module list<br>........<br>2: kd&gt; bl<br>&nbsp;0 eu&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 0001 (0001) (ntdll!ZwTerminateProcess)
+</p><p>使用.reload命令强制加载这个模块也不那么容易：
+</p><p>0: kd&gt; .reload /s /f ntdll.dll
+</p><p>"ntdll.dll" was not found in the image list.<br>Debugger will attempt to load "ntdll.dll" at given base 00000000.
+</p><p>Please provide the full image name, including the extension (i.e. kernel32.dll)<br>for more reliable results.Base address and size overrides can be given as<br>.reload =,.<br>Unable to add module at 00000000
+</p><p>那么该如何设置呢？方法一需要以下几步：
+</p><p>1.A 使用!process命令显示当前进程：
+</p><p>kd&gt; !process<br>PROCESS 80af22a0&nbsp; SessionId: none&nbsp; Cid: 0000&nbsp;&nbsp;&nbsp; Peb: 00000000&nbsp; ParentCid: 0000<br>&nbsp;&nbsp;&nbsp; DirBase: 00039000&nbsp; ObjectTable: e1001e38&nbsp; HandleCount: 240.<br>&nbsp;&nbsp;&nbsp; Image: Idle
+</p><p>如果像上面这样是IDLE进程或者是System这些没有用户态的进程，那么就需要执行下面一步，否则跳到1.C。
+</p><p>1.B 使用!process 0 0命令列出所有进程，然后选一个普通的Windows进程，并切换到这个进程：
+</p><p>kd&gt; !process 0 0&nbsp;<br>**** NT ACTIVE PROCESS DUMP ****
+</p><p>...<br>PROCESS 82748330&nbsp; SessionId: 0&nbsp; Cid: 0110&nbsp;&nbsp;&nbsp; Peb: 7ffde000&nbsp; ParentCid: 059c<br>&nbsp;&nbsp;&nbsp; DirBase: 13076000&nbsp; ObjectTable: e1a55640&nbsp; HandleCount:&nbsp; 72.<br>&nbsp;&nbsp;&nbsp; Image: notepad.exe
+</p><p>kd&gt; .PROCESS 82748330<br>Implicit process is now 82748330<br>WARNING: .cache forcedecodeuser is not enabled
+</p><p>1.C 执行.reload或.reload /user重新加载符号：
+</p><p>kd&gt; .reload<br>Connected to Windows XP 2600 x86 compatible target, ptr64 FALSE<br>Loading Kernel Symbols<br>................................................................................................<br>Loading User Symbols<br>...............................<br>Loading unloaded module list<br>..............................<br>kd&gt; lm m ntdll<br>start&nbsp;&nbsp;&nbsp; end&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; module name<br>7c800000 7c8c3000&nbsp;&nbsp; ntdll&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; (pdb symbols)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; d:\symbols\ntdll.pdb\9A2A73EBE8194059A14361915257B0B01\ntdll.pdb
+</p><p>第二种看起来可能更费事的方法就是在系统服务的内核函数设置断点，断点命中后，执行栈回溯这样的命令，再执行.reload（加/user会省些时间，不是必须）。例如：
+</p><p>0: kd&gt; bp nt!NtTerminateProcess<br>0: kd&gt; g
+</p><p>Breakpoint 2 hit<br>nt!NtTerminateProcess:<br>81a1b043 8bff&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; mov&nbsp;&nbsp;&nbsp;&nbsp; edi,edi<br>0: kd&gt; kv<br>ChildEBP RetAddr&nbsp; Args to Child&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>9f272d54 8188c96a 00000000 00000000 0021f998 nt!NtTerminateProcess<br>9f272d54 77c20f34 00000000 00000000 0021f998 nt!KiFastCallEntry+0x12a (FPO: [0,3] TrapFrame @ 9f272d64)<br>WARNING: Frame IP not in any known module. Following frames may be wrong.<br>0021f998 7682d873 00000000 77e8f3b0 ffffffff 0x77c20f34<br>...
+</p><p>0: kd&gt; .reload<br>Connected to Windows Vista 6000 x86 compatible target, ptr64 FALSE<br>Loading Kernel Symbols<br>..............................................................................................................................<br>Loading User Symbols<br>..................
+</p><p>再执行kv：<br>0: kd&gt; kv<br>ChildEBP RetAddr&nbsp; Args to Child&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>9f272d54 8188c96a 00000000 00000000 0021f998 nt!NtTerminateProcess<br>9f272d54 77c20f34 00000000 00000000 0021f998 nt!KiFastCallEntry+0x12a (FPO: [0,3] TrapFrame @ 9f272d64)<br>0021f978 77c20580 77bfa35f 00000000 00000000 ntdll!KiFastSystemCallRet (FPO: [0,0,0])<br>0021f97c 77bfa35f 00000000 00000000 00af0e70 ntdll!NtTerminateProcess+0xc (FPO: [2,0,0])<br>0021f998 7682d872 00000000 77e8f3b0 ffffffff ntdll!RtlExitUserProcess+0x39 (FPO: [Non-Fpo])
+</p><p>此时可以确信内核调试会话已经加载NTDLL的符号了，再显示断点：
+</p><p>0: kd&gt; bl<br>&nbsp;0 e 77c20574&nbsp;&nbsp;&nbsp;&nbsp; 0001 (0001) ntdll!NtTerminateProcess<br>&nbsp;2 e 81a1b043&nbsp;&nbsp;&nbsp;&nbsp; 0001 (0001) nt!NtTerminateProcess
+</p><p>这个显示表明内核调试会话已经落实了这个用户态的断点。
+</p><p>如果是在加载NTDLL模块后再执行bp命令，恢复执行后，KD会有一个提示告诉我们它成功的向断点位置写入了INT 3。
+</p><p>0: kd&gt; bp ntdll!ZwTerminateProcess<br>0: kd&gt; bl<br>&nbsp;0 e 77c20574&nbsp;&nbsp;0001 (0001) ntdll!NtTerminateProcess
+</p><p>0: kd&gt; g<br>KD: write to 77c20574&nbsp;&nbsp;ok
+</p><p>相对而言，如果是在用户态调试会话中，因为NTDLL会被映射到所有用户态进程中，而且ZwTerminateProcess是导出的函数，所以bp ntdll!ZwTerminateProcess会非常顺利的执行。
+</p><p>区别二、断点的作用范围不同，在内核调试会话中设置的ntdll!NtTerminateProcess断点会影响所有进程（可能有特例），而在用户态调试中对这个位置设置的断点只对当前进程有效。举例来说，刚才在内核调试会话中设置bp断点时的当前进程是notepad，但是当我们关闭计算器进程时这个断点也会命中。甚至当我们新启动一个WinMine程序，然后关闭它时，断点也会命中。
+</p><p>相对而言，如果是在调试notepad进程的用户态调试会话中对ntdll!NtTerminateProcess设置一个断点，那么这绝不会影响其它进程。
+</p><p>那么为什么有这个差异呢？
+</p><p>首先解释一下，为什么在内核调试会话中设置的断点会影响所有进程。还是通过试验来说明，我们先想办法观察到我们设置的断点所对应的INT 3指令。当KD落实我们的断点后，将目标再中断到调试器，这时无论是直接观察线性地址还是物理地址，都看不到INT 3：
+</p><p>1: kd&gt; dd 77c20574<br>77c20574&nbsp; 000152b8 0300ba00 12ff7ffe 900008c2<br>77c20584&nbsp; 000153b8 0300ba00 12ff7ffe 900008c2<br>77c20594&nbsp; 000154b8 0300ba00 12ff7ffe 00498dc3<br>77c205a4&nbsp; 000155b8 0300ba00 12ff7ffe 00498dc3<br>77c205b4&nbsp; 000156b8 0300ba00 12ff7ffe 00498dc3<br>77c205c4&nbsp; 000157b8 0300ba00 12ff7ffe 900010c2<br>77c205d4&nbsp; 000158b8 0300ba00 12ff7ffe 900018c2<br>77c205e4&nbsp; 000159b8 0300ba00 12ff7ffe 900010c2
+</p><p>0: kd&gt; !pte 77c20574&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; VA 77c20574<br>PDE at 00000000C0601DF0&nbsp;&nbsp;&nbsp; PTE at 00000000C03BE100<br>contains 000000001C9AC867&nbsp; contains 000000001DDDD025<br>pfn 1c9ac ---DA--UWEV&nbsp;&nbsp;&nbsp; pfn 1dddd ----A--UREV
+</p><p>0: kd&gt; !dd 1dddd574&nbsp;<br>#1dddd574 000152b8 0300ba00 12ff7ffe 900008c2<br>#1dddd584 000153b8 0300ba00 12ff7ffe 900008c2<br>#1dddd594 000154b8 0300ba00 12ff7ffe 00498dc3<br>#1dddd5a4 000155b8 0300ba00 12ff7ffe 00498dc3<br>#1dddd5b4 000156b8 0300ba00 12ff7ffe 00498dc3<br>#1dddd5c4 000157b8 0300ba00 12ff7ffe 900010c2<br>#1dddd5d4 000158b8 0300ba00 12ff7ffe 900018c2<br>#1dddd5e4 000159b8 0300ba00 12ff7ffe 900010c2
+</p><p>这是因为调试器在将目标中断到调试器之前会恢复已经设置的断点，按Ctrl+Alt+D启用WinDBG与KD的通信过程后就可以看到这样的信息：
+</p><p>DbgKdRestoreBreakPoint(1) returns 00000000
+</p><p>当恢复执行时，WinDBG会重新把断点写入：
+</p><p>DbgKdWriteBreakPoint(77c20574) returns 00000000, 1
+</p><p>那么如何观察到写入的INT 3呢？一种很惬意的方法就是使用ITP这样的硬件调试器，用了ITP，对付这样的任务真是手到擒来（图1）。
+</p><p><img title="[转]在内核调试会话中设置用户态断点 - Howie - Dspace"   src="pic/img0.ph.126.net_O1csT59oyv3MJBxSy2AlNA==_3002493576672790329.jpg"   alt=""   />
+</p><p>图1 使用硬件调试器观察断点指令（0xCC）
+</p><p>因为NTDLL是映射到所有进程中的，所以每个进程执行NtTerminateProcess函数时都会撞见这个0xCC，于是乎这个断点对所有进程都起作用也就在情理之中了。
+</p><p>下面再说说另一种情况，也就是在用户态调试器中对ntdll!NtTerminateProcess设置断点，难道这时就没有把0xCC写在大家都会"撞见"的地方么？的确如此。
+</p><p>我们在内核调试会话中使用bc *命令清除所有断点，并恢复执行一次，而且通过ITP观察确保刚才的0xcc已经不在。然后在目标系统中启动系统中自带的NTSD来调试计算器程序，并使用bp ntdll!NtTerminateProcess设置一个断点。恢复执行一次，以便让调试器写入这个断点。然后退出计算器程序，这时计算器程序会中断到NTSD，NTSD中不做分析，直接用g命令恢复执行，这下，我们前面设置的nt!NtTerminateProcess断点会命中，也就是中断到内核调试器中。
+</p><p>在内核调试器中，观察nt!NtTerminateProcess所对应的线性地址：
+</p><p>1: kd&gt; dd 77c20574<br>77c20574&nbsp; 000152cc&nbsp;0300ba00 12ff7ffe 900008c2<br>77c20584&nbsp; 000153b8 0300ba00 12ff7ffe 900008c2<br>77c20594&nbsp; 000154b8 0300ba00 12ff7ffe 00498dc3<br>77c205a4&nbsp; 000155b8 0300ba00 12ff7ffe 00498dc3<br>77c205b4&nbsp; 000156b8 0300ba00 12ff7ffe 00498dc3<br>77c205c4&nbsp; 000157b8 0300ba00 12ff7ffe 900010c2<br>77c205d4&nbsp; 000158b8 0300ba00 12ff7ffe 900018c2<br>77c205e4&nbsp; 000159b8 0300ba00 12ff7ffe 900010c2
+</p><p>睁大眼睛看那个0xCC，对的，这里的确有0xCC。因为内核断点已经取消了，这一定是用户态调试器写入的。
+</p><p>接下来的问题是，既然这里有0xCC，那么为什么不影响其它进程呢？注意这个线性地址与前面的一模一样。
+</p><p>其中的奥妙在于这个线性地址已经不再是前面那个物理地址了:
+</p><p>1: kd&gt; !pte 77c20574&nbsp;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; VA 77c20574<br>PDE at 00000000C0601DF0&nbsp;&nbsp;&nbsp; PTE at 00000000C03BE100<br>contains 00000000012E0867&nbsp; contains 00000000049BD025<br>pfn 12e0 ---DA--UWEV&nbsp;&nbsp;&nbsp; pfn 49bd ----A--UREV
+</p><p>虽然还同是一个线性地址，但是它现在对应的物理地址变成了49bd574。观察这个物理地址，其内容与刚才使用线性地址的得到的结果是一样的：
+</p><p>1: kd&gt; !dd 49bd574&nbsp;<br># 49bd574 000152cc 0300ba00 12ff7ffe 900008c2<br># 49bd584 000153b8 0300ba00 12ff7ffe 900008c2<br># 49bd594 000154b8 0300ba00 12ff7ffe 00498dc3<br># 49bd5a4 000155b8 0300ba00 12ff7ffe 00498dc3<br># 49bd5b4 000156b8 0300ba00 12ff7ffe 00498dc3<br># 49bd5c4 000157b8 0300ba00 12ff7ffe 900010c2<br># 49bd5d4 000158b8 0300ba00 12ff7ffe 900018c2<br># 49bd5e4 000159b8 0300ba00 12ff7ffe 900010c2
+</p><p>而此时，物理地址1dddd574那里根本没有0xCC。
+</p><p>说到这里，谜团基本揭开了。事实上，&nbsp;对于一个普通的进程，系统会把NTDLL的代码映射给它，如果这个进程始终很普通，那么它便会永远使用这份映射过来的代码。但是当它要修改代码时，系统会执行所谓的<a rel="nofollow" href="http://en.wikipedia.org/wiki/Copy-on-write"   >Copy on Write</a>动作，为其复制一份，让它来写。结合我们的情况，当在用户态调试会话中向NTDLL中设置断点时，系统为其复制了一份代码，让它去写，因此它写入的断点只有它自己"撞的到"，不会影响其它进程。但是当在内核会话中写入断点时，因为是内核调试引擎执行的写动作，所以没有触发Copy on Write，因此KD写入的断点写在了公共的代码上，会影响到使用这个公共代码的所有进程。</p>
+</body></html>

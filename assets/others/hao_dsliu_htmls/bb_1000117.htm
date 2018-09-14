@@ -1,0 +1,10 @@
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=utf8"><title>163 blogs的博客：C++遍历中删除std::map元素</title>
+<style type="text/css">
+a{color: #000000;text-decoration : none;font-size: 10pt;}
+a:hover {color: red;text-decoration : underline;}
+.replyBox{padding:4px;border:1px solid #D8D8D8;}
+</style></head><body><h2>C++遍历中删除std::map元素</h2>
+<p align="right">发布时间：2012-9-11 13:33
+<br>分类名称：STL</p><br>
+<p>在std::list中删除一个元素非常简单，直接使用erase方法即可，代码如下： </p><p>for(iter&nbsp;=&nbsp;list.begin();&nbsp;iter&nbsp;!=&nbsp;list.end();)&nbsp;{<br>if&nbsp;(shouldDelete(*iter))<br>    iter&nbsp;=&nbsp;list.erase(iter);<br>else<br>    ++iter;<br>} </p><p>或者更简单点 </p><p>list.erase(std::remove_, list.end(), shouldDelete), list_end()); </p><p>然而根据STL std::map中的定义void erase(iterator pos)，此erase并不返回下一个元素的迭代器，因此不能采用std::list的方法 </p><p>The truth is that 'erase' in associative containers doesn't invalidate any iterators except those that point to elements being erased (that's also true for 'sid::list'). For this reason, you don't really need 'map::erase' to return an iterator. Just do this </p><p>for(iter&nbsp;=&nbsp;map.begin();&nbsp;iter&nbsp;!=&nbsp;map.end();)&nbsp;{<br>if&nbsp;(shouldDelete(*iter))<br>    map.erase(iter++);<br>else<br>    ++iter;<br>} </p><p>当然此方法同样也适合于std::list等 </p>
+</body></html>

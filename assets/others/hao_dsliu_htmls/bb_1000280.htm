@@ -1,0 +1,206 @@
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=utf8"><title>163 blogs的博客：How to Provide Your Own DllMain in an MFC Regular DLL(如何在规则DLL中使用DllMain）</title>
+<style type="text/css">
+a{color: #000000;text-decoration : none;font-size: 10pt;}
+a:hover {color: red;text-decoration : underline;}
+.replyBox{padding:4px;border:1px solid #D8D8D8;}
+</style></head><body><h2>How to Provide Your Own DllMain in an MFC Regular DLL(如何在规则DLL中使用DllMain）</h2>
+<p align="right">发布时间：2010-6-29 18:00
+<br>分类名称：windows</p><br>
+<p class="MsoNormal" align="left" style="margin-bottom:7.5pt;text-align:left;
+mso-pagination:widow-orphan;mso-outline-level:1;"><font face="Verdana, sans-serif" size="5"><span style="font-size: 17px; line-height: 27px;"><b><p class="MsoNormal" align="left" style="margin-bottom:7.5pt;text-align:left;
+mso-pagination:widow-orphan;mso-outline-level:1;"><span><span lang="EN-US" style="font-size:9.0pt;mso-bidi-font-size:8.5pt;font-family:"Verdana","sans-serif";
+color:black;"><span style="font-weight: normal;">By design, MFC Regular DLLs have a default DllMain function
+provided automatically by MFC. Regular DLLs should not provide their own
+DllMain. Any initialization which is necessary when the DLL is loaded should be
+done in the InitInstance member function of the one CWinApp-derived class in
+the Regular DLL. Deinitialization and termination code should go in the
+ExitInstance member function.</span></span></span><span><span lang="EN-US" style="font-size:9.0pt;mso-bidi-font-size:8.5pt;font-family:"Verdana","sans-serif";
+color:black;"><span style="font-weight: normal;">&nbsp;</span></span></span></p><p><span lang="EN-US" style="font-size:9.0pt;
+mso-bidi-font-size:8.5pt;font-family:"Verdana","sans-serif";color:black;"><span style="font-weight: normal;"><br></span>
+
+<span><span style="font-weight: normal;">However, InitInstance is only called by MFC's
+DllMain when a process attaches (DLL_PROCESS_ATTACH) to the DLL and
+ExitInstance is called only when a process detaches (DLL_PROCESS_DETACH) from
+the DLL. If it is necessary to handle thread attachment to and detachment from
+(DLL_THREAD_ATTACH and DLL_THREAD_DETACH) in MFC Regular DLL, the Regular DLL
+will need to provide its own DllMain. This article explains how to do it.</span><span style="font-weight: normal;"></span></span></span></p>
+
+<p><span><span lang="EN-US" style="font-size:9.0pt;mso-bidi-font-size:8.5pt;font-family:"Verdana","sans-serif";
+color:black;"><span style="font-weight: normal;">&nbsp;</span></span></span></p>
+
+<p class="MsoNormal" align="left" style="text-align:left;line-height:12.0pt;
+mso-pagination:widow-orphan;"><span lang="EN-US" style="font-size:9.0pt;
+mso-bidi-font-size:8.5pt;font-family:"Verdana","sans-serif";mso-bidi-font-family:
+宋体;color:black;mso-font-kerning:0pt;"><span style="font-weight: normal;">When a Regular DLL is created, the MFC
+source forcibly links in the code for the source file
+\Msdev\Mfc\Src\Dllmodul.cpp. Dllmodul.cpp contains most of the code added to a
+Regular DLL to support MFC in that DLL. One of the most important functions in
+Dllmodul.cpp is the DllMain function.&nbsp;<br><br>
+To add code to MFC's DllMain, copy the \Msdev\Mfc\Src\Dllmodul.cpp source file
+to your project directory, and include the copy in your project. This copy of
+Dllmodul.cpp will be compiled and linked into your DLL instead of the
+Dllmodul.cpp in the Mfc\Src directory, so changes to the DllMain in it will
+show up in the final DLL.&nbsp;<br><br>
+The primary caveat is that this is not a recommended solution and should only
+be used when absolutely necessary. Any changes to the code in Dllmodul.cpp will
+undoubtedly have unpredictable results. Add code only, do not remove or modify
+the existing code.&nbsp;<br><br>
+For regular DLLs that use MFC in the Shared Lib, the module state should be set
+at the beginning of any added code and restored before returning from DllMain.
+Refer to the sample code in this article for an example of a DllMain that
+handles the DLL_THREAD_ATTACH and DLL_THREAD_DETACH notifications and properly
+switches the module state as necessary.&nbsp;<br><br>
+Additional care must be taken when relying on DllMain being called with
+DLL_THREAD_ATTACH and DLL_THREAD_DETACH because of the following
+conditions:&nbsp;<br><br><br></span>
+
+
+
+
+
+
+<span style="font-weight: normal;"></span></span></p>
+
+<ul type="disc">
+ <li class="MsoNormal" style="mso-margin-top-alt:auto;mso-margin-bottom-alt:auto;
+     text-align:left;line-height:12.0pt;mso-pagination:widow-orphan;mso-list:
+     l0 level1 lfo1;tab-stops:list 36.0pt;"><span lang="EN-US" style="font-size:
+     9.0pt;mso-bidi-font-size:8.5pt;font-family:"Verdana","sans-serif";
+     mso-bidi-font-family:宋体;color:black;mso-font-kerning:0pt;"><span style="font-weight: normal;">When a thread is
+     created in a process, the system calls DllMain with a value of
+     DLL_THREAD_ATTACH for each of the DLLs mapped into into the process.
+     However, if a process has several threads running in it when a new DLL is
+     mapped into it, DllMain isn't called with a DLL_THREAD_ATTACH value for
+     any of the existing threads.</span></span><span lang="EN-US" style="font-size:14.0pt;
+     mso-bidi-font-size:12.0pt;font-family:宋体;mso-bidi-font-family:宋体;
+     mso-font-kerning:0pt;"><span style="font-weight: normal;"></span></span></li>
+ <li class="MsoNormal" style="color:black;mso-margin-top-alt:auto;mso-margin-bottom-alt:
+     auto;text-align:left;line-height:12.0pt;mso-pagination:widow-orphan;
+     mso-list:l0 level1 lfo1;tab-stops:list 36.0pt;"><span lang="EN-US" style="font-size:9.0pt;mso-bidi-font-size:8.5pt;font-family:"Verdana","sans-serif";
+     mso-bidi-font-family:宋体;mso-font-kerning:0pt;"><span style="font-weight: normal;">DllMain is not called with a
+     value DLL_THREAD_ATTACH for the process's primary thread.</span><span style="font-weight: normal;"></span></span></li>
+ <li class="MsoNormal" style="color:black;mso-margin-top-alt:auto;mso-margin-bottom-alt:
+     auto;text-align:left;line-height:12.0pt;mso-pagination:widow-orphan;
+     mso-list:l0 level1 lfo1;tab-stops:list 36.0pt;"><span lang="EN-US" style="font-size:9.0pt;mso-bidi-font-size:8.5pt;font-family:"Verdana","sans-serif";
+     mso-bidi-font-family:宋体;mso-font-kerning:0pt;"><span style="font-weight: normal;">On thread termination (by a
+     call to ExitThread), DllMain is called with a value of DLL_THREAD_DETACH
+     for each of the DLLs. DllMain is not called with DLL_THREAD_DETACH for any
+     thread unless a thread terminates by calling ExitThread.</span><span style="font-weight: normal;"></span></span></li>
+ <li class="MsoNormal" style="color:black;mso-margin-top-alt:auto;mso-margin-bottom-alt:
+     auto;text-align:left;line-height:12.0pt;mso-pagination:widow-orphan;
+     mso-list:l0 level1 lfo1;tab-stops:list 36.0pt;"><span lang="EN-US" style="font-size:9.0pt;mso-bidi-font-size:8.5pt;font-family:"Verdana","sans-serif";
+     mso-bidi-font-family:宋体;mso-font-kerning:0pt;"><span style="font-weight: normal;">If a thread terminates due
+     to a call to TerminateThread, DllMain isn't called with a value
+     DLL_THREAD_DETACH.</span><span style="font-weight: normal;"></span></span></li>
+ <li class="MsoNormal" style="color:black;mso-margin-top-alt:auto;mso-margin-bottom-alt:
+     auto;text-align:left;line-height:12.0pt;mso-pagination:widow-orphan;
+     mso-list:l0 level1 lfo1;tab-stops:list 36.0pt;"><span lang="EN-US" style="font-size:9.0pt;mso-bidi-font-size:8.5pt;font-family:"Verdana","sans-serif";
+     mso-bidi-font-family:宋体;mso-font-kerning:0pt;"><span style="font-weight: normal;">It is possible for a thread
+     in a process to call LoadLibrary to load a DLL causing a call to DllMain
+     with DLL_PROCESS_ATTACH, and then on thread termination, cause a call to
+     dllMain with DLL_THREAD_DETACH without ever calling DLL_THREAD_ATTACH. It
+     is therefore best that the thread that calls LoadLibrary also call FreeLibrary.</span><span style="font-weight: normal;"></span></span></li>
+</ul>
+
+<p><span lang="EN-US" style="font-size:9.0pt;mso-bidi-font-size:
+8.5pt;font-family:"Verdana","sans-serif";mso-bidi-font-family:宋体;color:black;
+mso-font-kerning:0pt;"><span style="font-weight: normal;">NOTE: MFC CWnd objects, CDC objects, CMenu objects, GDI
+objects, and CImageList objects are restricted to a per-thread, per-module
+basis. In other words, MFC objects created in one module or thread cannot be
+passed to and/or used in a different module or thread. This has special
+relevance for any code added to handle DLL_THREAD_ATTACH or DLL_THREAD_DETACH
+in DllMain because DllMain is called for these reasons with different threads.
+CWnd objects, for instance, created in DllMain during DLL_PROCESS_ATTACH or in
+InitInstance will not be valid during DLL_THREAD_ATTACH.</span></span></p>
+
+<p><span lang="EN-US" style="font-size:8.5pt;font-family:"Verdana","sans-serif";
+mso-bidi-font-family:宋体;color:black;mso-font-kerning:0pt;">&nbsp;</span></p>
+
+<h3 style="margin-top:11.25pt;margin-right:0cm;margin-bottom:3.75pt;margin-left:
+0cm;line-height:12.0pt;"><span lang="EN-US" style="font-size:10.0pt;font-family:
+"Verdana","sans-serif";color:black;">Sample Code</span></h3>
+
+<p class="MsoNormal" align="left" style="text-align:left;line-height:12.0pt;
+mso-pagination:widow-orphan;tab-stops:45.8pt 91.6pt 137.4pt 183.2pt 229.0pt 274.8pt 320.6pt 366.4pt 412.2pt 458.0pt 503.8pt 549.6pt 595.4pt 641.2pt 687.0pt 732.8pt;"><font color="#333333" face="Consolas, sans-serif" size="3"><span style="font-size: 13px; line-height: 20px;"><span lang="EN-US" style="font-size:10.0pt;mso-bidi-font-size:
+12.0pt;font-family:Consolas;mso-fareast-font-family:宋体;color:#333333;
+mso-ansi-language:EN-US;mso-fareast-language:ZH-CN;mso-bidi-language:AR-SA;">////////////////////////////////////////////////////////////////////
+<br>
+// export DllMain for the DLL<br>
+// Add code in the specified sections only.<br>
+// Remove code at your own risk.<br>
+extern "C"<br>
+BOOL WINAPI DllMain(HINSTANCE hInstance, DWORD dwReason, LPVOID<br>
+/*lpReserved*/)<br>
+{<br>
+<span style="mso-spacerun:yes;">&nbsp;&nbsp; </span>if (dwReason == DLL_PROCESS_ATTACH)<br>
+<span style="mso-spacerun:yes;">&nbsp;&nbsp; </span>{<br>
+// ... Code abbreviated from DLLMODUL.CPP<br>
+<span style="mso-spacerun:yes;">&nbsp;&nbsp; </span>}<br>
+<span style="mso-spacerun:yes;">&nbsp;&nbsp; </span>else if (dwReason ==
+DLL_PROCESS_DETACH)<br>
+<span style="mso-spacerun:yes;">&nbsp;&nbsp; </span>{<br>
+// ... Code abbreviated from DLLMODUL.CPP<br>
+<span style="mso-spacerun:yes;">&nbsp;&nbsp; </span>}<br>
+// NEW CODE ADDED HERE<br>
+// -------------------<br>
+<span style="mso-spacerun:yes;">&nbsp;&nbsp; </span>else if (dwReason ==
+DLL_THREAD_ATTACH)<br>
+<span style="mso-spacerun:yes;">&nbsp;&nbsp; </span>{<br>
+#ifdef _AFXDLL<br>
+<span style="mso-spacerun:yes;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span>// set module state<br>
+<span style="mso-spacerun:yes;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span>ASSERT(AfxGetThreadState()-&gt;m_pPrevModuleState == NULL);<br>
+<span style="mso-spacerun:yes;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span>AfxGetThreadState()-&gt;m_pPrevModuleState
+=<br>
+<span style="mso-spacerun:yes;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span>AfxSetModuleState(AfxGetStaticModuleState());<br>
+#endif<br>
+<span style="mso-spacerun:yes;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span>// ADD DLL_THREAD_ATTACH CODE HERE<br>
+<span style="mso-spacerun:yes;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span>// Remember that this won't
+necessarily be called for<br>
+<span style="mso-spacerun:yes;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span>// every thread in the process into
+which this DLL is mapped<br>
+<span style="mso-spacerun:yes;">&nbsp;&nbsp;&nbsp;&nbsp; </span><span style="mso-spacerun:yes;">&nbsp;</span>// Threads created by the process BEFORE the
+DLL<br>
+<span style="mso-spacerun:yes;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span>// was loaded will not call into
+DLL_THREAD_ATTACH.<br>
+<br>
+#ifdef _AFXDLL<br>
+<span style="mso-spacerun:yes;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span>// restore previously-saved module
+state<br>
+<span style="mso-spacerun:yes;">&nbsp;&nbsp;&nbsp;&nbsp;
+</span>VERIFY(AfxSetModuleState(AfxGetThreadState()-&gt;m_pPrevModuleState)<br>
+<span style="mso-spacerun:yes;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span>==
+AfxGetStaticModuleState());<br>
+<span style="mso-spacerun:yes;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span>DEBUG_ONLY(AfxGetThreadState()-&gt;m_pPrevModuleState = NULL);<br>
+#endif<br>
+<br>
+<span style="mso-spacerun:yes;">&nbsp;&nbsp; </span>}<br>
+<span style="mso-spacerun:yes;">&nbsp;&nbsp; </span>else if (dwReason ==DLL_THREAD_DETACH)<br>
+<span style="mso-spacerun:yes;">&nbsp;&nbsp; </span>{<br>
+#ifdef _AFXDLL<br>
+<span style="mso-spacerun:yes;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span>// set module state<br>
+<span style="mso-spacerun:yes;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span>ASSERT(AfxGetThreadState()-&gt;m_pPrevModuleState == NULL);<br>
+<span style="mso-spacerun:yes;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span>AfxGetThreadState()-&gt;m_pPrevModuleState =<br>
+<span style="mso-spacerun:yes;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span>AfxSetModuleState(AfxGetStaticModuleState());<br>
+#endif<br>
+<span style="mso-spacerun:yes;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span>// ADD DLL_THREAD_DETACH CODE HERE<br>
+<br>
+#ifdef _AFXDLL<br>
+<span style="mso-spacerun:yes;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span>// restore previously-saved module
+state<br>
+<span style="mso-spacerun:yes;">&nbsp;&nbsp; </span>VERIFY(AfxSetModuleState(AfxGetThreadState()-&gt;m_pPrevModuleState)<br>
+<span style="mso-spacerun:yes;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span>== AfxGetStaticModuleState());<br>
+<span style="mso-spacerun:yes;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span>DEBUG_ONLY(AfxGetThreadState()-&gt;m_pPrevModuleState = NULL);<br>
+#endif<br>
+<span style="mso-spacerun:yes;">&nbsp;&nbsp; </span>}<br>
+<br>
+<span style="mso-spacerun:yes;">&nbsp;&nbsp; </span>return TRUE;<br>
+}<br style="mso-special-character:line-break;">
+<br style="mso-special-character:line-break;"></span></span></font></p></b></span></font></p>
+</body></html>

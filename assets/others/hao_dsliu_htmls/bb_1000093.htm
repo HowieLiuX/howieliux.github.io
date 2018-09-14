@@ -1,0 +1,626 @@
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=utf8"><title>163 blogs的博客：[原] COM笔记 - 原理（基础）</title>
+<style type="text/css">
+a{color: #000000;text-decoration : none;font-size: 10pt;}
+a:hover {color: red;text-decoration : underline;}
+.replyBox{padding:4px;border:1px solid #D8D8D8;}
+</style></head><body><h2>[原] COM笔记 - 原理（基础）</h2>
+<p align="right">发布时间：2012-12-14 17:24
+<br>分类名称：COM</p><br>
+
+<P><STRONG>COM对象和C++对象的区别</STRONG> </P>
+<P>一个是面向二进制级别的, 一个是面向源码级别的 </P>
+<P>一个是平台无关的, 一个是平台相关的. </P>
+<P><STRONG>1. 封装性 </STRONG></P>
+<P>COM对象完全被封装. COM对象和客户程序可能在不同的模块或不同的进程或不同的机器中. C++对象则往往在同一模块或同一进程中, 使用者有可能直接访问内部成员. </P>
+<P><STRONG>2. 可重用性 <BR></STRONG>COM表现在包容和聚合, COM的多态通过接口体现, 面向二进制级。<STRONG><BR></STRONG>C++多表现在继承和多态，源码级。 </P>
+<P>&nbsp;</P>
+<P><STRONG>COM 对象</STRONG> </P>
+<P>客户与COM组件程序交互的实体是COM对象，它并不关心组件模块的名称和位置，但它客户须知道自己在和哪儿个COM对象进行交互。 </P>
+<P>COM对象包括属性（also called 状态）和方法（also called 操作）。状态反映了对象的存在，也是区别于其它对象的要素；而对象提供的方法就是对象提供给外界的接口。 </P>
+<P>C++实现COM对象，很容易想到可以用class类来定义COM对象。所以，每个实例(C++)对应一个COM对象。如果使用C来实现，那对象就变成一个逻辑概念。（相对于客户来说，逻辑上说是COM对象，其实内COM部并没有自己认为的对象存在）。 </P>
+<P>一个COM中有很多对象存在，如何来寻找这些对象？使用GUID标识符号。为了和其它标识符相区分，将GUID命名为CLSID，在C++中，其实就是一个typedef。为什么使用GUID呢？很简单，在庞大的系统中，可能有人使用的标识和你使用的一样，使用GUID，基本上不可能一样。（一样的概率极其的低）。 </P>
+<P>&nbsp;</P>
+<P><STRONG>COM 接口</STRONG> </P>
+<P>一个COM组件也有很多接口，区分这些接口同样使用GUID，typedef为IID </P>
+<P>客户 &lt;====&gt; 接口 &lt;=====&gt; 对象 </P>
+<P>客户 ===&gt; 接口指针 ==&gt; pVtable ==&gt; vtable[pFunc1, pFunc2, pFunc3...] ==&gt; [函数实现]<BR></P>
+<P>无论什么语言，只要能实现上面的这种内存结构（二进制级别），就可以定义接口。 </P>
+<P>定义接口需要注意几点： </P>
+<OL>
+<LI>
+<DIV style="TEXT-ALIGN: justify;"   >每个接口的成员函数第一个参数总是接口本身的指针。（this指针） </DIV>
+<P>如果是C++的class实现，这个指针默认是隐藏的，所以无需实现。 </P>
+</LI><LI>
+<DIV style="TEXT-ALIGN: justify;"   >字符串必须是Unicode（国际化）。 </DIV>
+</LI><LI>
+<DIV style="TEXT-ALIGN: justify;"   >调用约定需要显示声明为_stdcall. </DIV></LI></OL>
+<P>COM接口的描述不依赖任何一种编程语言，它使用IDL（Interface description language）语言来描述（其实还是使用了一种语言，不过这种语言只是用来描述，不是用来编程的）。 </P>
+<P>&nbsp;</P>
+<P><STRONG>接口特点 </STRONG></P>
+<OL>
+<LI>
+<DIV style="TEXT-ALIGN: justify;"   ><STRONG>二进制特性 </STRONG>支持COM的语言都能调用 </DIV>
+</LI><LI>
+<DIV style="TEXT-ALIGN: justify;"   ><STRONG>接口不变性 </STRONG>接口需要稳固，总变不是件好事情<STRONG> </STRONG></DIV>
+</LI><LI>
+<DIV style="TEXT-ALIGN: justify;"   ><STRONG>继承性（扩展性）</STRONG>一些接口最后有"2"，"EX"，表明它是一个接口继承。<STRONG> </STRONG></DIV>
+</LI><LI>
+<DIV style="TEXT-ALIGN: justify;"   ><STRONG>多态性 </STRONG></DIV></LI></OL>
+<P>&nbsp;</P>
+<P><STRONG>"接口之父" - IUnknown</STRONG> </P>
+<P>平时，在c++定义一个全部都是虚函数的接口类，目的就是为了让继承它的子类去实现它定义的"规范"。你要不实现，编译器首先就不放过你。接口的作用就和那些通讯协议一样。只是个规范。 </P>
+<P>IUnknown规范了俩个重要的特性：<STRONG>生存期控制</STRONG>（引用计数）和<STRONG>接口查询</STRONG>。 </P>
+<P>interface IUnknown </P>
+<P>{ </P>
+<P>&nbsp;&nbsp;&nbsp; HRESULT QueryInterface([in] REFIID iid, [out] void **ppv); </P>
+<P>&nbsp;&nbsp;&nbsp; ULONG &nbsp; AddRef(void); </P>
+<P>&nbsp;&nbsp;&nbsp; ULONG &nbsp; Release(void); </P>
+<P>} </P>
+<P>&nbsp;</P>
+<P><STRONG>引用计数的实现</STRONG> </P>
+<P>1. 组件级 太粗 </P>
+<P>2. 对象级 正好 (释放后通知组件) </P>
+<P>3. 接口级 太细 (释放后通知对象) </P>
+<P>&nbsp;</P>
+<P><STRONG>使用引用计数规则</STRONG> </P>
+<P>函数参数： </P>
+<P>&nbsp;&nbsp;&nbsp; - 输入参数 &nbsp; &nbsp; &nbsp; &nbsp;无需调用AddRef和Releae </P>
+<P>&nbsp;&nbsp;&nbsp; - 输出参数 &nbsp; &nbsp; &nbsp; &nbsp;函数返回之前对输出参数调用AddRef </P>
+<P>&nbsp;&nbsp;&nbsp; - 输入输出参数 &nbsp;修改之前调用Release，修改后调用AddRef。如果不修改，什么也不做。 </P>
+<P>局部接口指针变量 &nbsp;无需调用AddRef和Release </P>
+<P>全局接口指针变量 &nbsp;传入函数之前AddRef，函数返回后，Release （应付多线/进程情况） </P>
+<P>C++类成员变量 &nbsp; &nbsp; 和全局变量类似 </P>
+<P><STRONG>注释：引用计数使用很繁琐，稍有不慎就会出错，因此平常使用一些工具类，例如CComPtr，CComQIPtr之类的智能指针。</STRONG> </P>
+<P><STRONG>自动AddRef和Release。</STRONG> </P>
+<P>&nbsp;</P>
+<P><STRONG>接口查询</STRONG> </P>
+<P>函数返回值：S_OK，E_NOINTERFACE，E_UNEXCEPTED </P>
+<P>&nbsp;</P>
+<P><STRONG>查询接口原则</STRONG> </P>
+<OL>
+<LI>
+<DIV style="TEXT-ALIGN: justify;"   >同一个对象的不同接口，查询到的IUnKnown接口必须完全相同。 </DIV>
+<P>也可以利用这点来判断俩个接口是否属于同一个对象。 </P>
+</LI><LI>
+<DIV style="TEXT-ALIGN: justify;"   >对称性，查询自身总是成功的。 </DIV>
+</LI><LI>
+<DIV style="TEXT-ALIGN: justify;"   >自反性，第一个接口查询到另一个接口，则从第二个接口必定能查到第一个接口。 </DIV>
+</LI><LI>
+<DIV style="TEXT-ALIGN: justify;"   >传递性，第一个接口查询到第二个，第二个到第三个，从第三个必定能查询到第一个。 </DIV>
+</LI><LI>
+<DIV style="TEXT-ALIGN: justify;"   >时间无关，在某时刻能够查询到，在以后任何时候都可以再次查询到。 </DIV></LI></OL>
+<P>&nbsp;</P>
+<P><STRONG>接口实现</STRONG> </P>
+<P>多继承（ATL使用），或内嵌类（MFC使用），多继承不要使用虚拟继承，他会破坏虚表的正常信息。（为什么？去查《深度探索 C++对象模型》，而且编译器不同，对虚表的调整结构也不尽相同） </P>
+<P>&nbsp;</P>
+<P><STRONG>GUID</STRONG> </P>
+<P>typedef struct _GUID </P>
+<P>{ </P>
+<P>DWORD Data1;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // 随机数 </P>
+<P>WORD&nbsp;&nbsp; Data2;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // 和时间相关 </P>
+<P>WORD&nbsp;&nbsp; Data3;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // 和时间相关 </P>
+<P>BYTE&nbsp; &nbsp;&nbsp; Data4[8];&nbsp;&nbsp;&nbsp; // 和网卡MAC相关 </P>
+<P>} GUID; </P>
+<P>可以看到GUID是以空间+时间的方式防止随机值重复。 </P>
+<P>&nbsp;</P>
+<P>COM对象的标识 <STRONG>CLSID</STRONG> </P>
+<P>COM接口标识 <STRONG>IID</STRONG> </P>
+<P><STRONG>&nbsp;注释：为何使用俩个GUID分别标识接口和对象？一个接口可以有多个实现。通过IID查询到接口，获得接口支持的方法信息，然后选择其中一个实例化的对象来操作。所以调用CoCreateInstance会需要俩个GUID参数，一个是接口的，一个是对象的。</STRONG> </P>
+<P>&nbsp; &nbsp;</P>
+<P>extern "C" const GUID CLSID_MYSPELLCHECKER = {0xFAEAE6B7, 0x67BE, 0x42a4, {0xA3, 0x18, 0x32, 0x56, 0x78, 0x1E, 0x94, 0x5A}}; </P>
+<P>GUID 乃随机数, 虽然不能保证唯一, 不过重复的几率很低. </P>
+<P>GUID值可以由网络适配器来计算出随机值, 以及利用时间值来计算. </P>
+<P>俩个工具来构造GUID: UUIDGen.exe(console) 和 GUIDGen.exe. </P>
+<P>一个函数来生成: HRESULT CoCreateGuid(GUID *pguid); </P>
+<P>&nbsp; &nbsp;</P>
+<P>接口描述语言: IDL(Interface Description Language)。 </P>
+<P>VC中，编译完IDL, 会生成TLB文件, xxx.h, xxx_i.c, 代理/存根源程序(dlldata.c、xxx_p.c、xxxps.def、xxxps.mak). </P>
+<P>&nbsp; &nbsp;</P>
+<P>进程外通讯利用LPC和RPC机制 </P>
+<P>&nbsp; &nbsp;</P>
+<P><STRONG>注册表</STRONG> </P>
+<P>+ HKEY_CLASSES_ROOT/CLSID/{GUIDs ... } </P>
+<P>&nbsp; - InprocServer32(进程内组件) </P>
+<P>&nbsp; - LocalServer32(进程外组件) </P>
+<P>&nbsp; -&nbsp;TypeLib </P>
+<P>&nbsp; - Implemented Categories （对应HKEY_CLASSES_ROOT/ Component Categories 中的分类） </P>
+<P>+ Interface </P>
+<P>&nbsp; - ProxyStubClsid </P>
+<P>&nbsp; - ProxyStubClsid32 </P>
+<P>+ &lt;ProgID&gt; </P>
+<P>&nbsp; -&nbsp;CLSID </P>
+<P>&nbsp; - CurVer </P>
+<P>&nbsp;</P>
+<P><STRONG>CATID COM组件分类 </STRONG></P>
+<P>HKEY_CLASSES_ROOT/ Component Categories </P>
+<P>&nbsp;</P>
+<P><STRONG>注册COM&nbsp;&nbsp;&nbsp;&nbsp; </STRONG></P>
+<P>进程内：regsvr32.exe （调用DllRegisterServer, DllUnRegisterServer） </P>
+<P>进程外：/RegServer /UnRegServer </P>
+<P>&nbsp; &nbsp;</P>
+<P>导出函数 </P>
+<P>DllRegisterServer </P>
+<P>DLLUnregisterServer </P>
+<P>DLLGetClassObject &nbsp; &nbsp; 不要直接调用，CoGetClassObject会调用CoLoadLibrary，接着就调用此函数。 </P>
+<P>DLLCanUnloadNow </P>
+<P>&nbsp; &nbsp;</P>
+<P><STRONG>类厂</STRONG> </P>
+<P>class IClassFactory : public IUnknown </P>
+<P>{ </P>
+<P>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; virtual HRESULT __stdcall CreateInstance(IUnknown *pUnknownOuter, const IID &amp;idd,&nbsp;void *ppv) = 0; </P>
+<P>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; virtual HRESULT __stdcall LockServer(BOOL bLock) = 0; </P>
+<P>}; </P>
+<P>COM规定，每一个COM对象应该有一个对应的类厂对象。（这种类厂在设计模式中，应该就是"类厂方法"吧）。 </P>
+<P>HRESULT DllGetClassObject(const CLSID &amp;clsid, const IID &amp;iid, void **ppv); 来获得创建的类厂。 </P>
+<P>&nbsp; &nbsp;</P>
+<P><STRONG>创建对象三个API</STRONG> </P>
+<P>1. <STRONG>CoGetClassObject</STRONG>(const CLSID &amp;clsid, DWORD dwClsContext, </P>
+<P>COSERVERINFO *pServerInfo, </P>
+<P>const IID &amp;iid, void **ppv); </P>
+<P>&nbsp;</P>
+<P>进程内组件调用流程 </P>
+<P>User -&gt; CoGetClassObject -&gt; DllGetClassObject -&gt; Create instance of IClassFactory </P>
+<P>&nbsp;</P>
+<P>2. <STRONG>CoCreateInstance</STRONG> </P>
+<P>对<STRONG>CoGetClassObject</STRONG> 包装, 然后接着调用厂类的<STRONG>CreateInstance</STRONG>, 创建COM对象和返回对应的接口. </P>
+<P>只适用创建本地组件对象. </P>
+<P>进程内组件调用流程 </P>
+<P>User -&gt; CoGetClassObject -&gt; DllGetClassObject -&gt; IClassFactory::CreateInstance -&gt; Create Object and return the pointer of the specific interface&nbsp; </P>
+<P>&nbsp;</P>
+<P>3. <STRONG>CoCreateInstanceEx </STRONG>用于创建多个接口. 及其远端Instance </P>
+<P>&nbsp;</P>
+<P>&nbsp;<IMG title="[原] COM笔记 - 原理（基础） - Howie - Dspace"   alt=""   src="pic/img9.ph.126.net_QjyqdeVnW-uZhP4_idr26g==_6597848220889188989.jpg"   > </P>
+<P>&nbsp;</P>
+<P><STRONG>进程外组件</STRONG> </P>
+<P>CoRegisterClassObject </P>
+<P>CoRevokeClassObject </P>
+<P>&nbsp; &nbsp;</P>
+<P><STRONG>存根/代理 </STRONG></P>
+<P><IMG title="[原] COM笔记 - 原理（基础） - Howie - Dspace"   alt=""   src="pic/img3.ph.126.net_IEmBVS0vaAwd7tazDN3Huw==_6597575542005490363.jpg"   > </P>
+<P>&nbsp;</P>
+<P><IMG title="[原] COM笔记 - 原理（基础） - Howie - Dspace"   alt=""   src="pic/img5.ph.126.net_KqUM94lzzz7ZUIdilo79ZA==_6597211603657989795.jpg"   > </P>
+<P>代理/存根作用： </P>
+<OL>
+<LI>
+<DIV style="TEXT-ALIGN: justify;"   >LPC/RPC调用 </DIV>
+</LI><LI>
+<DIV style="TEXT-ALIGN: justify;"   >对参数和返回值进行翻译和传递 </DIV>
+<OL>
+<LI>
+<DIV style="TEXT-ALIGN: justify;"   >参数列集（marshaling） </DIV>
+</LI><LI>
+<DIV style="TEXT-ALIGN: justify;"   >参数散集（unmarshaling） </DIV></LI></OL></LI></OL>
+<P>&nbsp;</P>
+<P>客户端调用起来看起来就像调用一个DLL，如同虚线画的那样。 </P>
+<P>&nbsp; &nbsp;</P>
+<P>&nbsp;</P>
+<P><STRONG>类厂实现</STRONG> </P>
+<P>1.&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 继承接口IClassFactory </P>
+<P>2.&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 对生存期的控制(LockServer) </P>
+<P>&nbsp; &nbsp;</P>
+<P><STRONG>COM库</STRONG> </P>
+<P>1.&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 初始化CoInitialize(IMalloc *pMalloc); （调用CoBuildVersion()函数可以不初始化） </P>
+<P>2.&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 终止COM服务CoUninitialize(); </P>
+<P>&nbsp; &nbsp;</P>
+<P><STRONG>适用COM库分配内存</STRONG> </P>
+<P><STRONG>class IMalloc : public IUnkown</STRONG> </P>
+<P><STRONG>{</STRONG> </P>
+<P><STRONG>&nbsp;&nbsp;&nbsp; void *Alloc(ULONG cb) = 0;</STRONG> </P>
+<P><STRONG>&nbsp;&nbsp;&nbsp; void *Realloc(void *pv, ULONG cb) = 0;</STRONG> </P>
+<P><STRONG>&nbsp;&nbsp;&nbsp; void Free(void *pv) = 0;</STRONG> </P>
+<P><STRONG>&nbsp;&nbsp;&nbsp; ULONG GetSize(void *pv) = 0;</STRONG> </P>
+<P><STRONG>&nbsp;&nbsp;&nbsp; int DidAlloc(void *pv) = 0;</STRONG> </P>
+<P><STRONG>&nbsp;&nbsp;&nbsp; void HeapMinimize() = 0;</STRONG> </P>
+<P><STRONG>};</STRONG> </P>
+<OL>
+<LI>
+<DIV style="TEXT-ALIGN: justify;"   >直接使用IMalloc指针. CoGetMalloc </DIV>
+<P>代码略去指针检查： </P>
+<P>DWORD length = MAX_LENGTH; </P>
+<P>IMalloc *pIMalloc; </P>
+<P>HRESULT hr = CoGetMalloc(MEMCTX_TASK, &amp;pIMalloc); </P>
+<P>psz = pIMalloc-&gt;Alloc(length); </P>
+<P>pIMalloc-&gt;Release(); // Notice here </P>
+</LI><LI>
+<DIV style="TEXT-ALIGN: justify;"   >适用封装好的API 函数. </DIV></LI></OL>
+<P style="TEXT-ALIGN: justify;"   >void *CoTaskMemAlloc(ULONG cb); </P>
+<P style="TEXT-ALIGN: justify;"   >void CoTaskMemFree(void *pv); </P>
+<P style="TEXT-ALIGN: justify;"   >void CoTaskMemRealloc(void *pv, ULONG cb); </P>
+<P style="TEXT-ALIGN: justify;"   >&nbsp;</P>
+<P>&nbsp;常用函数： </P>
+<DIV>
+<TABLE style="BORDER-COLLAPSE: collapse;"   border="0"  >
+<COLGROUP>
+<COL style="WIDTH: 199px;"   >
+<COL style="WIDTH: 204px;"   >
+<COL style="WIDTH: 277px;"   >
+<TBODY vAlign="top"  >
+<TR>
+<TD style="BORDER-TOP: 0.5pt solid; BORDER-RIGHT: 0.5pt solid; BORDER-BOTTOM: 0.5pt solid; PADDING-LEFT: 7px; BORDER-LEFT: 0.5pt solid; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 10pt;"   >类别</SPAN></P></TD>
+<TD style="BORDER-TOP: 0.5pt solid; BORDER-RIGHT: 0.5pt solid; BORDER-BOTTOM: 0.5pt solid; PADDING-LEFT: 7px; BORDER-LEFT: medium none; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 10pt;"   >函数</SPAN></P></TD>
+<TD style="BORDER-TOP: 0.5pt solid; BORDER-RIGHT: 0.5pt solid; BORDER-BOTTOM: 0.5pt solid; PADDING-LEFT: 7px; BORDER-LEFT: medium none; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 10pt;"   >功能</SPAN></P></TD></TR>
+<TR>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.5pt solid; BORDER-BOTTOM: 0.5pt solid; PADDING-LEFT: 7px; BORDER-LEFT: 0.5pt solid; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 10pt;"   >初始化函数</SPAN></P></TD>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.5pt solid; BORDER-BOTTOM: 0.5pt solid; PADDING-LEFT: 7px; BORDER-LEFT: medium none; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 10pt;"   >CoBuildVersion </SPAN></P>
+<P><SPAN style="FONT-SIZE: 10pt;"   >CoInitialize </SPAN></P>
+<P><SPAN style="FONT-SIZE: 10pt;"   >CoUninitialize </SPAN></P>
+<P><SPAN style="FONT-SIZE: 10pt;"   >CoFreeUnusedLibraries</SPAN></P></TD>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.5pt solid; BORDER-BOTTOM: 0.5pt solid; PADDING-LEFT: 7px; BORDER-LEFT: medium none; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 10pt;"   >获取COM版本号 </SPAN></P>
+<P><SPAN style="FONT-SIZE: 10pt;"   >COM库初始化 </SPAN></P>
+<P><SPAN style="FONT-SIZE: 10pt;"   >COM库服务终止 </SPAN></P>
+<P><SPAN style="FONT-SIZE: 10pt;"   >释放进程中不在使用的组件</SPAN></P></TD></TR>
+<TR>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.5pt solid; BORDER-BOTTOM: 0.5pt solid; PADDING-LEFT: 7px; BORDER-LEFT: 0.5pt solid; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 10pt;"   >&nbsp;GUID相关函数</SPAN></P></TD>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.5pt solid; BORDER-BOTTOM: 0.5pt solid; PADDING-LEFT: 7px; BORDER-LEFT: medium none; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 10pt;"   >IsEqualGUID </SPAN></P>
+<P><SPAN style="FONT-SIZE: 10pt;"   >IsEqualIID </SPAN></P>
+<P><SPAN style="FONT-SIZE: 10pt;"   >IsEqualCLSID </SPAN></P>
+<P><SPAN style="FONT-SIZE: 10pt;"   >CLSIDFromProgID </SPAN></P>
+<P><SPAN style="FONT-SIZE: 10pt;"   >StringFromCLSID </SPAN></P>
+<P><SPAN style="FONT-SIZE: 10pt;"   >IIDFromString </SPAN></P>
+<P><SPAN style="FONT-SIZE: 10pt;"   >StringFromIID </SPAN></P>
+<P><SPAN style="FONT-SIZE: 10pt;"   >StringFromGUID2</SPAN></P></TD>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.5pt solid; BORDER-BOTTOM: 0.5pt solid; PADDING-LEFT: 7px; BORDER-LEFT: medium none; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 10pt;"   >判断GUID是否相等 </SPAN></P>
+<P><SPAN style="FONT-SIZE: 10pt;"   >判断IID是否相等 </SPAN></P>
+<P><SPAN style="FONT-SIZE: 10pt;"   >判断CLSID是否相等 </SPAN></P>
+<P><SPAN style="FONT-SIZE: 10pt;"   >ProgID -&gt; CLSID </SPAN></P>
+<P><SPAN style="FONT-SIZE: 10pt;"   >CLSID -&gt; String </SPAN></P>
+<P><SPAN style="FONT-SIZE: 10pt;"   >String -&gt; IID </SPAN></P>
+<P><SPAN style="FONT-SIZE: 10pt;"   >IID -&gt; String </SPAN></P>
+<P><SPAN style="FONT-SIZE: 10pt;"   >GUID -&gt; String</SPAN></P></TD></TR>
+<TR>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.5pt solid; BORDER-BOTTOM: 0.5pt solid; PADDING-LEFT: 7px; BORDER-LEFT: 0.5pt solid; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 10pt;"   >对象创建函数</SPAN></P></TD>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.5pt solid; BORDER-BOTTOM: 0.5pt solid; PADDING-LEFT: 7px; BORDER-LEFT: medium none; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 10pt;"   >CoGetClassObject </SPAN></P>
+<P><SPAN style="FONT-SIZE: 10pt;"   >CoCreateInstance </SPAN></P>
+<P><SPAN style="FONT-SIZE: 10pt;"   >CoCreateInstanceEX </SPAN></P>
+<P>&nbsp;</P>
+<P><SPAN style="FONT-SIZE: 10pt;"   >CoRegisterClassObject </SPAN></P>
+<P>&nbsp;</P>
+<P><SPAN style="FONT-SIZE: 10pt;"   >CoRevokeClassObject </SPAN></P>
+<P><SPAN style="FONT-SIZE: 10pt;"   >CoDisconnectObject</SPAN></P></TD>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.5pt solid; BORDER-BOTTOM: 0.5pt solid; PADDING-LEFT: 7px; BORDER-LEFT: medium none; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 10pt;"   >获取类厂对象 </SPAN></P>
+<P><SPAN style="FONT-SIZE: 10pt;"   >创建COM对象 </SPAN></P>
+<P><SPAN style="FONT-SIZE: 10pt;"   >同时，可指定多个接口和远程对象 </SPAN></P>
+<P><SPAN style="FONT-SIZE: 10pt;"   >登记一个对象，以便其它应用可以连接到该对象 </SPAN></P>
+<P><SPAN style="FONT-SIZE: 10pt;"   >取消登记操作 </SPAN></P>
+<P><SPAN style="FONT-SIZE: 10pt;"   >断开连接</SPAN></P></TD></TR>
+<TR>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.5pt solid; BORDER-BOTTOM: 0.5pt solid; PADDING-LEFT: 7px; BORDER-LEFT: 0.5pt solid; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 10pt;"   >&nbsp;内存管理</SPAN></P></TD>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.5pt solid; BORDER-BOTTOM: 0.5pt solid; PADDING-LEFT: 7px; BORDER-LEFT: medium none; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 10pt;"   >CoTaskMemAlloc<BR>CoTaskMemRealloc<BR>CoTaskMemFree<BR>CoGetMalloc</SPAN></P></TD>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.5pt solid; BORDER-BOTTOM: 0.5pt solid; PADDING-LEFT: 7px; BORDER-LEFT: medium none; PADDING-RIGHT: 7px;"   >&nbsp;</TD></TR></TABLE></DIV>
+<P>&nbsp;</P>
+<P>&nbsp;</P>
+<P><STRONG>COM 内部调用过程</STRONG> </P>
+<P><STRONG>1 进程内组件协作</STRONG> </P>
+<DIV>
+<TABLE style="BORDER-COLLAPSE: collapse;"   border="0"  >
+<COLGROUP>
+<COL style="WIDTH: 224px;"   >
+<COL style="WIDTH: 204px;"   >
+<COL style="WIDTH: 252px;"   >
+<TBODY vAlign="top"  >
+<TR>
+<TD style="BORDER-TOP: 0.5pt solid; BORDER-RIGHT: 0.5pt solid; BORDER-BOTTOM: 0.5pt solid; PADDING-LEFT: 7px; BORDER-LEFT: 0.5pt solid; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 10pt;"   >客户程序</SPAN></P></TD>
+<TD style="BORDER-TOP: 0.5pt solid; BORDER-RIGHT: 0.5pt solid; BORDER-BOTTOM: 0.5pt solid; PADDING-LEFT: 7px; BORDER-LEFT: medium none; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 10pt;"   >COM库</SPAN></P></TD>
+<TD style="BORDER-TOP: 0.5pt solid; BORDER-RIGHT: 0.5pt solid; BORDER-BOTTOM: 0.5pt solid; PADDING-LEFT: 7px; BORDER-LEFT: medium none; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 10pt;"   >组件程序(DLL)</SPAN></P></TD></TR>
+<TR>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.5pt solid; BORDER-BOTTOM: 0.5pt solid; PADDING-LEFT: 7px; BORDER-LEFT: 0.5pt solid; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 10pt;"   >CLSID clsid </SPAN></P>
+<P><SPAN style="FONT-SIZE: 10pt;"   >IClassFactory *pClf; </SPAN></P>
+<P><SPAN style="FONT-SIZE: 10pt;"   >IUknown *pUnknown; </SPAN></P>
+<P><SPAN style="FONT-SIZE: 10pt;"   >CoInitialize(NULL); </SPAN></P>
+<P><SPAN style="FONT-SIZE: 10pt;"   >CLSIDFromProgID("Dictinary.Object", &amp;clsid);</SPAN></P></TD>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.5pt solid; BORDER-BOTTOM: 0.5pt solid; PADDING-LEFT: 7px; BORDER-LEFT: medium none; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 10pt;"   >&nbsp;</SPAN>&nbsp;</P></TD>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.5pt solid; BORDER-BOTTOM: 0.5pt solid; PADDING-LEFT: 7px; BORDER-LEFT: medium none; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 10pt;"   >&nbsp;</SPAN>&nbsp;</P></TD></TR>
+<TR>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.5pt solid; BORDER-BOTTOM: 0.5pt solid; PADDING-LEFT: 7px; BORDER-LEFT: 0.5pt solid; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 10pt;"   >&nbsp;</SPAN>&nbsp;</P></TD>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.5pt solid; BORDER-BOTTOM: 0.5pt solid; PADDING-LEFT: 7px; BORDER-LEFT: medium none; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 10pt;"   >COM 在注册表中查找CLSID</SPAN></P></TD>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.5pt solid; BORDER-BOTTOM: 0.5pt solid; PADDING-LEFT: 7px; BORDER-LEFT: medium none; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 10pt;"   >&nbsp;</SPAN>&nbsp;</P></TD></TR>
+<TR>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.5pt solid; BORDER-BOTTOM: 0.5pt solid; PADDING-LEFT: 7px; BORDER-LEFT: 0.5pt solid; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 10pt;"   >CoGetClassObject(clsid, CLSCTX_INPROC_SERVER, NULL, IID_IClassFactory, </SPAN></P>
+<P><SPAN style="FONT-SIZE: 10pt;"   >(void **)&amp;pClf);</SPAN></P></TD>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.5pt solid; BORDER-BOTTOM: 0.5pt solid; PADDING-LEFT: 7px; BORDER-LEFT: medium none; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 10pt;"   >&nbsp;</SPAN>&nbsp;</P></TD>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.5pt solid; BORDER-BOTTOM: 0.5pt solid; PADDING-LEFT: 7px; BORDER-LEFT: medium none; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 10pt;"   >&nbsp;</SPAN>&nbsp;</P></TD></TR>
+<TR>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.5pt solid; BORDER-BOTTOM: 0.5pt solid; PADDING-LEFT: 7px; BORDER-LEFT: 0.5pt solid; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 10pt;"   >&nbsp;</SPAN>&nbsp;</P></TD>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.5pt solid; BORDER-BOTTOM: 0.5pt solid; PADDING-LEFT: 7px; BORDER-LEFT: medium none; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 10pt;"   >COM库在内存中查找clsid组件 如果DictComp.dll还没装入内存,那就从注册表中获取组件程序全路径名.然后CoLoadLibrary(…), 接着调用DLL的DLLGetClassObject</SPAN></P></TD>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.5pt solid; BORDER-BOTTOM: 0.5pt solid; PADDING-LEFT: 7px; BORDER-LEFT: medium none; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 10pt;"   >&nbsp;</SPAN>&nbsp;</P></TD></TR>
+<TR>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.5pt solid; BORDER-BOTTOM: 0.5pt solid; PADDING-LEFT: 7px; BORDER-LEFT: 0.5pt solid; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 10pt;"   >&nbsp;</SPAN>&nbsp;</P></TD>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.5pt solid; BORDER-BOTTOM: 0.5pt solid; PADDING-LEFT: 7px; BORDER-LEFT: medium none; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 10pt;"   >&nbsp;</SPAN>&nbsp;</P></TD>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.5pt solid; BORDER-BOTTOM: 0.5pt solid; PADDING-LEFT: 7px; BORDER-LEFT: medium none; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 10pt;"   >创建类厂对象 CDictionaryFactory并返回IClassFactory接口.</SPAN></P></TD></TR>
+<TR>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.5pt solid; BORDER-BOTTOM: 0.5pt solid; PADDING-LEFT: 7px; BORDER-LEFT: 0.5pt solid; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 10pt;"   >&nbsp;</SPAN>&nbsp;</P></TD>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.5pt solid; BORDER-BOTTOM: 0.5pt solid; PADDING-LEFT: 7px; BORDER-LEFT: medium none; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 10pt;"   >COM库返回IClassFactory给用户</SPAN></P></TD>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.5pt solid; BORDER-BOTTOM: 0.5pt solid; PADDING-LEFT: 7px; BORDER-LEFT: medium none; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 10pt;"   >&nbsp;</SPAN>&nbsp;</P></TD></TR>
+<TR>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.5pt solid; BORDER-BOTTOM: 0.5pt solid; PADDING-LEFT: 7px; BORDER-LEFT: 0.5pt solid; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 10pt;"   >pClf-&gt;CreateInstance(NULL, IID_IUnknown, </SPAN></P>
+<P><SPAN style="FONT-SIZE: 10pt;"   >(void **)&amp;pUnknown);</SPAN></P></TD>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.5pt solid; BORDER-BOTTOM: 0.5pt solid; PADDING-LEFT: 7px; BORDER-LEFT: medium none; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 10pt;"   >&nbsp;</SPAN>&nbsp;</P></TD>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.5pt solid; BORDER-BOTTOM: 0.5pt solid; PADDING-LEFT: 7px; BORDER-LEFT: medium none; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 10pt;"   >&nbsp;</SPAN>&nbsp;</P></TD></TR>
+<TR>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.5pt solid; BORDER-BOTTOM: 0.5pt solid; PADDING-LEFT: 7px; BORDER-LEFT: 0.5pt solid; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 10pt;"   >&nbsp;</SPAN>&nbsp;</P></TD>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.5pt solid; BORDER-BOTTOM: 0.5pt solid; PADDING-LEFT: 7px; BORDER-LEFT: medium none; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 10pt;"   >&nbsp;</SPAN>&nbsp;</P></TD>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.5pt solid; BORDER-BOTTOM: 0.5pt solid; PADDING-LEFT: 7px; BORDER-LEFT: medium none; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 10pt;"   >类厂对象的CreateInstance函数被调用(通过组件的vtable直接被客户调用). 用new操作符构造字典组件对象new CDictionary; 返回IUnknown接口指针.</SPAN></P></TD></TR>
+<TR>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.5pt solid; BORDER-BOTTOM: 0.5pt solid; PADDING-LEFT: 7px; BORDER-LEFT: 0.5pt solid; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 10pt;"   >客户使用字典组件, 通过其他接口进行各种操作…… </SPAN></P>
+<P>&nbsp;</P>
+<P><SPAN style="FONT-SIZE: 10pt;"   >pClf-&gt;Release(); </SPAN></P>
+<P><SPAN style="FONT-SIZE: 10pt;"   >pUnknown-&gt;Release();</SPAN></P></TD>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.5pt solid; BORDER-BOTTOM: 0.5pt solid; PADDING-LEFT: 7px; BORDER-LEFT: medium none; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 10pt;"   >&nbsp;</SPAN>&nbsp;</P></TD>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.5pt solid; BORDER-BOTTOM: 0.5pt solid; PADDING-LEFT: 7px; BORDER-LEFT: medium none; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 10pt;"   >&nbsp;</SPAN>&nbsp;</P></TD></TR>
+<TR>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.5pt solid; BORDER-BOTTOM: 0.5pt solid; PADDING-LEFT: 7px; BORDER-LEFT: 0.5pt solid; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 10pt;"   >&nbsp;</SPAN>&nbsp;</P></TD>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.5pt solid; BORDER-BOTTOM: 0.5pt solid; PADDING-LEFT: 7px; BORDER-LEFT: medium none; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 10pt;"   >&nbsp;</SPAN>&nbsp;</P></TD>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.5pt solid; BORDER-BOTTOM: 0.5pt solid; PADDING-LEFT: 7px; BORDER-LEFT: medium none; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 10pt;"   >组件对象的Release被调用 </SPAN></P>
+<P><SPAN style="FONT-SIZE: 10pt;"   > </SPAN></P>
+<P><SPAN style="FONT-SIZE: 10pt;"   >{ </SPAN></P>
+<P><SPAN style="FONT-SIZE: 10pt;"   >delete this; </SPAN></P>
+<P><SPAN style="FONT-SIZE: 10pt;"   >return 0; </SPAN></P>
+<P><SPAN style="FONT-SIZE: 10pt;"   >}</SPAN></P></TD></TR>
+<TR>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.5pt solid; BORDER-BOTTOM: 0.5pt solid; PADDING-LEFT: 7px; BORDER-LEFT: 0.5pt solid; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 10pt;"   >CoFreeUnusedLibraries()</SPAN></P></TD>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.5pt solid; BORDER-BOTTOM: 0.5pt solid; PADDING-LEFT: 7px; BORDER-LEFT: medium none; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 10pt;"   >&nbsp;</SPAN>&nbsp;</P></TD>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.5pt solid; BORDER-BOTTOM: 0.5pt solid; PADDING-LEFT: 7px; BORDER-LEFT: medium none; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 10pt;"   >&nbsp;</SPAN>&nbsp;</P></TD></TR>
+<TR>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.5pt solid; BORDER-BOTTOM: 0.5pt solid; PADDING-LEFT: 7px; BORDER-LEFT: 0.5pt solid; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 10pt;"   >&nbsp;</SPAN>&nbsp;</P></TD>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.5pt solid; BORDER-BOTTOM: 0.5pt solid; PADDING-LEFT: 7px; BORDER-LEFT: medium none; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 10pt;"   >COM库调用字典组件的引出函数DllCanUnloadNow</SPAN></P></TD>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.5pt solid; BORDER-BOTTOM: 0.5pt solid; PADDING-LEFT: 7px; BORDER-LEFT: medium none; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 10pt;"   >&nbsp;</SPAN>&nbsp;</P></TD></TR>
+<TR>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.5pt solid; BORDER-BOTTOM: 0.5pt solid; PADDING-LEFT: 7px; BORDER-LEFT: 0.5pt solid; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 10pt;"   >&nbsp;</SPAN>&nbsp;</P></TD>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.5pt solid; BORDER-BOTTOM: 0.5pt solid; PADDING-LEFT: 7px; BORDER-LEFT: medium none; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 10pt;"   >&nbsp;</SPAN>&nbsp;</P></TD>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.5pt solid; BORDER-BOTTOM: 0.5pt solid; PADDING-LEFT: 7px; BORDER-LEFT: medium none; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 10pt;"   >DllCanUnloadNow函数中: </SPAN></P>
+<P><SPAN style="FONT-SIZE: 10pt;"   > </SPAN></P>
+<P><SPAN style="FONT-SIZE: 10pt;"   >return TRUE; </SPAN></P>
+<P><SPAN style="FONT-SIZE: 10pt;"   >else </SPAN></P>
+<P><SPAN style="FONT-SIZE: 10pt;"   >return FALSE;</SPAN></P></TD></TR>
+<TR style="HEIGHT: 7px;"   >
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.5pt solid; BORDER-BOTTOM: 0.5pt solid; PADDING-LEFT: 7px; BORDER-LEFT: 0.5pt solid; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 10pt;"   >&nbsp;</SPAN>&nbsp;</P></TD>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.5pt solid; BORDER-BOTTOM: 0.5pt solid; PADDING-LEFT: 7px; BORDER-LEFT: medium none; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 10pt;"   >if (字典组件 </SPAN></P>
+<P><SPAN style="FONT-SIZE: 10pt;"   >DllCanUnloadUnloadNow函数返回TRUE) </SPAN></P>
+<P><SPAN style="FONT-SIZE: 10pt;"   >&nbsp;&nbsp; CoFreeLibrary(…);</SPAN></P></TD>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.5pt solid; BORDER-BOTTOM: 0.5pt solid; PADDING-LEFT: 7px; BORDER-LEFT: medium none; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 10pt;"   >&nbsp;</SPAN>&nbsp;</P></TD></TR>
+<TR>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.5pt solid; BORDER-BOTTOM: 0.5pt solid; PADDING-LEFT: 7px; BORDER-LEFT: 0.5pt solid; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 10pt;"   >CoUninitialize()</SPAN></P></TD>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.5pt solid; BORDER-BOTTOM: 0.5pt solid; PADDING-LEFT: 7px; BORDER-LEFT: medium none; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 10pt;"   >&nbsp;</SPAN>&nbsp;</P></TD>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.5pt solid; BORDER-BOTTOM: 0.5pt solid; PADDING-LEFT: 7px; BORDER-LEFT: medium none; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 10pt;"   >&nbsp;</SPAN>&nbsp;</P></TD></TR>
+<TR>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.5pt solid; BORDER-BOTTOM: 0.5pt solid; PADDING-LEFT: 7px; BORDER-LEFT: 0.5pt solid; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 10pt;"   >&nbsp;</SPAN>&nbsp;</P></TD>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.5pt solid; BORDER-BOTTOM: 0.5pt solid; PADDING-LEFT: 7px; BORDER-LEFT: medium none; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 10pt;"   >COM 库释放资源</SPAN></P></TD>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.5pt solid; BORDER-BOTTOM: 0.5pt solid; PADDING-LEFT: 7px; BORDER-LEFT: medium none; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 10pt;"   >&nbsp;</SPAN>&nbsp;</P></TD></TR>
+<TR>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.5pt solid; BORDER-BOTTOM: 0.5pt solid; PADDING-LEFT: 7px; BORDER-LEFT: 0.5pt solid; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 10pt;"   >客户程序退出</SPAN></P></TD>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.5pt solid; BORDER-BOTTOM: 0.5pt solid; PADDING-LEFT: 7px; BORDER-LEFT: medium none; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 10pt;"   >&nbsp;</SPAN>&nbsp;</P></TD>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.5pt solid; BORDER-BOTTOM: 0.5pt solid; PADDING-LEFT: 7px; BORDER-LEFT: medium none; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 10pt;"   >&nbsp;</SPAN>&nbsp;</P></TD></TR></TABLE></DIV>
+<P>&nbsp; &nbsp;</P>
+<P><STRONG>进程外组件协作</STRONG> </P>
+<DIV>
+<TABLE style="BORDER-COLLAPSE: collapse;"   border="0"  >
+<COLGROUP>
+<COL style="WIDTH: 224px;"   >
+<COL style="WIDTH: 204px;"   >
+<COL style="WIDTH: 252px;"   >
+<TBODY vAlign="top"  >
+<TR>
+<TD style="BORDER-TOP: 0.5pt solid; BORDER-RIGHT: 0.5pt solid; BORDER-BOTTOM: 0.5pt solid; PADDING-LEFT: 7px; BORDER-LEFT: 0.5pt solid; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 10pt;"   >客户程序</SPAN></P></TD>
+<TD style="BORDER-TOP: 0.5pt solid; BORDER-RIGHT: 0.5pt solid; BORDER-BOTTOM: 0.5pt solid; PADDING-LEFT: 7px; BORDER-LEFT: medium none; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 10pt;"   >COM库</SPAN></P></TD>
+<TD style="BORDER-TOP: 0.5pt solid; BORDER-RIGHT: 0.5pt solid; BORDER-BOTTOM: 0.5pt solid; PADDING-LEFT: 7px; BORDER-LEFT: medium none; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 10pt;"   >组件程序(DLL)</SPAN></P></TD></TR>
+<TR>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.5pt solid; BORDER-BOTTOM: 0.5pt solid; PADDING-LEFT: 7px; BORDER-LEFT: 0.5pt solid; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 10pt;"   >CLSID clsid </SPAN></P>
+<P><SPAN style="FONT-SIZE: 10pt;"   >IClassFactory *pClf; </SPAN></P>
+<P><SPAN style="FONT-SIZE: 10pt;"   >IUknown *pUnknown; </SPAN></P>
+<P><SPAN style="FONT-SIZE: 10pt;"   >CoInitialize(NULL); </SPAN></P>
+<P><SPAN style="FONT-SIZE: 10pt;"   >CLSIDFromProgID("Dictinary.Object", &amp;clsid);</SPAN></P></TD>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.5pt solid; BORDER-BOTTOM: 0.5pt solid; PADDING-LEFT: 7px; BORDER-LEFT: medium none; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 10pt;"   >&nbsp;</SPAN>&nbsp;</P></TD>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.5pt solid; BORDER-BOTTOM: 0.5pt solid; PADDING-LEFT: 7px; BORDER-LEFT: medium none; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 10pt;"   >&nbsp;</SPAN>&nbsp;</P></TD></TR>
+<TR>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.5pt solid; BORDER-BOTTOM: 0.5pt solid; PADDING-LEFT: 7px; BORDER-LEFT: 0.5pt solid; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 10pt;"   >&nbsp;</SPAN>&nbsp;</P></TD>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.5pt solid; BORDER-BOTTOM: 0.5pt solid; PADDING-LEFT: 7px; BORDER-LEFT: medium none; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 10pt;"   >COM 在注册表中查找CLSID</SPAN></P></TD>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.5pt solid; BORDER-BOTTOM: 0.5pt solid; PADDING-LEFT: 7px; BORDER-LEFT: medium none; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 10pt;"   >&nbsp;</SPAN>&nbsp;</P></TD></TR>
+<TR>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.5pt solid; BORDER-BOTTOM: 0.5pt solid; PADDING-LEFT: 7px; BORDER-LEFT: 0.5pt solid; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 10pt;"   >CoGetClassObject(clsid, CLSCTX_INPROC_SERVER, NULL, IID_IClassFactory, </SPAN></P>
+<P><SPAN style="FONT-SIZE: 10pt;"   >(void **)&amp;pClf);</SPAN></P></TD>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.5pt solid; BORDER-BOTTOM: 0.5pt solid; PADDING-LEFT: 7px; BORDER-LEFT: medium none; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 10pt;"   >&nbsp;</SPAN>&nbsp;</P></TD>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.5pt solid; BORDER-BOTTOM: 0.5pt solid; PADDING-LEFT: 7px; BORDER-LEFT: medium none; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 10pt;"   >&nbsp;</SPAN>&nbsp;</P></TD></TR>
+<TR>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.5pt solid; BORDER-BOTTOM: 0.5pt solid; PADDING-LEFT: 7px; BORDER-LEFT: 0.5pt solid; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 10pt;"   >&nbsp;</SPAN>&nbsp;</P></TD>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.5pt solid; BORDER-BOTTOM: 0.5pt solid; PADDING-LEFT: 7px; BORDER-LEFT: medium none; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 10pt;"   >COM库在内存中查找clsid组件 如果 组件.exe 还没启动或者COM需要另一个实例, 那就从注册表中获取EXE组件名,创建组件进程. 等待创建完成.</SPAN></P></TD>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.5pt solid; BORDER-BOTTOM: 0.5pt solid; PADDING-LEFT: 7px; BORDER-LEFT: medium none; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 10pt;"   >&nbsp;</SPAN>&nbsp;</P></TD></TR>
+<TR>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.5pt solid; BORDER-BOTTOM: 0.5pt solid; PADDING-LEFT: 7px; BORDER-LEFT: 0.5pt solid; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 10pt;"   >&nbsp;</SPAN>&nbsp;</P></TD>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.5pt solid; BORDER-BOTTOM: 0.5pt solid; PADDING-LEFT: 7px; BORDER-LEFT: medium none; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 10pt;"   >&nbsp;</SPAN>&nbsp;</P></TD>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.5pt solid; BORDER-BOTTOM: 0.5pt solid; PADDING-LEFT: 7px; BORDER-LEFT: medium none; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 10pt;"   >调用CoInitialize </SPAN></P>
+<P><SPAN style="FONT-SIZE: 10pt;"   >创建组件支持的各种类厂对象, 调用COM函数注册所有类厂对象; CoRegisterClassObject</SPAN></P></TD></TR>
+<TR>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.5pt solid; BORDER-BOTTOM: 0.5pt solid; PADDING-LEFT: 7px; BORDER-LEFT: 0.5pt solid; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 10pt;"   >&nbsp;</SPAN>&nbsp;</P></TD>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.5pt solid; BORDER-BOTTOM: 0.5pt solid; PADDING-LEFT: 7px; BORDER-LEFT: medium none; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 10pt;"   >等COM注册完, COM库返回IClassFactory给用户</SPAN></P></TD>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.5pt solid; BORDER-BOTTOM: 0.5pt solid; PADDING-LEFT: 7px; BORDER-LEFT: medium none; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 10pt;"   >&nbsp;</SPAN>&nbsp;</P></TD></TR>
+<TR>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.5pt solid; BORDER-BOTTOM: 0.5pt solid; PADDING-LEFT: 7px; BORDER-LEFT: 0.5pt solid; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 10pt;"   >pClf-&gt;CreateInstance(NULL, IID_IUnknown, </SPAN></P>
+<P><SPAN style="FONT-SIZE: 10pt;"   >(void **)&amp;pUnknown);</SPAN></P></TD>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.5pt solid; BORDER-BOTTOM: 0.5pt solid; PADDING-LEFT: 7px; BORDER-LEFT: medium none; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 10pt;"   >&nbsp;</SPAN>&nbsp;</P></TD>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.5pt solid; BORDER-BOTTOM: 0.5pt solid; PADDING-LEFT: 7px; BORDER-LEFT: medium none; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 10pt;"   >&nbsp;</SPAN>&nbsp;</P></TD></TR>
+<TR>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.5pt solid; BORDER-BOTTOM: 0.5pt solid; PADDING-LEFT: 7px; BORDER-LEFT: 0.5pt solid; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 10pt;"   >&nbsp;</SPAN>&nbsp;</P></TD>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.5pt solid; BORDER-BOTTOM: 0.5pt solid; PADDING-LEFT: 7px; BORDER-LEFT: medium none; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 10pt;"   >&nbsp;</SPAN>&nbsp;</P></TD>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.5pt solid; BORDER-BOTTOM: 0.5pt solid; PADDING-LEFT: 7px; BORDER-LEFT: medium none; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 10pt;"   >类厂对象的CreateInstance函数被调用(通过组件的vtable直接被客户调用). 用new操作符构造字典组件对象new CDictionary; 返回IUnknown接口指针.</SPAN></P></TD></TR>
+<TR>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.5pt solid; BORDER-BOTTOM: 0.5pt solid; PADDING-LEFT: 7px; BORDER-LEFT: 0.5pt solid; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 10pt;"   >客户使用字典组件, 通过其他接口进行各种操作…… </SPAN></P>
+<P><SPAN style="FONT-SIZE: 10pt;"   >pClf-&gt;Release(); </SPAN></P>
+<P><SPAN style="FONT-SIZE: 10pt;"   >pUnknown-&gt;Release();</SPAN></P></TD>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.5pt solid; BORDER-BOTTOM: 0.5pt solid; PADDING-LEFT: 7px; BORDER-LEFT: medium none; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 10pt;"   >&nbsp;</SPAN>&nbsp;</P></TD>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.5pt solid; BORDER-BOTTOM: 0.5pt solid; PADDING-LEFT: 7px; BORDER-LEFT: medium none; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 10pt;"   >&nbsp;</SPAN>&nbsp;</P></TD></TR>
+<TR>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.5pt solid; BORDER-BOTTOM: 0.5pt solid; PADDING-LEFT: 7px; BORDER-LEFT: 0.5pt solid; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 10pt;"   >&nbsp;</SPAN>&nbsp;</P></TD>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.5pt solid; BORDER-BOTTOM: 0.5pt solid; PADDING-LEFT: 7px; BORDER-LEFT: medium none; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 10pt;"   >&nbsp;</SPAN>&nbsp;</P></TD>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.5pt solid; BORDER-BOTTOM: 0.5pt solid; PADDING-LEFT: 7px; BORDER-LEFT: medium none; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 10pt;"   >组件对象的Release被调用 </SPAN></P>
+<P><SPAN style="FONT-SIZE: 10pt;"   > </SPAN></P>
+<P><SPAN style="FONT-SIZE: 10pt;"   >{ </SPAN></P>
+<P><SPAN style="FONT-SIZE: 10pt;"   >delete this; </SPAN></P>
+<P><SPAN style="FONT-SIZE: 10pt;"   >return 0; </SPAN></P>
+<P><SPAN style="FONT-SIZE: 10pt;"   >}</SPAN></P></TD></TR>
+<TR>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.5pt solid; BORDER-BOTTOM: 0.5pt solid; PADDING-LEFT: 7px; BORDER-LEFT: 0.5pt solid; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 10pt;"   >CoUninitialize()</SPAN></P></TD>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.5pt solid; BORDER-BOTTOM: 0.5pt solid; PADDING-LEFT: 7px; BORDER-LEFT: medium none; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 10pt;"   >&nbsp;</SPAN>&nbsp;</P></TD>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.5pt solid; BORDER-BOTTOM: 0.5pt solid; PADDING-LEFT: 7px; BORDER-LEFT: medium none; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 10pt;"   >&nbsp;</SPAN>&nbsp;</P></TD></TR>
+<TR>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.5pt solid; BORDER-BOTTOM: 0.5pt solid; PADDING-LEFT: 7px; BORDER-LEFT: 0.5pt solid; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 10pt;"   >&nbsp;</SPAN>&nbsp;</P></TD>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.5pt solid; BORDER-BOTTOM: 0.5pt solid; PADDING-LEFT: 7px; BORDER-LEFT: medium none; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 10pt;"   >COM库对所有该客户没用成功释放的对象调用Release函数</SPAN></P></TD>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.5pt solid; BORDER-BOTTOM: 0.5pt solid; PADDING-LEFT: 7px; BORDER-LEFT: medium none; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 10pt;"   >&nbsp;</SPAN>&nbsp;</P></TD></TR>
+<TR>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.5pt solid; BORDER-BOTTOM: 0.5pt solid; PADDING-LEFT: 7px; BORDER-LEFT: 0.5pt solid; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 10pt;"   >&nbsp;</SPAN>&nbsp;</P></TD>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.5pt solid; BORDER-BOTTOM: 0.5pt solid; PADDING-LEFT: 7px; BORDER-LEFT: medium none; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 10pt;"   >&nbsp;</SPAN>&nbsp;</P></TD>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.5pt solid; BORDER-BOTTOM: 0.5pt solid; PADDING-LEFT: 7px; BORDER-LEFT: medium none; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 10pt;"   >组件程序退出</SPAN></P></TD></TR>
+<TR>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.5pt solid; BORDER-BOTTOM: 0.5pt solid; PADDING-LEFT: 7px; BORDER-LEFT: 0.5pt solid; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 10pt;"   >&nbsp;</SPAN>&nbsp;</P></TD>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.5pt solid; BORDER-BOTTOM: 0.5pt solid; PADDING-LEFT: 7px; BORDER-LEFT: medium none; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 10pt;"   >COM 库释放资源</SPAN></P></TD>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.5pt solid; BORDER-BOTTOM: 0.5pt solid; PADDING-LEFT: 7px; BORDER-LEFT: medium none; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 10pt;"   >&nbsp;</SPAN>&nbsp;</P></TD></TR>
+<TR>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.5pt solid; BORDER-BOTTOM: 0.5pt solid; PADDING-LEFT: 7px; BORDER-LEFT: 0.5pt solid; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 10pt;"   >客户程序退出</SPAN></P></TD>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.5pt solid; BORDER-BOTTOM: 0.5pt solid; PADDING-LEFT: 7px; BORDER-LEFT: medium none; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 10pt;"   >&nbsp;</SPAN>&nbsp;</P></TD>
+<TD style="BORDER-TOP: medium none; BORDER-RIGHT: 0.5pt solid; BORDER-BOTTOM: 0.5pt solid; PADDING-LEFT: 7px; BORDER-LEFT: medium none; PADDING-RIGHT: 7px;"   >
+<P><SPAN style="FONT-SIZE: 10pt;"   >&nbsp;</SPAN>&nbsp;</P></TD></TR></TABLE></DIV>
+<P>&nbsp; &nbsp;</P>
+<P><STRONG>总结: 实现及调用COM流程</STRONG> </P>
+<P><STRONG>"组件"端实现流程</STRONG> </P>
+<P>1. 定义接口 </P>
+<P>2. 实现接口, 实现类厂 </P>
+<P>3. 实现必要的导出函数(俩类: 注册表相关, 厂对象相关): </P>
+<P>extern "C" HRESULT __stdcall DllGetClassObject&nbsp; </P>
+<P>说明: 得到创建厂类对象; </P>
+<P>&nbsp; &nbsp;</P>
+<P>extern "C" HRESULT __stdcall DllCanUnloadNow(void) </P>
+<P>说明: 当前对象和厂对象为0是, retrn TRUE; </P>
+<P>&nbsp; &nbsp;</P>
+<P>extern "C" HRESULT __stdcall DllRegisterServer() </P>
+<P>说明: 调用 regsvr32 *.dll 时候调用, 以便注册控件到注册表中. </P>
+<P>&nbsp; &nbsp;</P>
+<P>DllUnregisterServer </P>
+<P>说明: 调用 regsvr32 *.dll /u 时候调用, 以便删除控件在注册表中的信息. </P>
+<P>&nbsp;</P>
+<P><STRONG>注释：若使用MFC或者ATL，通过向导生成的代码中，导出函数和类厂已经自动实现完，不需要添加多余代码。就专注具体实现吧。而且引用计数的维护工作也无需管理。 </STRONG></P>
+<P>&nbsp; &nbsp;</P>
+<P><STRONG>"客户"端使用流程</STRONG> </P>
+<P>初始化COM库 CoInitialize </P>
+<P>创建COM实例, 创建的方式有: </P>
+<P>CoGetClassObject </P>
+<P>CoCreateInstance </P>
+<P>CoCreateInstanceEx </P>
+<P>查询接(QueryInterface) </P>
+<P>使用接口指针 </P>
+<P>释放对象资源(CoFreeLibrary, CoFreeUnusedLibraries) </P>
+<P>释放COM(CoUninitialize) </P>
+</body></html>

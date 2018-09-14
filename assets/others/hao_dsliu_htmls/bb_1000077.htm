@@ -1,0 +1,40 @@
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=utf8"><title>163 blogs的博客：Order of Driver Loading</title>
+<style type="text/css">
+a{color: #000000;text-decoration : none;font-size: 10pt;}
+a:hover {color: red;text-decoration : underline;}
+.replyBox{padding:4px;border:1px solid #D8D8D8;}
+</style></head><body><h2>Order of Driver Loading</h2>
+<p align="right">发布时间：2013-8-18 20:32
+<br>分类名称：Driver</p><br>
+<p style="text-align: justify;"   ><strong>From: &lt; Programming the Microsoft Windows Driver Model 2nd&gt;
+</strong></p><p style="text-align: justify;"   >
+&nbsp;</p><p style="text-align: justify;"   >I said earlier that devices can have upper and lower filter drivers as well as a function driver. <strong>Two registry keys</strong> associated with the device contain information about <strong>filter drivers</strong>. The<strong>
+<em>device key</em></strong>, which contains information about an<strong> instance of your hardware</strong>, can have <strong><em>UpperFilters</em></strong> and <strong><em>LowerFilters</em></strong> values that specify filter drivers for that instance. There is another registry key for the class to which the device belongs. For example, a mouse belongs to the Mouse class, which you could probably have figured out without me telling you. The <strong><em>class key</em>
+</strong>can also contain <strong><em>UpperFilters</em>
+</strong>and<strong>
+<em>LowerFilters</em></strong> values. They specify filter drivers that the system will load for every device belonging to the class.
+</p><p style="text-align: justify;"   ><img title="Order of Driver Loading - Howie - Dspace"   src="pic/img0.ph.126.net_XpvzQQ6bxb_bHZ1hgNS2-A==_2053641430181076813.jpg"   alt=""   />
+</p><p style="text-align: justify;"   ><strong>Figure 2-6.</strong>
+<em>Layering of recursively enumerated devices.</em>
+</p><p style="text-align: justify;"   >
+&nbsp;</p><p style="text-align: justify;"   >No matter where it appears, an <em>UpperFilters</em> or <em>LowerFilters</em> value is of type <strong><em>REG_MULTI_SZ</em>
+</strong>and can therefore contain<strong> one or more</strong> null-terminated Unicode string values.
+</p><p style="text-align: justify;"   >
+&nbsp;</p><p style="text-align: justify;"   ><strong>NOTE</strong>
+<br><strong>Windows 98/Me doesn't support <em>the REG_MULTI_SZ</em> registry type and doesn't fully support Unicode. </strong>In Windows 98/Me, the <em>UpperFilters</em> and <em>LowerFilters</em> values are <strong><em>REG_BINARY</em></strong> values that contain multiple null-terminated ANSI strings followed by an extra null terminator.
+</p><p style="text-align: justify;"   >
+&nbsp;</p><p style="text-align: justify;"   >It may be important in some situations to understand in what order the system calls drivers. The actual process of "loading" a driver entails mapping its code image into virtual memory, and the order in which that's done is actually not very interesting. You might be interested, however, in knowing the order of calls to the <em>AddDevice</em> functions in the various drivers. (Refer to Figure 2-7.)
+</p><p style="text-align: justify;"   ><img title="Order of Driver Loading - Howie - Dspace"   src="pic/img2.ph.126.net_bYsHUYop--m24PrnTEnZJA==_1449596130159990443.jpg"   alt=""   />
+</p><p style="text-align: justify;"   ><strong>Figure 2-7.</strong>
+<em>Order of AddDevice calls.</em>
+</p><ol><li><div style="text-align: justify;"   >The system first calls the <em>AddDevice</em> functions in any lower filter drivers specified in the device key for the device, in the order in which they appear in the <em>LowerFilters</em> value.
+</div></li><li><div style="text-align: justify;"   >Then the system calls <em>AddDevice</em> in any lower filter drivers specified in the class key. Again, the calls occur in the order in which the drivers appear in the <em>LowerFilters</em> string.
+</div></li><li><div style="text-align: justify;"   >The system calls <em>AddDevice</em> in the driver specified by the <em>Service</em> value in the device key. This is the function driver.
+</div></li><li><div style="text-align: justify;"   >The system calls <em>AddDevice</em> for any upper filter drivers specified in the device key, in the order in which they appear in the <em>UpperFilters</em> data string.
+</div></li><li><div style="text-align: justify;"   >Finally the system calls <em>AddDevice</em> for any upper filter drivers specified in the class key, in the order in which they appear in the <em>UpperFilters</em> data string.
+</div></li></ol><p style="text-align: justify;"   >As I explain later in this chapter, each <em>AddDevice</em> function creates a kernel <em>DEVICE_OBJECT</em> and links it into the stack rooted in the PDO. Therefore, the order of calls to <em>AddDevice</em> governs the order of device objects in the stack and, ultimately, the order in which drivers see IRPs.
+</p><p style="text-align: justify;"   >
+&nbsp;</p><p style="text-align: justify;"   ><strong>NOTE</strong>
+<br>You might have noticed that the loading of upper and lower filters belonging to the class and to the device instance isn't neatly nested as you might have expected. Before I knew the facts, I guessed that device-level filters would be closer to the function driver than class-level filters.
+</p>
+</body></html>

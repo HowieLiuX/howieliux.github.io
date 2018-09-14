@@ -1,0 +1,19 @@
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=utf8"><title>163 blogs的博客：交通银行 登陆蓝屏的解决途径</title>
+<style type="text/css">
+a{color: #000000;text-decoration : none;font-size: 10pt;}
+a:hover {color: red;text-decoration : underline;}
+.replyBox{padding:4px;border:1px solid #D8D8D8;}
+</style></head><body><h2>交通银行 登陆蓝屏的解决途径</h2>
+<p align="right">发布时间：2014-5-11 16:10
+<br>分类名称：Driver</p><br>
+
+<P><WBR>今天偶然去交通银行查询公积金，发现输入密码的时候出现蓝屏，重启后用Windbg瞧了瞧，说是金山毒霸的驱动崩溃了：</P>
+<P>栈回溯如下，貌似有些问题，估计是交行驱动和毒霸之间的驱动引起的：</P>
+<P>&nbsp;nt!KeBugCheckEx<BR>&nbsp;nt!ExFreePoolWithTag+0xcd9<BR>&nbsp;kdhacker64+0x2f15<BR>&nbsp;0xffffe000`000002d0<BR>&nbsp;0x88<BR>&nbsp;0x4b534657<BR>&nbsp;0x7ff<BR>&nbsp;0xffffe000`68da85a0<BR>&nbsp;0xffffe000`677019d0</P>
+<P>网上搜了搜，都是说表面现象。交行的登录框使用的是键盘过滤驱动：</P>
+<DIV><IMG title="交通银行 登陆蓝屏的解决途径 - Howie - Dspace"   style="margin: 0px 10px 0px 0px;"   alt="交通银行 登陆蓝屏的解决途径 - Howie - Dspace"   src="pic/img2.ph.126.net_VtYpQL7OkqHJgItI5sDGSQ==_6599277586005876746.png"   ></DIV>
+<DIV>（注意，上面其实还有腾讯的财付通键盘过滤驱动）。</DIV>
+<DIV>既然是金山驱动崩溃了，那就先把金山毒霸退出试试，退出后，它应该不会监控这些过滤驱动。</DIV>
+<DIV>果然，退出后，使用正常，不会蓝屏了。</DIV>
+<P>&nbsp;这个蓝屏适用于我，不知道其它人情况是否也一样。大家可以尝试关闭安全防护进程后再登陆交通银行。</P>
+</body></html>

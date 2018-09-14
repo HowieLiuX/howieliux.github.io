@@ -1,0 +1,10 @@
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=utf8"><title>163 blogs的博客：【原】WRK 代码分析图（不断更新）</title>
+<style type="text/css">
+a{color: #000000;text-decoration : none;font-size: 10pt;}
+a:hover {color: red;text-decoration : underline;}
+.replyBox{padding:4px;border:1px solid #D8D8D8;}
+</style></head><body><h2>【原】WRK 代码分析图（不断更新）</h2>
+<p align="right">发布时间：2012-8-6 17:07
+<br>分类名称：WRK</p><br>
+Windows 内核结构（全图）：<br><br><div><img title="【原】WRK 代码分析图（不断更新） - Howie - Dspace"  alt="【原】WRK 代码分析图（不断更新） - Howie - Dspace"  style="margin:0 10px 0 0;"  src="pic/img0.ph.126.net_VSoMyuQY64kmJAfW6vj-Lw==_6597190712935932410.jpg"  ><br><br><br>Windows 内核结构（简图）：<br></div> <br><wbr><div><div><img title="【原】WRK 代码分析图（不断更新） - Howie - Dspace"  alt="【原】WRK 代码分析图（不断更新） - Howie - Dspace"  style="margin:0 10px 0 0;"  src="pic/img1.ph.126.net_sP9ErnWl1yKHVHGSjMK7iQ==_3029796649331312061.jpg"  ></div> <br><br>XP启动调用顺序：可以看出：idle -&gt; System -&gt;smss.exe-&gt;csrss.exe-&gt;winlogon.exe-&gt;lsass.exe-&gt;services.exe-&gt;explorer.exe<br><img title="【原】WRK 代码分析图（不断更新） - Howie - Dspace"  alt="【原】WRK 代码分析图（不断更新） - Howie - Dspace"  style="margin:0 10px 0 0;"  src="pic/img9.ph.126.net_cmP-hGFN5BMKdFCnvF1R5g==_6597231394866157989.jpg"  ><br><br><br></div>WRK中，对象管理器如何组织对象 的。将C语言变成类似C++的方式，Object由header和body俩部分构成。header中包含type类型。每种type对应了一些方法（OBJECT_TYPE_INITIAILIZER)<br><div><img title="【原】WRK 代码分析图（不断更新） - Howie - Dspace"  alt="【原】WRK 代码分析图（不断更新） - Howie - Dspace"  style="margin:0 10px 0 0;"  src="pic/img2.ph.126.net_DsQnqtdGCHZQCyFtHqlwdg==_6597261081680121002.jpg"  ></div>&nbsp;<br>创建一个对象的步骤：<br><div><img title="【原】WRK 代码分析图（不断更新） - Howie - Dspace"  alt="【原】WRK 代码分析图（不断更新） - Howie - Dspace"  style="margin:0 10px 0 0;"  src="pic/img7.ph.126.net_o1MrnLN_zTkzJRgQodlA4A==_6597156628075473827.jpg"  ></div>
+</body></html>

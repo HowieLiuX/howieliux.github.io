@@ -1,0 +1,42 @@
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=utf8"><title>163 blogs的博客：[原] Inside C++ Object model 笔记（3）</title>
+<style type="text/css">
+a{color: #000000;text-decoration : none;font-size: 10pt;}
+a:hover {color: red;text-decoration : underline;}
+.replyBox{padding:4px;border:1px solid #D8D8D8;}
+</style></head><body><h2>[原] Inside C++ Object model 笔记（3）</h2>
+<p align="right">发布时间：2011-12-6 17:06
+<br>分类名称：C++</p><br>
+
+<P><SPAN style="FONT-SIZE: 18pt;"   ><STRONG>The Semantics of Function </STRONG></SPAN></P>
+<P><SPAN style="FONT-SIZE: 12pt;"   ><STRONG>Member 的各种调用方式 </STRONG></SPAN></P>
+<P><STRONG>Nonstatic Member Functions </STRONG></P>
+<P>obj.magnitude(); 转换为：magnitude_7Point3dFv( register Point3d * const this); </P>
+<P>this用来函数内部使用。关于函数名字变形和处理问题，见本书内容。不做详细说明。<BR><BR><STRONG>Virtual Member Functions </STRONG></P>
+<P>ptr-&gt;normalize(); 转化为：( *(ptr-&gt;_vptr[1]) )(ptr); </P>
+<P>看看，这就是所谓的"运行时"绑定。 _vptr[1]，也就是虚函数表中的第一个函数地址，会随着程序代码的不同情况，有所变化。例如，ptr是一个Derived Class，那么这个位置，很有可能被Derived Class 替换掉。那么这个调用就会去调用子类的虚函数，而不是基类的。 </P>
+<P>一个class只会有一个virtual table，每一table内含有其对应的class object中所有的active virtual functions的实际地址，这些函数包括： </P>
+<OL>
+<LI>class所定义的functions，这些functions可能会改写（overriding）一个已经存在的base class functions。<STRONG> </STRONG>
+</LI><LI>继承自base class的functions（没有被derived class改写）。<STRONG> </STRONG>
+</LI><LI>一个pure_virtual_called() 函数实体，扮演空间保卫和异常处理。<STRONG> </STRONG></LI></OL>
+<P><BR><STRONG>单一继承下的Virtual functions </STRONG></P>
+<P><FONT face="宋体"  >class Point<BR>{<BR>public:<BR>&nbsp;&nbsp;&nbsp;&nbsp;virtual ~Point();<BR>&nbsp;&nbsp;&nbsp;&nbsp;virtual Point &amp;mult(float) = 0;<BR>&nbsp;&nbsp;&nbsp;&nbsp;<BR>&nbsp;&nbsp;&nbsp;&nbsp;// ... ...<BR>&nbsp;&nbsp;&nbsp;&nbsp;float x() const { return _x;}<BR>&nbsp;&nbsp;&nbsp;&nbsp;virtual float y() const {return 0;}<BR>&nbsp;&nbsp;&nbsp;&nbsp;virtual float z() const {return 0;}<BR>&nbsp;&nbsp;&nbsp;&nbsp;// ... ...<BR><BR>protected:<BR>&nbsp;&nbsp;&nbsp;&nbsp;Point(float x = 0.0);<BR>&nbsp;&nbsp;&nbsp;&nbsp;float _x;<BR>};<BR><BR>class Point2d : public Point<BR>{<BR>public:<BR>&nbsp;&nbsp;&nbsp;&nbsp;Point2d(float x = 0.0, float y = 0.0) : Point(x), _y(y) { }<BR>&nbsp;&nbsp;&nbsp;&nbsp;~Point2d();<BR><BR>&nbsp;&nbsp;&nbsp;&nbsp;// override base class virtual functions<BR>&nbsp;&nbsp;&nbsp;&nbsp;Point2d&amp; mult(float);<BR>&nbsp;&nbsp;&nbsp;&nbsp;float y() const {return _y};<BR>protected:<BR>&nbsp;&nbsp;&nbsp;&nbsp;float _y;<BR>};<BR><BR>class Point3d : public Point2d<BR>{<BR>public:<BR>&nbsp;&nbsp;&nbsp;&nbsp;Point3d(float x = 0.0, float y = 0.0, float z = 0.0) <BR>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;: Point2d(x, y), _z(z) { }<BR>&nbsp;&nbsp;&nbsp;&nbsp;~Point3d();<BR><BR>&nbsp;&nbsp;&nbsp;&nbsp;// override base class virtual functions<BR>&nbsp;&nbsp;&nbsp;&nbsp;Point3d&amp; mult(float);<BR>&nbsp;&nbsp;&nbsp;&nbsp;float z() const {return _z};<BR>protected:<BR>&nbsp;&nbsp;&nbsp;&nbsp;float _z;<BR>}; </FONT></P>
+<P><STRONG><BR><IMG title="[原] Inside C++ Object model 笔记（3） - Dsliu - Dspace"   alt=""   src="pic/img2.ph.126.net_f_6LUI7Ot2hQPJmZieNrQw==_2734247923784434682.jpg"   > </STRONG></P>
+<P>要说明的是，以上三张表，在运行的时候实际上都是存在的。子类只是拷贝了父类的表格，然后进行改写。而不是直接拿来父类的表格在上面写写画画。为什么，待会儿我会摘取《ATL Under the hood》中的一节来说明。 </P>
+<P><STRONG>多继承下的Virtual Functions </STRONG></P>
+<P>多重继承的问题在于Dervied class和第二个和其后继的base classes的this指针调节上。 </P>
+<P><FONT face="宋体"  >class Base1<BR>{<BR>public:<BR>&nbsp;&nbsp;&nbsp;&nbsp;Base1();<BR>&nbsp;&nbsp;&nbsp;&nbsp;virtual ~Base1();<BR>&nbsp;&nbsp;&nbsp;&nbsp;virtual void speakClearly();<BR>&nbsp;&nbsp;&nbsp;&nbsp;virtual Base1 *clone() const;<BR>protected:<BR>&nbsp;&nbsp;&nbsp;&nbsp;float data_Base1;<BR>};<BR><BR>class Base2<BR>{<BR>public:<BR>&nbsp;&nbsp;&nbsp;&nbsp;Base2();<BR>&nbsp;&nbsp;&nbsp;&nbsp;virtual ~Base2();<BR>&nbsp;&nbsp;&nbsp;&nbsp;virtual void mumble();<BR>&nbsp;&nbsp;&nbsp;&nbsp;virtual Base2 *clone() const;<BR>protected:<BR>&nbsp;&nbsp;&nbsp;&nbsp;float data_Base2;<BR>};<BR><BR>class Derived : public Base1, public Base2<BR>{<BR>public:<BR>&nbsp;&nbsp;&nbsp;&nbsp;Derived();<BR>&nbsp;&nbsp;&nbsp;&nbsp;virtual ~Derived();<BR>&nbsp;&nbsp;&nbsp;&nbsp;virtual Derived *clone() const;<BR>protected:<BR>&nbsp;&nbsp;&nbsp;&nbsp;float data_Derived;<BR>}; </FONT></P>
+<P><FONT face="宋体"  >Base2 *pBase2 = new Derived; ==&gt;&gt;转换为： </FONT></P>
+<P><FONT face="宋体"  >Derived *pTemp = new Derived;<BR>Base2* pBase2 = pTemp ? (Base2 *)((char *)pTemp + sizeof(Base1)) : 0; </FONT></P>
+<P>当要执行: delete pBase2的时候，需要再次调整回，以便指到对象的起始点。然而，这个offset在编译时刻无法确定。所以调整需要在执行期间来进行。比较有效率的做法是使用Thunk技术（就是插入一小段汇编）。看看VS2010的Derived布局： </P>
+<P><FONT face="宋体"  >+---<BR>| +--- (base class Base1)<BR>0 | | {vfptr}<BR>4 | | data_Base1<BR>| +---<BR>| +--- (base class Base2)<BR>8 | | {vfptr}<BR>12 | | data_Base2<BR>| +---<BR>16 | data_Derived<BR>+---<BR>Derived::$vftable@Base1@:<BR>| &amp;Derived_meta<BR>| 0<BR>0 | &amp;Derived::{dtor}<BR>1 | &amp;Base1::speakClearly<BR>2 | &amp;Derived::clone<BR>Derived::$vftable@Base2@:<BR>| -8<BR>0 | &amp;thunk: this-=8; goto Derived::{dtor} ;看到没，这里有几个thunk字样，后面调整this，然后调用子类函数。<BR>1 | &amp;Base2::mumble<BR>2 | &amp;thunk: this-=8; goto Base2* Derived::clone<BR>3 | &amp;thunk: this-=8; goto Derived* Derived::clone<BR>Derived::{dtor} this adjustor: 0<BR>Derived::clone this adjustor: 0<BR>Derived::__delDtor this adjustor: 0<BR>Derived::__vecDelDtor this adjustor: 0 </FONT></P>
+<P><IMG title="[原] Inside C++ Object model 笔记（3） - Dsliu - Dspace"   alt=""   src="pic/img5.ph.126.net_tcJwFBWZykWLxhOirT8Mqg==_2607865659241356975.jpg"   >、<BR></P>
+<P><STRONG>虚拟继承下的Virtual Functions </STRONG></P>
+<P><FONT face="宋体"  >class Point2d<BR>{<BR>public:<BR>&nbsp;&nbsp;&nbsp;&nbsp;Point2d(float x = 0.0, float y = 0.0){ }<BR>&nbsp;&nbsp;&nbsp;&nbsp;virtual ~Point2d();<BR><BR>&nbsp;&nbsp;&nbsp;&nbsp;// override base class virtual functions<BR>&nbsp;&nbsp;&nbsp;&nbsp;virtual&nbsp;void mumble();<BR>&nbsp;&nbsp;&nbsp;&nbsp;virtual float z();<BR>protected:<BR>&nbsp;&nbsp;&nbsp;&nbsp;float _x, _y;<BR>};<BR><BR>class Point3d : virtual public Point2d<BR>{<BR>public:<BR>&nbsp;&nbsp;&nbsp;&nbsp;Point3d(float x = 0.0, float y = 0.0, float z = 0.0) <BR>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;: Point2d(x, y), _z(z) { }<BR>&nbsp;&nbsp;&nbsp;&nbsp;~Point3d();<BR><BR>&nbsp;&nbsp;&nbsp;&nbsp;// override base class virtual functions<BR>&nbsp;&nbsp;&nbsp;&nbsp;Point3d&amp; mult(float);<BR>&nbsp;&nbsp;&nbsp;&nbsp;float z() const {return _z;}<BR>protected:<BR>&nbsp;&nbsp;&nbsp;&nbsp;float _z;<BR>}; </FONT></P>
+<P><IMG title="[原] Inside C++ Object model 笔记（3） - Dsliu - Dspace"   alt=""   src="pic/img7.ph.126.net_HBpXXNYTl7FlDpqqIGgW5g==_1307732741814838427.jpg"   ><STRONG> </STRONG></P>
+<P><FONT face="宋体"  >微软编译器布局如下：</FONT></P>
+<P><FONT face="宋体"  >class Point3d size(20):<BR>&nbsp;+---<BR>&nbsp;0 | {vbptr}<BR>&nbsp;4 | _z<BR>&nbsp;+---<BR>&nbsp;+--- (virtual base Point2d)<BR>&nbsp;8 | {vfptr}<BR>12 | _x<BR>16 | _y<BR>&nbsp;+---<BR>Point3d::$vbtable@:<BR>&nbsp;0 | 0<BR>&nbsp;1 | 8 (Point3dd(Point3d+0)Point2d)<BR>Point3d::$vftable@:<BR>&nbsp;| -8<BR>&nbsp;0 | &amp;Point3d::{dtor}<BR>&nbsp;1 | &amp;Point2d::mumble<BR>&nbsp;2 | &amp;Point2d::z<BR>Point3d::{dtor} this adjustor: 8<BR>Point3d::__delDtor this adjustor: 8<BR>Point3d::__vecDelDtor this adjustor: 8<BR>vbi:&nbsp;&nbsp;&nbsp; class&nbsp; offset o.vbptr&nbsp; o.vbte fVtorDisp<BR>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Point2d&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 8&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 0&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 4 0</FONT></P>
+<P>不要在virtual base clas中声明nonstatic data member。为什么？你可以自己试试。 </P>
+<P><BR><STRONG>Static Member Functions</STRONG> </P>
+<P>没有啥好说的，Static Member Functions就和一般的普通函数(非成员函数)一样，该怎么调用，就怎么调用。这种函数是憋屈了一段时间才被推出的，以前有种奇怪的调用方法：((Point3d *)0)-&gt;object_count(); 在引入static member functions之前，C++语言要求所有的member functions都必须由该class的object调用，所有就出现了上述调用方法。</P>
+</body></html>

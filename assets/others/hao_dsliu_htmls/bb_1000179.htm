@@ -1,0 +1,96 @@
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=utf8"><title>163 blogs的博客：[原] Inside C++ Object model 笔记（1）</title>
+<style type="text/css">
+a{color: #000000;text-decoration : none;font-size: 10pt;}
+a:hover {color: red;text-decoration : underline;}
+.replyBox{padding:4px;border:1px solid #D8D8D8;}
+</style></head><body><h2>[原] Inside C++ Object model 笔记（1）</h2>
+<p align="right">发布时间：2011-12-4 21:00
+<br>分类名称：C++</p><br>
+ 
+<P><SPAN style="FONT-SIZE: 14pt;"   ><STRONG>Default Constructor </STRONG></SPAN></P>
+<P>在<STRONG>编译器</STRONG>需要的时候，会被合成出来。（谁需要？恩，编译器。何时才需要？以下四种情况需要。） </P>
+<P>&nbsp;下面的<STRONG>Default Constructor</STRONG>可以是implicit和explicit </P>
+<OL>
+<LI>
+<DIV style="TEXT-ALIGN: justify;"   ><STRONG>带有Default Constructor 的Member Class Object。 </STRONG></DIV>
+<P>如果Default Constructor已经被定义出来，编译器会安插初始化成员代码。 </P>
+</LI><LI>
+<DIV style="TEXT-ALIGN: justify;"   ><STRONG>带有Default Constructor的Base Class </STRONG></DIV>
+<P>如果Default Constructor已经被定义出来，编译器会安插调用上一层base class的Default constructor。 如果类本身已经有多个构造函数，编译器会在每个构造函数内部的最开始，插入调用Base Class</P>
+</LI><LI>
+<P><STRONG>带有Virtual Function的Class。本身声明的或者从父类继承而来的。</STRONG>（这也就隐含了Member Class如果也有虚函数，编译器肯定会为此Class合成Default constructor出来，就回到了第一条，本Class也要合成出Default constructor来调用Member Class的Default constructor）<STRONG> </STRONG>合成出来的Default Constructor是用来初始化虚指针等。 </P>
+</LI><LI>
+<P><STRONG>带有一个Virtual Base Class的Class</STRONG>。每个编译器在实现Virtual base class上，区别比较大。微软是再插入一个指针（vbptr)，来指向虚基表。<STRONG> <BR></STRONG></P></LI></OL>
+<P><SPAN style="FONT-SIZE: 14pt;"   ><STRONG>注意</STRONG></SPAN></P>
+<UL>
+<LI><SPAN style="FONT-SIZE: 14pt;"   ><FONT color="#ff0000"  ><STRONG>上面说的前两条，</STRONG><FONT size="3"  ><STRONG>Default Constructor 可能是程序员写的（explicit），也可能时被编译器合成的（implicit）。如CTest有一个Member Class Object : CB，CB没有声明Default Constructor，CB 中有一个Member Class Object : CA，CA中有程序员编写了一个Default Constructor，问CTest会合成一个Default Constructor么？会的。因为CB为了调用CA的Default Constructor，编译器会给CB合成一个Default Constructor，CTest则再次由编译器合成一个Default Constructor，调用CB的Default Constructor，最终调用到CA的</STRONG><STRONG>Default Constructor。</STRONG></FONT></FONT></SPAN> 
+</LI><LI><SPAN style="FONT-SIZE: 14pt;"   ><FONT color="#ff0000"  ><STRONG>只有在class中没有任何构造函数，编译器才会考虑合成</STRONG><FONT size="3"  ><STRONG>Default Constructor，如果class有构造函数（default or not default with parameters），</STRONG><STRONG>Default Constructor是不会被合成的。但编译器可能会给现有的构造函数安插一些初始化代码。</STRONG></FONT></FONT></SPAN> 
+</LI><LI><SPAN style="FONT-SIZE: 14pt;"   ><STRONG><FONT color="#ff0000"  >合成操作不是类定完就开始合成了，是当Constructor被调用的时候才会发生。</FONT></STRONG></SPAN> 
+</LI><LI><SPAN style="FONT-SIZE: 14pt;"   ></SPAN><SPAN style="FONT-SIZE: 14pt;"   ><STRONG><FONT color="#ff0000"  >被合成的构造函数只满足编译器需要，他不会帮助你实现你想要的功能（如将成员全部清零等）。</FONT></STRONG></SPAN></LI></UL>
+<P><SPAN style="FONT-SIZE: 14pt;"   ><STRONG>Copy Constructor </STRONG></SPAN></P>
+<P>拷贝的三种形式： </P>
+<OL>
+<LI>
+<DIV style="TEXT-ALIGN: justify;"   >初始化 </DIV>
+</LI><LI>
+<DIV style="TEXT-ALIGN: justify;"   >以class object传参（非引用和指针方式）</DIV>
+</LI><LI>
+<DIV style="TEXT-ALIGN: justify;"   >返回class object （非引用和指针方式）</DIV></LI></OL>
+<P><FONT color="#ff0000"  ><STRONG>赋值</STRONG>和<STRONG>初始化</STRONG>是有区别的，赋值操作并不会调用<STRONG>Copy Constructor</STRONG>，赋值操作调用的是operator=。初始化明显的一个特征就是在初始化实例的时候，前面一定有它的定义，即在定义中完成初始化操作，如下：<BR>X x0;<BR>X x(x0);&nbsp;&nbsp;&nbsp;&nbsp; // 初始化，调用copy constructor，如果没有，变会被隐式合成。<BR>X x = x0;&nbsp;&nbsp; // 初始化，调用copy constructor，如果没有，变会被隐式合成。</FONT></P>
+<P><FONT color="#ff0000"  >赋值（assignment操作为：<BR>X x0;<BR>X x1;<BR>x1 = x0;&nbsp;&nbsp;&nbsp; // 赋值操作，调用 operator= ，如果没有，变会被隐式合成。</FONT></P>
+<P><FONT color="#ff0000"  >传参和参数返回，为何也是调用<STRONG>Copy Constructor？</STRONG>因为这两种方式中间插入了临时变量，临时变量等于在定义的时候被初始化，初始化则调用<STRONG>Copy Constructor</STRONG>。</FONT></P>
+<P>编译器是如何拷贝？ 引自原文： "如果class没有提供一个explicit copy constructor，当class object以相同class的另一个object最为初值时，其内部是以所谓的<STRONG>default memberwise initialization</STRONG>手法完成的"。 </P>
+<P><STRONG>default memberwise initialization</STRONG>：把每一个内建的或者派生的data member从某个object拷贝到另外一个object，而member class object不会被拷贝，编译器而是以递归的方式实行memberwise initialization（注意，没有default）。 </P>
+<P>编译器默认是以bitwise copy semantics来实现<STRONG>default memberwise initialization</STRONG>拷贝的（位拷贝）。如果编译器在需要的时候，需要合成拷贝构造函数，那么bitwise copy也就不会实施的。换过来说，如果class不展现bitwise copy semantics时候，编译器会合成出来一个nontrivial的copy constructor，当然在此函数中，如整数，指针，数组等等的nonclass members也会被复制。</P>
+<P><FONT color="#ff0000"  ><STRONG>我在使用VS2013调试模式测试发现，即便是class展现bitwise copy semantics，编译器同样会合成一个copy constructor，这又怎么解释呢？我觉得既然是要拷贝，即便是bitwise copy，你也得有条汇编来执行吧？如果你不合成任何函数或者汇编，这拷贝如何进行？所以我觉得书中说的，只有nontrivial的copy constructor才会被合成到程序中有问题，trivial的copy constructor也会被合成，只是他们做的工作不一样。nontrival做的工作会更多，除了执行bitwise copy，还要调用成员或父类等的copy constructor，虚指针调整等。而trivial只做</STRONG><STRONG>bitwise copy。 </STRONG><STRONG>本人拙见，不一定正确。</STRONG></FONT></P>
+<P><FONT color="#ff0000"  ><FONT color="#000000"  >Bitwise Copy是很危险的，特别是处理成员指针的时候，所以Effective C++，建议为每个C++类都声明一个copy Constructor（拷贝）和assignment operator（赋值）。</FONT></FONT></P>
+<P>何时不展现"Bitwise Copy Semantics"？和Default constructor类似： </P>
+<OL>
+<LI>
+<DIV style="TEXT-ALIGN: justify;"   >当Class含有一个member object，而后者的class声明有一个copy constructor（implicit或者explicit）。 </DIV>
+</LI><LI>
+<DIV style="TEXT-ALIGN: justify;"   >当Class继承自一个Base Class，而后者存在一个copy constructor（implicit或者explicit）。 </DIV>
+</LI><LI>
+<DIV style="TEXT-ALIGN: justify;"   >当Class声明了一个或者多个virtual function。 （防止父类切割子类）</DIV>
+</LI><LI>
+<DIV style="TEXT-ALIGN: justify;"   >当Class派生自一个继承链，其中有一个或者多个virtual base class。 </DIV></LI></OL>
+<P>合成出来的copy constructor是为了调用成员的copy constructor。所以这些代码会被编译器安插进来。 <BR></P>
+<P><SPAN style="FONT-SIZE: 14pt;"   ><STRONG>编译器的"程序转化语意学" </STRONG></SPAN></P>
+<P><FONT face="宋体"  >class X<BR>{<BR>public:<BR>&nbsp;&nbsp;&nbsp;&nbsp;int a;<BR>&nbsp;&nbsp;&nbsp;&nbsp;int b;<BR><BR>&nbsp;&nbsp;&nbsp;&nbsp;X(): a(1), b(2)<BR>&nbsp;&nbsp;&nbsp;&nbsp;{<BR><BR>&nbsp;&nbsp;&nbsp;&nbsp;}<BR>&nbsp;&nbsp;&nbsp;&nbsp;X(const X &amp;x1)<BR>&nbsp;&nbsp;&nbsp;&nbsp;{<BR>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;a = x1.a;<BR>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;b = x1.b;<BR>&nbsp;&nbsp;&nbsp;&nbsp;}<BR>};</FONT><BR></P>
+<P><SPAN style="FONT-SIZE: 12pt;"   ><STRONG>Explicit initialization（初始化）</STRONG></SPAN><BR><FONT face="宋体"  >X xx;<BR>X x1(xx);<BR>X x2 = xx;&nbsp;&nbsp;&nbsp; <STRONG>// initializatin, not assignment</STRONG><BR>X x3 = X(xx); <STRONG>// initializatin, not assignment</STRONG></FONT><BR></P>
+<P>编译器转化为俩个阶段： </P>
+<OL>
+<LI>
+<DIV style="TEXT-ALIGN: justify;"   >重写每一个定义，其中的初始化操作会被去除。（定义就是"占用内存"）。 </DIV>
+</LI><LI>
+<DIV style="TEXT-ALIGN: justify;"   >将class的copy constructor调用安插进去。 </DIV></LI></OL>
+<P>转化后变为： </P>
+<P><FONT face="宋体"  >X x1;<BR>X x2;<BR>X x3; <BR></FONT></P>
+<P><FONT face="宋体"  >x1.X::X(xx);<BR>x2.X::X(xx);<BR>x3.X::X(xx);</FONT><BR></P>
+<P>下面是我使用Visual studio 2010，编译出的汇编的代码，来解释这个操作： </P>
+<P><FONT face="宋体"  >&nbsp;&nbsp;&nbsp;&nbsp;X xx;<BR>0095144E lea ecx,[xx] ;xx已经被分配出内存<BR>00951451 call X::X (95112Ch) ;此处调用Default Constructor来初始化对象。<BR><BR>&nbsp;&nbsp;&nbsp;&nbsp;X x1(xx);<BR>00951456 lea eax,[xx] ;取xx地址<BR>00951459 push eax ;将xx地址压栈，也就是作为copy constructor的参数<BR>0095145A lea ecx,[x1] ;x1(堆栈地址，ebp-XXX)的内存被分配（相当于X x1），这里把this指针，保存到ecx中<BR>0095145D call X::X (95109Bh) ;调用copy constructor<BR><BR>&nbsp;&nbsp;&nbsp;&nbsp;X x2 = xx;<BR>00951462 lea eax,[xx] ;和x1类似<BR>00951465 push eax <BR>00951466 lea ecx,[x2] <BR>00951469 call X::X (95109Bh) <BR><BR>&nbsp;&nbsp;&nbsp;&nbsp;X x3 = X(xx);<BR>0095146E lea eax,[xx] ;和x1类似<BR>00951471 push eax <BR>00951472 lea ecx,[x3] <BR>00951475 call X::X (95109Bh)</FONT><BR><BR><SPAN style="FONT-SIZE: 12pt;"   ><STRONG>Argument Initialization </STRONG></SPAN></P>
+<P><FONT face="宋体"  >void foo(X x0); </FONT></P>
+<P><FONT face="宋体"  >X xx; </FONT></P>
+<P><FONT face="宋体"  >foo(xx); </FONT></P>
+<P>编译器使用一种导入暂时object的解决办法，将暂时object交给函数，转化为： </P>
+<P><FONT face="宋体"  >X __temp0;<BR>__temp0.X::X(xx);<BR>foo(__temp0);</FONT><BR></P>
+<P>下面是Visual Studio 2010产生的汇编代码： </P>
+<P><FONT face="宋体"  >foo(xx);<BR>0095147A sub esp,8 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;; 8是Class X的大小，即在堆栈中划出__temp0的内存地址为（esp-8）<BR>0095147D mov ecx,esp ;将__temp0的地址保存到ecx中，也就是保存this指针到ecx中。<BR>0095147F lea eax,[xx] <BR>00951482 push eax ;将xx地址作为拷贝构造函数的参数传递<BR>00951483 call X::X (95109Bh) ;调用拷贝构造函数<BR>00951488 call foo (951172h) ;为何没有push__temp0呢？因为__temp0是在堆栈中分配的，已经在堆栈中了，无需再push了。<BR>0095148D add esp,8 ; 调整前面减去的8的esp。再加回来。</FONT><BR></P>
+<P>看来微软编译器也是使用暂时object来操作的。 </P>
+<P>再看看声明为void foo2(X &amp;x0); 的汇编： </P>
+<P><FONT face="宋体"  >Foo2(xx);<BR>00951490 lea eax,[xx] <BR>00951493 push eax ;直接取xx的地址，作为Foo2的参数<BR>00951494 call Foo2 (95114Ah) <BR>00951499 add esp,4 </FONT><BR></P>
+<P>看来以引用的方式调用，不会构造暂时object，也就不用调用copy constructor，省去了很多代码。这就是引用传递的好处。 <BR></P>
+<P><SPAN style="FONT-SIZE: 12pt;"   ><STRONG>Return Value Initialization </STRONG></SPAN></P>
+<P><FONT face="宋体"  >X bar()<BR>{<BR>&nbsp;&nbsp;&nbsp;&nbsp;X xx;<BR>&nbsp;&nbsp;&nbsp;&nbsp;// ... do something&nbsp;using xx;</FONT><FONT face="宋体"  ><BR>&nbsp;&nbsp;&nbsp;&nbsp;return xx;<BR>}<BR></FONT></P>
+<P><FONT face="宋体"  >被转化为： </FONT></P>
+<P><FONT face="宋体"  >void bar(X &amp;__result)<BR>{<BR>&nbsp;&nbsp;&nbsp;&nbsp;X xx;<BR>&nbsp;&nbsp;&nbsp;&nbsp;xx.X::X(); //调用 default constructor<BR>&nbsp;&nbsp;&nbsp; // ... do something&nbsp;using xx;<BR>&nbsp;&nbsp;&nbsp;&nbsp;__result.X::X(xx); //调用copy constructor<BR>&nbsp;&nbsp;&nbsp;&nbsp;return;<BR>}<BR>X xx = bar();<BR></FONT>被转化为： </P>
+<P>X xx;<BR>bar(xx);<BR></P>
+<P>看看visual studio 2010的汇编： </P>
+<P><FONT face="宋体"  >X xx = bar();<BR>00B2158E lea eax,[xx] <BR>00B21591 push eax ;可以看出bar以xx的地址作为函数参数。<BR>00B21592 call bar (0B21131h) <BR>00B21597 add esp,4 <BR><BR>X bar()<BR>{<BR>&nbsp;&nbsp;&nbsp;&nbsp;X xx;<BR>00B2144E lea ecx,[xx] <BR>00B21451 call X::X (0B2112Ch) ;调用default constructor<BR>&nbsp;&nbsp;&nbsp;&nbsp;return xx;<BR>00B21456 lea eax,[xx] <BR>00B21459 push eax <BR>00B2145A mov ecx,dword ptr [ebp+8] &nbsp;&nbsp;&nbsp;&nbsp;;ebp+8就是传入的xx的地址，将this保存到ecx中<BR>00B2145D call X::X (0B2109Bh) &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;;调用copy constructor<BR>} </FONT></P>
+<P>编译器可以将其进一步优化为： </P>
+<P><FONT face="宋体"  >void bar(X &amp;__result)<BR>{<BR>&nbsp;&nbsp;&nbsp;&nbsp;__result.X::X();<BR>&nbsp;&nbsp;&nbsp;&nbsp;// ... do something&nbsp;using __result;<BR>&nbsp;&nbsp;&nbsp;&nbsp;return;<BR>}</FONT><BR>此优化称作：Named Return Value(NRV). </P>
+<P>VC 2010中Release版本中默认是打开了NRV，Release版本cl的参数有一项优化为：Maximize Speed(/O2); </P>
+<P>关于NRV，我的博客有转载其他文章介绍。（Release汇编代码没法看了，我使用ollydbg打开后，发现vs2010优化了太多代码了，连bar这个函数都没调用到。） <BR><BR><STRONG>Member Initialization List</STRONG><BR>为了能够顺利编译，必须使用member Initialization list的情况：</P>
+<P>当初始化一个reference member时<BR>当初始化一个const member时<BR>当调用一个base class的constructor，而且它有一组参数时<BR>当调用一个member class的constructor，而且它有一组参数时</P>
+<P>list中的初始化顺序是由class中的members声明的顺序决定的，不是由list中的排序顺序决定的。</P>
+</body></html>

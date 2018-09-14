@@ -1,0 +1,56 @@
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=utf8"><title>163 blogs的博客：驱动设备命名</title>
+<style type="text/css">
+a{color: #000000;text-decoration : none;font-size: 10pt;}
+a:hover {color: red;text-decoration : underline;}
+.replyBox{padding:4px;border:1px solid #D8D8D8;}
+</style></head><body><h2>驱动设备命名</h2>
+<p align="right">发布时间：2014-5-6 14:29
+<br>分类名称：Driver</p><br>
+<p>Windows NT使用对象管理器集中管理大量的内部数据结构，包括我们讨论过的驱动程序对象和设备对象。David Solomon在《Inside Windows NT, Second Edition (Microsoft Press, 1998)》的第三章"System Mechanisms"中给出了关于Windows NT对象管理器和命名空间的一个比较完整的阐述。对象都有名称，对象管理器用一个层次化的命名空间来管理这些名称。图中以文件夹形式显示的对象是目录对象，它可以包含子目录或常规对象，其它图标则代表正常对象。
+</p><p><img title="驱动设备命名 - Howie - Dspace"   src="pic/img1.ph.126.net_l3ZY-3tGT1op99PRmuMczQ==_6608267193074026876.jpg"   alt=""   />
+</p><p>通常设备对象都把自己的名字放到\Device目录中。在Windows 2000中，设备的名称有两个用途。
+</p><p>第一个用途，设备命名后，其它内核模式部件可以通过调用IoGetDeviceObjectPointer函数找到该设备，找到设备对象后，就可以向该设备的驱动程序发送IRP。
+</p><p>另一个用途，允许应用程序打开命名设备的句柄，这样它们就可以向驱动程序发送IRP。应用程序可以使用标准的CreateFile API打开命名设备句柄，然后用ReadFile、WriteFile，和DeviceIoControl向驱动程序发出请求。应用程序打开设备句柄时使用<strong>\\.\</strong>路径前缀而不是标准的UNC(统一命名约定)名称，如C:\MYFILE.CPP或\\FRED\C-Drive\HISFILE.CPP。在内部，I/O管理器在执行名称搜索前自动把<strong>\\.\转换成\??\</strong>。<strong>为了把\??目录中的名字与名字在其它目录(例如，在\Device目录)中的对象相连接，对象管理器实现了一种称为符号连接(symbolic link)的对象</strong>。
+</p><p><strong>符号连接
+</strong></p><p>符号连接有点象桌面上的快捷方式，符号连接在Windows NT中的主要用途是把处于列表前面的<strong>DOS形式的名称连接到设备上</strong>。下图显示了\??目录的部分内容，这里就有一些符号名，例如，"C:"和其它一些用DOS命名方案命名的驱动器名称，它们被连接到\Device目录中，而这些设备对象的真正名称就放在\Device目录中。符号连接可以使对象管理器在分析一个名称时能跳到命名空间的某个地方。例如，如果我用CreateFile打开名称为"C:\MYFILE.CPP"的对象，对象管理器将以下面过程打开该文件： 
+</p><ol><li>内核模式代码最开始看到的名称是\??\C:\MYFILE.CPP。对象管理器在根目录中查找"??"。 
+</li><li>找到\??目录后，对象管理器在其中查找"C:"。它发现找到的对象是一个符号连接，所以它就用这个符号连接组成一个新的内核模式路径名：\Device\HarddiskVolume1\MYFILE.CPP，然后析取它。 
+</li><li>使用新路径名后，对象管理器重新在根目录中查找"Device"。 
+</li><li>找到\Device目录后，对象管理器在其中查找"HarddiskVolume1"，最后它找到一个以该名字命名的设备。 
+</li></ol><p><img title="驱动设备命名 - Howie - Dspace"   src="pic/img1.ph.126.net_iG-jLA_7g9kV1mdTWEP_dA==_6599286382098824095.jpg"   alt=""   />
+</p><p>现在，对象管理器要创建一个IRP，然后把它发到HarddiskVolume1设备的驱动程序。该IRP最终将使某个文件系统驱动程序或其它驱动程序定位并打开一个磁盘文件。描述文件系统驱动程序的工作过程已经超出了本书的范围。如果我们使用设备名COM1，那么最终收到该IRP的将是\Device\Serial0的驱动程序。
+</p><p>用户模式程序可以调用<strong>DefineDosDevice</strong>创建一个符号连接，如下例：<br><strong>BOOL okay = DefineDosDevice(DDD_RAW_TARGET_PATH, "barf", "\\Device\\SECTEST_0");</strong>
+</p><p>如果你需要在WDM驱动程序中创建一个符号连接，可以调用<strong>IoCreateSymbolicLink</strong>函数：<br><strong>IoCreateSymbolicLink(linkname, targname);</strong>
+</p><p>linkname是要创建的符号连接名，targname是要连接的名字。顺便说一下，对象管理器并不关心targname是否是已存在对象的名字，如果连接到一个未定义的符号名，那么访问该符号连接将简单地收到一个错误。如果你想允许用户模式程序能超越这个连接而转到其它地方，应使用<strong>IoCreateUnprotectedSymbolicLink</strong>函数替代上面函数。
+</p><p><strong>设备名称
+</strong></p><p>如果你决定命名设备对象，通常应该把对象名放在名称空间的\Device分支中。为了命名设备对象，首先应该创建一个UNICODE_STRING结构来存放对象名，然后把该串作为调用IoCreateDevice的参数：
+</p><p>UNICODE_STRING devname;<br>RtlInitUnicodeString(&amp;devname, L"\\Device\\Simple0");<br>IoCreateDevice(DriverObject, sizeof(DEVICE_EXTENSION), &amp;devname, ...);
+</p><p>通常，驱动程序用设备类型串后加上一个以0开始的实例号作为设备对象名(如上面的Simple0)。一般，你不希望象我上面做的那样使用带有硬编码性质的名称。你希望用串操作函数动态地合成一个名字：
+</p><p>UNICODE_STRING devname;<br>static LONG lastindex = -1;<br>LONG devindex = InterlockedIncrement(&amp;lastindex);<br>WCHAR name[32];<br>_snwprintf(name, arraysize(name), L"\\Device\\SIMPLE%2.2d", devindex);<br>RtlInitUnicodeString(&amp;devname, name);<br>IoCreateDevice(...);
+</p><p><strong>设备接口
+</strong></p><p>用旧的命名方法命名设备对象，并创建一个应用程序能够使用的符号连接，存在着<strong>两个主要问题</strong>。命名设备对象所带来的<strong>潜在安全问题</strong>我们已经讨论过。此外，访问设备的应用程序需要先知道设备采用的命名方案。如果你的硬件仅由你的应用程序访问，那么不会有什么问题。但是，如果有其它公司想为你的硬件写应用程序，并且有许多硬件公司想制作相似的设备，那么设计一个合适的<strong>命名方案</strong>是困难的。最后，许多命名方案将依赖于程序员所说的自然语言，这不是一个好的选择。
+</p><p>为了解决这些问题，WDM引入了一个新的设备命名方案，该方案是语言中立的、易于扩展的、可用于许多硬件和软件厂商，并且易于文档化。该方案依靠一个设备接口(device interface)的概念，它基本上是软件如何访问硬件的一个说明。一个设备接口被一个128位的GUID唯一标识。你可以用平台SDK中的UUIDGEN工具或者GUIDGEN工具生成GUID，这两个工具输出同一种数，但格式不同。这个想法就象某些工业组织联合起来共同制定某种硬件的标准访问方法一样。在标准制作过程中，产生了一些GUID，这些GUID将永远关联到某些接口上。
+</p><p>注册设备接口 调用<strong>IoRegisterDeviceInterface</strong>函数，功能驱动程序的<strong>AddDevice</strong>函数可以注册一个或多个设备接口：
+</p><p>#include &lt;initguid.h&gt;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;--1<br>#include "guids.h"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;--2<br>...<br>NTSTATUS AddDevice(...)<br>{<br>  ...<br>  IoRegisterDeviceInterface(pdo, &amp;GUID_SIMPLE, NULL, &amp;pdx-&gt;ifname);&nbsp;&nbsp;&nbsp;&nbsp;&lt;--3
+</p><p>  ...<br>}
+</p><ol><li>我们包含了GUIDS.H头文件，那里定义了DEFINE_GUID宏。DEFINE_GUID通常声明一个外部变量。在驱动程序的某些地方，我们不得不为将要引用的每个GUID保留初始化的存储空间。系统头文件INITGUID.H利用某些预编译指令使DEFINE_GUID宏在已经定义的情况下仍能保留该存储空间。 
+</li><li>我使用单独的头文件来保存我要引用的GUID定义。这是一个好的想法，因为用户模式的代码也需要包含这些定义，但它们不需要那些仅与内核模式驱动程序有关的声明。 
+</li><li>IoRegisterDeviceInterface的第一个参数必须是设备PDO的地址。第二个参数指出与<strong>接口关联的GUID</strong>，第三个参数指出额外的接口细分类名。只有Microsoft的代码才使用名称细分类方案。第四个参数是一个UNICODE_STRING串的地址，该串用于接收设备对象的符号连接名。 
+</li></ol><p>IoRegisterDeviceInterface的返回值是一个Unicode串，这样在不知道驱动程序编码的情况下，应用程序能用该串确定并打开设备句柄。顺便说一下，这个名字比较丑陋；后面例子是我在Windows 98中为Sample设备生成的名字：\DosDevices\0000000000000007#{CAF53C68-A94C-11d2-BB4A-00C04FA330A6}。
+</p><p>注册过程实际就是先创建一个符号连接名，然后再把它存入注册表（HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\DeviceClasses）。之后，当响应PnP请求IRP_MN_START_DEVICE时，驱动程序将调用IoSetDeviceInterfaceState函数"使能"该接口：
+</p><p>IoSetDeviceInterfaceState(&amp;pdx-&gt;ifname, TRUE);
+</p><p>在响应这个调用过程中，I/O管理器将创建一个指向设备PDO的符号连接对象。以后，驱动程序会执行一个功能相反的调用禁止该接口(用FALSE做参数调用IoSetDeviceInterfaceState)。最后，I/O管理器删除符号连接对象，但它保留了注册表项，即这个名字将总与设备的这个实例关联；但符号连接对象与硬件一同到来或消失。
+</p><p>因为接口名最终指向PDO，所以PDO的安全描述符将最终控制设备的访问权限。这样比较好，因为只有管理员才可以通过控制台控制PDO的安全属性。
+</p><p><strong>枚举设备接口</strong>
+</p><p>内核模式代码和用户模式代码都能定位含有支持它们感兴趣接口的设备。下面我将解释如何在用户模式中枚举所有含有特定接口的设备。枚举代码写起来十分冗长，最后我不得不写一个C++类来实现。你可以在DEVICELIST.CPP和DEVICELIST.H文件中找到这些代码，这些文件是第八章"电源管理"中WDMIDLE例子的一部分。它们声明并实现了一个CDeviceList类，该类包含一个CDeviceListEntry对象数组。这两个类声明如下：
+</p><p>class CDeviceListEntry<br>{<br>public:<br>  CDeviceListEntry(LPCTSTR linkname, LPCTSTR friendlyname);<br>  CDeviceListEntry(){}<br>  CString m_linkname;<br>  CString m_friendlyname;<br>};<br><br>class CDeviceList<br>{<br>public:<br>  CDeviceList(const GUID&amp; guid);<br>  ~CDeviceList();<br>  GUID m_guid;<br>  CArray&lt;CDeviceListEntry, CDeviceListEntry&amp;&gt; m_list;<br>  int Initialize();<br>};
+</p><p>该类使用了CString类和CArray模板，它们都是MFC的一部分。这两个类的构造函数仅简单地把它们的参数复制到数据成员中：
+</p><p>CDeviceList::CDeviceList(const GUID&amp; guid)<br>{<br>  m_guid = guid;<br>}<br><br>CDeviceListEntry::CDeviceListEntry(LPCTSTR linkname, LPCTSTR friendlyname)<br>{<br>  m_linkname = linkname;<br>  m_friendlyname = friendlyname;<br>}
+</p><p>所有实际的工作都发生在<strong>CDeviceList::Initialize</strong>函数中。其执行过程大致是这样：先枚举所有接口GUID与构造函数得到的GUID相同的设备，然后确定一个"友好"名，我们希望向最终用户显示这个名字。最后返回找到的设备号。下面是这个函数的代码：
+</p><p>int CDeviceList::Initialize()<br>{<br>  HDEVINFO info = SetupDiGetClassDevs(&amp;m_guid, NULL, NULL, DIGCF_PRESENT | DIGCF_INTERFACEDEVICE);&nbsp;&nbsp;&nbsp;&nbsp;&lt;--1<br>  if (info == INVALID_HANDLE_VALUE)<br>    return 0;<br>  SP_INTERFACE_DEVICE_DATA ifdata;<br>  ifdata.cbSize = sizeof(ifdata);<br>  DWORD devindex;<br>  for (devindex = 0; SetupDiEnumDeviceInterfaces(info, NULL, &amp;m_guid, devindex, &amp;ifdata); ++devindex)&nbsp;&nbsp;&nbsp;&nbsp;&lt;--2<br>  {<br>    DWORD needed;<br>    SetupDiGetDeviceInterfaceDetail(info, &amp;ifdata, NULL, 0, &amp;needed, NULL);&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;--3<br><br>    PSP_INTERFACE_DEVICE_DETAIL_DATA detail = (PSP_INTERFACE_DEVICE_DETAIL_DATA) malloc(needed);<br>    detail-&gt;cbSize = sizeof(SP_INTERFACE_DEVICE_DETAIL_DATA);<br>    SP_DEVINFO_DATA did = {sizeof(SP_DEVINFO_DATA)};<br>    SetupDiGetDeviceInterfaceDetail(info, &amp;ifdata, detail, needed, NULL, &amp;did));<br><br>    TCHAR fname[256];&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;--4<br>    if (!SetupDiGetDeviceRegistryProperty(info,<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  &amp;did,<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  SPDRP_FRIENDLYNAME,<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  NULL,<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  (PBYTE) fname,<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  sizeof(fname),<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  NULL)<br>      &amp;&amp; !SetupDiGetDeviceRegistryProperty(info,<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;   &amp;did,<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;   SPDRP_DEVICEDESC,<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;   NULL,<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;   (PBYTE) fname,<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;   sizeof(fname),<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;   NULL)<br>&nbsp;&nbsp;&nbsp;&nbsp;)<br>      _tcsncpy(fname, detail-&gt;DevicePath, 256);<br><br>    CDeviceListEntry e(detail-&gt;DevicePath, fname);&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;--5<br>    free((PVOID) detail);<br><br>    m_list.Add(e);<br>  }<br><br>  SetupDiDestroyDeviceInfoList(info);<br>  return m_list.GetSize();<br>}
+</p><ol><li>该语句打开一个枚举句柄，我们用它寻找寄存了指定GUID接口的所有设备。 
+</li><li>循环调用SetupDiEnumDeviceInterfaces以寻找每个匹配的设备。 
+</li><li>有两项信息是我们需要的，<strong>接口的"细节"信息</strong>和<strong>设备实例信息</strong>。这个"细节"信息就是<strong>设备的符号名</strong>。因为它的长度可变，所以我们两次调用了SetupDiGetDeviceInterfaceDetail。第一次调用确定了长度，第二次调用获得了名字。 
+</li><li>通过询问注册表中的<strong>FriendlyName</strong>键或<strong>DeviceDesc</strong>键，我们获得了设备的"友好"名称。 
+</li><li>我们用设备符号名同时作为连接名和友好名创建了类CDeviceListEntry的一个临时实例e。</li></ol>
+</body></html>

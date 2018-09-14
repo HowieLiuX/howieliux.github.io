@@ -1,0 +1,120 @@
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=utf8"><title>163 blogs的博客：[原] Inside C++ Object model 笔记（2）</title>
+<style type="text/css">
+a{color: #000000;text-decoration : none;font-size: 10pt;}
+a:hover {color: red;text-decoration : underline;}
+.replyBox{padding:4px;border:1px solid #D8D8D8;}
+</style></head><body><h2>[原] Inside C++ Object model 笔记（2）</h2>
+<p align="right">发布时间：2011-12-5 23:36
+<br>分类名称：C++</p><br>
+ 
+<P><SPAN style="FONT-SIZE: 16pt;"   ><STRONG>The Semantics of Data </STRONG></SPAN></P>
+<P>class X { };<BR>class Y : public virtual X { };<BR>class Z : public virtual X { };<BR>class A : public Y, public Z { }; </P>
+<P>sizeof(X) = ?<BR>sizeof(Y) = ?<BR>sizeof(Z) = ?<BR>sizeof(A) = ? </P>
+<P>你会发现，不同机器上，不同的编译器里，可能结果都会不一样。 </P>
+<P>通常情况下，X的大小应该在都是一样的，大小为1byte，这是被编译器安插进去的一个char，这样才使得这个class的object拥有独一无二的地址。 </P>
+<P>Y和Z的大小会依据下面三种情况而定： </P>
+<OL>
+<LI>
+<DIV>语言本身造成的额外负担。由于是虚继承，不同编译器，实现的方式略有差异。例如微软实现方式为插入一个指向虚基表的指针。 </DIV>
+<P>而其他编译器可能不插入额外指针，而是通过其他机制。 </P>
+</LI><LI>
+<DIV>编译器对特殊情况的优化处理。X那1byte的大小也会落在Y和Z身上，但某些编译器会对empty virtual base class做特殊处理，它会去掉这1byte（本身没用，只是占位用的）。 </DIV>
+<P>微软的就是这么处理的。 </P>
+</LI><LI>字节对齐的问题。每个编译器下，默认的字节对齐可能都不一样。而且某些编译器支持设定特定的字节对齐。 </LI></OL>
+<P>下面安装4字节对齐的方式来分析： </P>
+<OL>
+<LI>
+<DIV>不对empty virtual base class做处理： </DIV>
+<P>sizeof(X) = 1<BR>sizeof(Y) = 1 + 4 + 3 = 8 // 为何加3？因为要按照4字节的对齐1+4=5, 加3为8，正好能被4整除<BR>sizeof(Z) = 1 + 4 + 3 = 8<BR>sizeof(A) = 1 + 4 + 4 + 3 = 12 </P>
+</LI><LI>
+<DIV>对empty virtual base class做处理：（微软就做了处理，可以使用virtual studio 6-9做实验） </DIV>
+<P>sizeof(X) = 1<BR>sizeof(Y) = 4 <BR>sizeof(Z) = 4<BR>sizeof(A) = 4 + 4 = 8 </P>
+<P>&nbsp;</P></LI></OL>
+<P><SPAN style="FONT-SIZE: 16pt;"   ><STRONG>Data Member 的布局 </STRONG></SPAN></P>
+<P>C++Standard要求，同一个access section（private，public，protected）中，member排列只要符合"较晚出现的member在class object中有较高的地址。没有要求一定要连续。而且允许那些从内部产生处理的members（如vptr）自由放在任何位置上。（有的编译器vptr在所有member之后，有的则在所有member之前）。 </P>
+<P>目前，各家编译器都是把一个以上的access section连锁成一个，依照声明次序，成为一个连续区域。 </P>
+<P><SPAN style="FONT-SIZE: 16pt;"   ><STRONG>Data Member的存取 </STRONG></SPAN></P>
+<P>Point3d origin;<BR>origin.x = 0.0; </P>
+<P>x的存取成本是什么？分几种情况考虑： </P>
+<OL>
+<LI><STRONG>Static Data Members</STRONG> Static Members相当于一个全局变量，存取没有任何代价，无论它是从哪儿或者如何继承而来的。 
+</LI><LI><STRONG>NonStatic Data Members</STRONG> 在不继承，单一继承，多重继承的情况下，是没有什么代价的。但如果是存取虚继承链中的virtual base class的member，那就会有速度上影响了。 </LI></OL>
+<P><SPAN style="FONT-SIZE: 18pt;"   ><STRONG>继承 </STRONG></SPAN></P>
+<P>Derived class object = itself members + base class(es) member </P>
+<P>至于它们的排列次序，C++ standard没有规定，可以自由安排。大部分编译器都是base class members在前，derived的在后。 virtual base class除外。 </P>
+<P><STRONG>单一继承（没有多态） </STRONG></P>
+<P><IMG title="[原] Inside C++ Object model 笔记（2） - Dsliu - Dspace"   alt=""   src="pic/img0.ph.126.net_FEmvHKvIUMAGyDVznac4Tg==_2494712718603669570.jpg"   > </P>
+<P>下面是关于一个字节补位与继承的问题 <BR><FONT face="宋体"  >class Concrete1<BR>{<BR>private:<BR>&nbsp;&nbsp;&nbsp; int val;<BR>&nbsp;&nbsp;&nbsp; char bit1;<BR>} </FONT></P>
+<P><FONT face="宋体"  >class Concrete2 : public Concrete1<BR>{<BR>private:<BR>&nbsp;&nbsp;&nbsp; char bit2;<BR>} </FONT></P>
+<P><FONT face="宋体"  >class Concrete3 : public Concrete2<BR>{<BR>private:<BR>&nbsp;&nbsp;&nbsp; char bit3;<BR>} </FONT></P>
+<P><IMG title="[原] Inside C++ Object model 笔记（2） - Dsliu - Dspace"   alt=""   src="pic/img7.ph.126.net_nbxcJPJsLEbLJvCmd8zO6g==_2523986116181575067.jpg"   > </P>
+<P>为什么字节补位也被继承下来了？看看下图： </P>
+<P><IMG title="[原] Inside C++ Object model 笔记（2） - Dsliu - Dspace"   alt=""   src="pic/img8.ph.126.net___WGr5ghXBW_rr0v1-CpGw==_1554304821413361738.jpg"   > </P>
+<P>Concrete2 *pc2;<BR>Concrete1 *pc1_1, *pc1_2; </P>
+<P>pc1_1 = pc2;<BR>*pc1_2 = *pc1_1; //就发生了上图的情况。 </P>
+<P>&nbsp;</P>
+<P><STRONG>单一继承（有多态） </STRONG></P>
+<P>多态带来的代价： </P>
+<OL>
+<LI>virtual table的产生 
+</LI><LI>vptr的安插 
+</LI><LI>构造函数的加强（插入初始化vptr的代码） 
+</LI><LI>析构函数的加强（插入相关virtual table清理操作） </LI></OL>
+<P>&nbsp;</P>
+<P>vptr被放在Class的尾端 </P>
+<P><IMG title="[原] Inside C++ Object model 笔记（2） - Dsliu - Dspace"   alt=""   src="pic/img0.ph.126.net_KHUm-E_PMagokRUVHkLQsw==_2711166975694158570.jpg"   ><STRONG> </STRONG></P>
+<P>&nbsp;</P>
+<P>Vptr被放在Class的前端 (微软的编译就是放在前端，低字节处）</P>
+<P><IMG title="[原] Inside C++ Object model 笔记（2） - Dsliu - Dspace"   alt=""   src="pic/img4.ph.126.net_QU6qcmBB6pWSqDKKnsmotg==_1350798413251559534.jpg"   ><STRONG> </STRONG></P>
+<P>&nbsp;</P>
+<P>vptr被放在了base class的尾端 </P>
+<P><IMG title="[原] Inside C++ Object model 笔记（2） - Dsliu - Dspace"   alt=""   src="pic/img3.ph.126.net_1jgva8Jf0i0PKLiZhGjEfA==_1037798239149310483.jpg"   > </P>
+<P><SPAN style="FONT-SIZE: 12pt;"   >Point 3d;<BR>Point *p2d = &amp;3d; </SPAN></P>
+<P><SPAN style="FONT-SIZE: 12pt;"   >单继承下，基本上指针无需调整，但vptr在前端例外，如果Base class没有虚函数而其子类有虚函数，指针需要加一个vptr的长度。 </SPAN></P>
+<P><SPAN style="FONT-SIZE: 12pt;"   ><FONT color="#ff0000"  >因为这个vptr是子类安插的，属于其子类。使用微软编译器打印出来俩种单一继承的vptr：</FONT></SPAN></P>
+<P><SPAN style="FONT-SIZE: 12pt;"   ><STRONG><FONT color="#ff0000"  >1. 从父类继承来的vptr：</FONT></STRONG></SPAN></P>
+<P><SPAN style="FONT-SIZE: 12pt;"   ><FONT color="#ff0000"  face="宋体"  >class CTestD&nbsp;size(12):<BR>&nbsp;+---<BR>&nbsp;| +--- (base class CTest)&nbsp;&nbsp;// 这是父类范围<BR>&nbsp;0&nbsp;| | {vfptr}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;// vfptr 在父类范围内<BR>&nbsp;4&nbsp;| | a<BR>&nbsp;| +---<BR>&nbsp;8&nbsp;| m_n<BR>&nbsp;+---</FONT></SPAN></P>
+<P><SPAN style="FONT-SIZE: 12pt;"   ><FONT color="#ff0000"  face="宋体"  >CTestD::$vftable@:<BR>&nbsp;| &amp;CTestD_meta<BR>&nbsp;|&nbsp; 0<BR>&nbsp;0&nbsp;| &amp;CTestD::{dtor} <BR>&nbsp;1&nbsp;| &amp;CTestD::somefunc</FONT></SPAN></P>
+<P><SPAN style="FONT-SIZE: 12pt;"   ><FONT color="#ff0000"  face="宋体"  ><STRONG>2. 父类没有虚函数，但其子类有：</STRONG></FONT></SPAN></P>
+<P><SPAN style="FONT-SIZE: 12pt;"   ><FONT color="#ff0000"  face="宋体"  >&nbsp;class CTestD&nbsp;size(12):<BR>&nbsp;+---<BR>&nbsp;0&nbsp;| {vfptr}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;// vfptr在子类范围<BR>&nbsp;| +--- (base class CTest)&nbsp; // 父类范围，如果将子类实例地址赋值给父类指针，指针首先需要加一个vptr长度。<BR>&nbsp;4&nbsp;| | a<BR>&nbsp;| +---<BR>&nbsp;8&nbsp;| m_n<BR>&nbsp;+---</FONT></SPAN></P>
+<P><SPAN style="FONT-SIZE: 12pt;"   ><FONT color="#ff0000"  ><FONT face="宋体"  >CTestD::$vftable@:<BR>&nbsp;| &amp;CTestD_meta<BR>&nbsp;|&nbsp; 0<BR>&nbsp;0&nbsp;| &amp;CTestD::somefunc </FONT><BR></FONT></SPAN><SPAN style="FONT-SIZE: 12pt;"   ><FONT color="#ff0000"  ></FONT></SPAN></P>
+<P><SPAN style="FONT-SIZE: 12pt;"   ><STRONG>多重继承 </STRONG></SPAN></P>
+<P><IMG title="[原] Inside C++ Object model 笔记（2） - Dsliu - Dspace"   alt=""   src="pic/img7.ph.126.net_Y2nvNfziNz1w6oPczDx1UQ==_190277084273528747.jpg"   > </P>
+<P>多重继承的问题出现在derived class objects和其第二个和后继的base class objects直接的转换。 </P>
+<P>Vertex3d v3d;<BR>Vertex *pv;<BR>Point2d *p2d;<BR>Point3d *p3d; </P>
+<P>pv = &amp;v3d; <BR>转换为：<BR>pv = pv3d ? (vertex *)((char *)&amp;v3d + sizeof(Point3d)) : 0; </P>
+<P>而： </P>
+<P>p2d = &amp;v3d;<BR>p3d = &amp;v3d;<BR>无需转换。（Point2d中有virtual functions，如果没有，在vptr前置的情况系啊，可能需要进行移位） </P>
+<P>下图是几个class对象的布局：<BR><IMG title="[原] Inside C++ Object model 笔记（2） - Dsliu - Dspace"   alt=""   src="pic/img2.ph.126.net_lkhe9J2gdBSBHTvBXLxL0g==_2765210171222610172.jpg"   > </P>
+<P><FONT face="宋体"  >class Point2d<BR>{<BR>public:<BR>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; int _x;<BR>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; int _y;</FONT></P>
+<P><FONT face="宋体"  >&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; virtual void test2d()<BR>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {</FONT></P>
+<P><FONT face="宋体"  >&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }<BR>};</FONT></P>
+<P><FONT face="宋体"  >class Point3d : public Point2d<BR>{<BR>public:<BR>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; int _z;<BR>};</FONT></P>
+<P><FONT face="宋体"  >class Vertex<BR>{<BR>public:<BR>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Vertex *_next;<BR>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; virtual void testVertex()<BR>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {</FONT></P>
+<P><FONT face="宋体"  >&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }<BR>};</FONT></P>
+<P><FONT face="宋体"  >class Vertex3d : <BR>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; public Point3d,<BR>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; public Vertex<BR>{<BR>public:<BR>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; int mumble;<BR>};</FONT></P>
+<P>&nbsp;</P>
+<P>VS2008布局如下：</P>
+<P><FONT face="宋体"  >class Vertex3d size(28):<BR>&nbsp;+---<BR>&nbsp;| +--- (base class Point3d)<BR>&nbsp;| | +--- (base class Point2d)<BR>&nbsp;0 | | | {vfptr}&nbsp;// 从Pointer2d继承下的vfptr<BR>&nbsp;4 | | | _x<BR>&nbsp;8 | | | _y<BR>&nbsp;| | +---<BR>12 | | _z<BR>&nbsp;| +---<BR>&nbsp;| +--- (base class Vertex)<BR>16 | | {vfptr} // 从Vertex继承下的vfptr<BR>20 | | _next<BR>&nbsp;| +---<BR>24 | mumble<BR>&nbsp;+---</FONT></P>
+<P><FONT face="宋体"  >Vertex3d::$vftable@Point3d@:<BR>&nbsp;| &amp;Vertex3d_meta<BR>&nbsp;|&nbsp; 0<BR>&nbsp;0 | &amp;Point2d::test2d<BR>Vertex3d::$vftable@Vertex@:<BR>&nbsp;| -16<BR>&nbsp;0 | &amp;Vertex::testVertex</FONT></P>
+<P><SPAN style="FONT-SIZE: 12pt;"   ><STRONG>所以，非</STRONG><STRONG>虚继承的</STRONG><STRONG>多继承下，子类存储着多个vptr，每一条单条的继承，都能继承下vptr。也就对应多张虚表。因为多个父类不能共用一张虚表，调整起来，会更加混乱。<BR></STRONG></SPAN><SPAN style="FONT-SIZE: 12pt;"   ><STRONG><BR>虚拟继承 <BR></STRONG></SPAN><SPAN style="FONT-SIZE: 12pt;"   >为何需要虚拟继承？看下图。 </SPAN></P>
+<P><IMG title="[原] Inside C++ Object model 笔记（2） - Dsliu - Dspace"   alt=""   src="pic/img4.ph.126.net_z3CCWq0-6Zv-NN1wm2WV9g==_1568941520202321854.jpg"   > </P>
+<P>如果 在iostream中引用ios中的成员，编译器就会因为无法判断到底引用的是istream的ios，还是ostream的ios。<FONT color="#ff0000"  >（当然可以使用作用符强制指定，但子类可能并不需要知道太多细节）</FONT>如果为虚继承，ios的实体则为一个。 </P>
+<P>编译器一般将含有virtual base class的subobjects（如iostream）分割为两部分，一部分不变，一部分共享（ios）。不变部分拥有固定的offset。而共享部分会随着每次的派生操作而发生变化。cfont编译器实现上，会为每一个derived class object安插一些指针，来指向virtual base class，来存取virtual base class members。 </P>
+<P><IMG title="[原] Inside C++ Object model 笔记（2） - Dsliu - Dspace"   alt=""   src="pic/img2.ph.126.net_0g6k5zAMNstTRUFCx06dOQ==_2765210171222610232.jpg"   > </P>
+<P><IMG title="[原] Inside C++ Object model 笔记（2） - Dsliu - Dspace"   alt=""   src="pic/img6.ph.126.net_Vla7aiKRgQfCurqlfh_NEQ==_1165587878575949796.jpg"   > </P>
+<P>Point2d *p2d = pv3d; 转换为： Point2d *p2d = pv3d ? pv3d-&gt;__vbcPoint2d : 0; </P>
+<P>微软的实现方式为产生virtual base class table，每个class object如果有一个或者多个virtual base classes，编译器就会安插一个指针，指向virtual base class table，table里面存放了真正的virtual base class指针。 </P>
+<P>下面一段代码，在微软编译器中表现的内存如下： </P>
+<P><FONT face="宋体"  >class Base<BR>{<BR>public:<BR>&nbsp;int base;<BR>&nbsp;virtual void fooBase() {}<BR>};</FONT></P>
+<P><FONT face="宋体"  >class A : virtual public Base<BR>{<BR>public:<BR>&nbsp;int a;<BR>&nbsp;virtual void fooA() {}<BR>};</FONT></P>
+<P><FONT face="宋体"  >class B : virtual public Base<BR>{<BR>public:<BR>&nbsp;int b;<BR>&nbsp;virtual void fooB() {}<BR>};</FONT></P>
+<P><FONT face="宋体"  >class Derived : public A, public B<BR>{<BR>public:<BR>&nbsp;int d;<BR>&nbsp;virtual void fooD() {}<BR>};</FONT><BR><BR>布局：</P>
+<P><FONT face="宋体"  >1&gt;class Derived size(36):<BR>1&gt; +---<BR>1&gt; | +--- (base class A)<BR>1&gt; 0 | | {vfptr} // A的虚函数指针，指向<FONT face="Arial"  >virtual&nbsp;funtions table</FONT><BR>1&gt; 4 | | {vbptr} // A的虚父类指针，指向<FONT face="Arial"  >virtual base class table</FONT><BR>1&gt; 8 | | a<BR>1&gt; | +---<BR>1&gt; | +--- (base class B)<BR>1&gt;12 | | {vfptr}&nbsp;// B的虚函数指针，指向<FONT face="Arial"  >virtual&nbsp;funtions table</FONT> <BR>1&gt;16 | | {vbptr}&nbsp;// B的虚父类指针，指向<FONT face="Arial"  >virtual base class table</FONT> <BR>1&gt;20 | | b<BR>1&gt; | +---<BR>1&gt;24 | d&nbsp;&nbsp; <BR>1&gt; +---&nbsp; // 到此为止，都是不变的部分<BR>1&gt; +--- (virtual base Base)<BR>1&gt;28 | {vfptr} // Base的虚函数指针，指向<FONT face="Arial"  >virtual&nbsp;funtions table</FONT><BR>1&gt;32 | base<BR>1&gt; +--- // 虚基类，可变部分</FONT></P><FONT face="宋体"  >
+<P><BR>1&gt;Derived::$vftable@A@:&nbsp; // A的虚函数表<BR>1&gt; | &amp;Derived_meta<BR>1&gt; |&nbsp; 0&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // offset（Derived，A） = 0<BR>1&gt; 0 | &amp;A::fooA<BR>1&gt; 1 | &amp;Derived::fooD</P>
+<P><BR>1&gt;Derived::$vftable@B@:&nbsp; // B的虚函数表<BR>1&gt; | -12&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // offset（Derived，B） = 12<BR>1&gt; 0 | &amp;B::fooB</P>
+<P><BR>1&gt;Derived::$vbtable@A@:&nbsp; // A的虚基类表<BR>1&gt; 0 | -4&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // offset（A，A.vbptr） = 4<BR>1&gt; 1 | 24 (Derivedd(A+4)Base)</P>
+<P><BR>1&gt;Derived::$vbtable@B@:&nbsp; // B的虚基类表<BR>1&gt; 0 | -4&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // offset（B，B.vbptr） = 4<BR>1&gt; 1 | 12 (Derivedd(B+4)Base)</P>
+<P><BR>1&gt;Derived::$vftable@Base@: // Base的虚函数表<BR>1&gt; | -28&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // offset（Derived，Base） = 0<BR>1&gt; 0 | &amp;Base::fooBase</P>
+<P><BR>1&gt;Derived::fooD this adjustor: 0<BR>1&gt;vbi:&nbsp;&nbsp;&nbsp; class&nbsp; offset o.vbptr&nbsp; o.vbte fVtorDisp<BR>1&gt;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Base&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 28&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 4&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 4&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 0</P></FONT>
+</body></html>

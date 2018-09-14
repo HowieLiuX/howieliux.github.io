@@ -1,0 +1,10 @@
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=utf8"><title>163 blogs的博客：(转)安装IE8后，VS2008无法调试ActiveX的问题</title>
+<style type="text/css">
+a{color: #000000;text-decoration : none;font-size: 10pt;}
+a:hover {color: red;text-decoration : underline;}
+.replyBox{padding:4px;border:1px solid #D8D8D8;}
+</style></head><body><h2>(转)安装IE8后，VS2008无法调试ActiveX的问题</h2>
+<p align="right">发布时间：2010-2-11 14:24
+<br>分类名称：COM</p><br>
+<p><br></p><p>Microsoft论坛有给出一个解决方案：<br><a rel="nofollow" href="http://social.microsoft.com/Forums/en-US/vsdebug/thread/e2c795cd-b7a0-4fad-b7c9-b1ca40d7302e"  ><span>http://social.microsoft.com/Forums/en-US/vsdebug/thread/e2c795cd-b7a0-4fad-b7c9-b1ca40d7302e<br></span></a>1.   点击【开始】-&gt;【运行】 命令：regedit.<br>2. 定位到HKEY_LOCALMACHINE -&gt; SOFTWARE -&gt;   Microsoft -&gt; Internet Explorer -&gt; Main<br>3.   在【右边区域】【右键】新建一个名称为TabProcGrowth的DWORD值, 数值数据设置为0.</p>  <p>VS不用重启，直接可以按F5进行调试ActiveX了！</p>  <p>PS：设置该值后，IE8不再为每个Tab启动单独的进程</p>
+</body></html>

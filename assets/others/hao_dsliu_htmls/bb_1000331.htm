@@ -1,0 +1,83 @@
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=utf8"><title>163 blogs的博客：[转] pragma指令简介</title>
+<style type="text/css">
+a{color: #000000;text-decoration : none;font-size: 10pt;}
+a:hover {color: red;text-decoration : underline;}
+.replyBox{padding:4px;border:1px solid #D8D8D8;}
+</style></head><body><h2>[转] pragma指令简介</h2>
+<p align="right">发布时间：2010-2-11 16:11
+<br>分类名称：windows</p><br>
+
+<p>在编写程序的时候，我们经常要用到#pragma指令来设定编译器的状态或者是指示编译器完成一些特定的动作。</p>
+<p>一.message参数</p>
+<p>message它能够在编译消息输出窗口中输出相应的消息，这对于源代码信息的控制非常重要的，使用方法为：</p>
+<p>#pragma message（“消息文本”）</p>
+<p>当编译器遇到这条指令时就在编译输出窗口中将消息文本打印出来。当我们在程序中定义了许多宏来控制源代码版本的时候，我们自己有可能都会忘记有没有正确的设置这些宏，此时我们可以用这条指令在编译的候进行检查，假设我们希望判断自己有没有源代码的什么地方定义了_X86这个宏可以用下面的方法：</p>
+<p>#ifdef _x86</p>
+<p>#pragma message("_x86 macro activated!")</p>
+<p>#endif</p>
+<p>当我们定义了_X86这个宏以后，应用程序在编译时就会在编译输出窗口里显示"_x86 macro activated!"。</p>
+<p>二. 另一个使用得比较多的#pragma参数是co<wbr>de_seg。格式如：</p>
+<p>#pragma 
+co<wbr>de_seg([[{push|pop},][identifier,]]["segment-name"][,"segment-class"])</p>
+<p>该指令用来指定函数在.obj文件中存放的节，观察OBJ文件可以使用VC自带的dumpbin命令行程序,函数在.obj文件中默认的存放节 
+<br>为.text节 <br>如果co<wbr>de_seg没有带参数的话,则函数存放在.text节中 <br>push (可选参数) 
+将一个记录放到内部编译器的堆栈中,可选参数可以为一个标识符或者节名 <br>pop(可选参数) 将一个记录从堆栈顶端弹出,该记录可以为一个标识符或者节名 
+<br>identifier (可选参数) 当使用push指令时,为压入堆栈的记录指派的一个标识符,当该标识符被删除的时候和其相关的堆栈中的记录将被弹出堆栈 
+<br>"segment-name" (可选参数) 表示函数存放的节名 <br>例如: <br>//默认情况下,函数被存放在.text节中 <br>void 
+func1() { // stored in .text <br>} <br><br>//将函数存放在.my_da<wbr>ta1节中 <br>#pragma 
+co<wbr>de_seg(".my_da<wbr>ta1") <br>void func2() { // stored in my_da<wbr>ta1 <br>} 
+<br><br>//r1为标识符,将函数放入.my_da<wbr>ta2节中 <br>#pragma co<wbr>de_seg(push, r1, ".my_da<wbr>ta2") 
+<br>void func3() { // stored in my_da<wbr>ta2 <br>} <br><br>int main() { <br>} 
+<br><font color="#ff6600">三. #pragma on<wbr>ce（比较常用）</font></p>
+<p><font color="#ff6600">这是一个比较常用的指令,只要在头文件的最开始加入这条指令就能够保证头文件被编译一次</font></p>
+<p><font color="#ff6600">#pragma 
+on<wbr>ce用来防止某个头文件被多次include，#ifndef，#define，#endif用来防止某个宏被多次定义。</font></p>
+<p><font color="#ff6600">#pragma 
+on<wbr>ce是编译相关，就是说这个编译系统上能用，但在其他编译系统不一定可以，也就是说移植性差，不过现在基本上已经是每个编译器都有这个定义了。</font></p>
+<p><font color="#ff6600">#ifndef，#define，#endif这个是C++语言相关，这是C++语言中的宏定义，通过宏定义避免文件多次编译。所以在所有支持C++语言的编译器上都是有效的，如果写的程序要跨平台，最好使用这种方式</font></p>
+<p>四. #pragma hdrstop表示预编译头文件到此为止，后面的头文件不进行预编译。 
+<br><br>BCB可以预编译头文件以加快链接的速度，但如果所有头文件都进行预编译又可能占太多磁盘空间，所以使用这个选项排除一些头文件。 
+<br>有时单元之间有依赖关系，比如单元A依赖单元B，所以单元B要先于单元A编译。你可以用#pragma startup指定编译优先级， 
+<br>如果使用了#pragma package(smart_init) ，BCB就会根据优先级的大小先后编译。 <br><br><br><br>五. 
+#pragma warning指令 <br><br>该指令允许有选择性的修改编译器的警告消息的行为 <br><br><br>指令格式如下: 
+<br>#pragma warning( warning-specifier : warning-number-list [; 
+warning-specifier : warning-number-list...] <br>#pragma warning( push[ ,n ] ) 
+<br>#pragma warning( pop ) <br><br>主要用到的警告表示有如下几个: <br><br>on<wbr>ce:只显示一次(警告/错误等)消息 
+<br>default:重置编译器的警告行为到默认状态 <br>1,2,3,4:四个警告级别 <br>disable:禁止指定的警告信息 
+<br>error:将指定的警告信息作为错误报告 <br><br>如果大家对上面的解释不是很理解,可以参考一下下面的例子及说明 <br><br>#pragma 
+warning( disable : 4507 34; on<wbr>ce : 4385; error : 164 ) <br>等价于： <br>#pragma 
+warning(disable:4507 34) // 不显示4507和34号警告信息 <br>#pragma warning(on<wbr>ce:4385) // 
+4385号警告信息仅报告一次 <br>#pragma warning(error:164) // 把164号警告信息作为一个错误。 <br>同时这个pragma 
+warning 也支持如下格式： <br>#pragma warning( push [ ,n ] ) <br>#pragma warning( pop ) 
+<br>这里n代表一个警告等级(1---4)。 <br>#pragma warning( push )保存所有警告信息的现有的警告状态。 <br>#pragma 
+warning( push, n)保存所有警告信息的现有的警告状态，并且把全局警告 <br>等级设定为n。 <br>#pragma warning( pop 
+)向栈中弹出最后一个警告信息，在入栈和出栈之间所作的 <br>一切改动取消。例如： <br>#pragma warning( push ) 
+<br>#pragma warning( disable : 4705 ) <br>#pragma warning( disable : 4706 ) 
+<br>#pragma warning( disable : 4707 ) <br>#pragma warning( pop ) 
+<br><br>在这段代码的最后，重新保存所有的警告信息(包括4705，4706和4707) 
+<br><br>在使用标准C++进行编程的时候经常会得到很多的警告信息,而这些警告信息都是不必要的提示, <br>所以我们可以使用#pragma 
+warning(disable:4786)来禁止该类型的警告 <br><br>在vc中使用ADO的时候也会得到不必要的警告信息,这个时候我们可以通过 
+<br>#pragma warning(disable:4146)来消除该类型的警告信息 <br><br><br><br><br>六. pragma 
+comment(...) <br>该指令的格式为 <br>#pragma comment( "comment-type" [, commentstring] ) 
+<br><br><br>该指令将一个注释记录放入一个对象文件或可执行文件中, 
+<br>comment-type(注释类型):可以指定为五种预定义的标识符的其中一种 <br>五种预定义的标识符为: 
+<br><br>compiler:将编译器的版本号和名称放入目标文件中,本条注释记录将被编译器忽略 
+<br>如果你为该记录类型提供了commentstring参数,编译器将会产生一个警告 <br>例如:#pragma comment( compiler ) 
+<br><br>exestr:将commentstring参数放入目标文件中,在链接的时候这个字符串将被放入到可执行文件中, 
+<br>当操作系统加载可执行文件的时候,该参数字符串不会被加载到内存中.但是,该字符串可以被 
+<br>dumpbin之类的程序查找出并打印出来,你可以用这个标识符将版本号码之类的信息嵌入到可 <br>执行文件中! 
+<br><br>lib:这是一个非常常用的关键字,用来将一个库文件链接到目标文件中 <br><br><br>常用的lib关键字，可以帮我们连入一个库文件。 
+<br>例如: <br>#pragma comment(lib, "user32.lib") <br>该指令用来将user32.lib库文件加入到本工程中 
+<br><br><br>linker:将一个链接选项放入目标文件中,你可以使用这个指令来代替由命令行传入的或者在开发环境中 
+<br>设置的链接选项,你可以指定/include选项来强制包含某个对象,例如: <br>#pragma comment(linker, 
+"/include:__mySymbol") <br><br>你可以在程序中设置下列链接选项 <br><br>/DEFAULTLIB <br>/EXPORT 
+<br>/INCLUDE <br>/MERGE <br>/SECTION <br>这些选项在这里就不一一说明了,详细信息请看msdn! 
+<br><br>user:将一般的注释信息放入目标文件中commentstring参数包含注释的文本信息,这个注释记录将被链接器忽略 <br>例如: 
+<br>#pragma comment( user, "Compiled on " __DATE__ " at " __TIME__ ) 
+<br><br><br>补充一个 <br><br><br><br>#pragma pack(n) <br><br>控制对齐 如 
+<br><br><br>#pragma pack(push) <br>#pragma pack(1) <br>struct s_1{ <br>char 
+szname[1]; <br>int a; <br>}; <br>#pragma pack(pop) <br>struct s_2{ <br>char 
+szname[1]; <br>int a; <br>}; <br>则 <br><br><br>printf("s_1 size : %d\n", 
+sizeof(struct s_1)); <br>printf("s_2 size : %d\n", sizeof(struct s_2)); 
+<br>得到5，8。</p>
+</body></html>

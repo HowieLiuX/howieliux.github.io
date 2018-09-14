@@ -1,0 +1,10 @@
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=utf8"><title>163 blogs的博客：[转]NRV</title>
+<style type="text/css">
+a{color: #000000;text-decoration : none;font-size: 10pt;}
+a:hover {color: red;text-decoration : underline;}
+.replyBox{padding:4px;border:1px solid #D8D8D8;}
+</style></head><body><h2>[转]NRV</h2>
+<p align="right">发布时间：2011-11-9 13:15
+<br>分类名称：C++</p><br>
+<p>作者：<a rel="nofollow" href="mailto:phylips@bmy"  >phylips@bmy</a>  </p><p>出处：<a href="http://duanple.blog.163.com/blog/static/7097176720094532219778/"  >http://duanple.blog.163.com/blog/static/7097176720094532219778/</a>  </p><p> &nbsp;</p><p><span style="font-size:14pt;"  ><span style="color:green;"  ><strong>Named Return value 优化：</strong></span>   </span></p><p>nrv 优化的本质是优化掉拷贝构造函数，去掉它不是生成它。当然了，因为为了优化掉它，前提就是它存在，也就是欲先去之，必先有之，这个也就是nrv优化需要有 拷贝构造函数存在的原因。&nbsp;nrv优化会带来副作用，目前也不是正式标准，倒是那个对象模型上举的应用例子看看比较好。极端情况下，不用它的确造成很大的 性能损失，知道这个情况就可以了。&nbsp;&nbsp; </p><p>为什么必须定义了拷贝构造函数才能进行nrv优化？首先它是lippman在inside c++ object mode里说的。那个预先取之，必先有之的说法只是我的思考。查阅资料，实际上这个可能仅仅只是cfont开启NRV优化的一个开关。&nbsp; </p><p>The C++ standard allows the elision of the copy constructor (even if this results in different program behavior), which has a side effect of enabling the compiler to treat both objects as one。也就是我说的副作用，c++标准允许这个副作用的出现，也就是它允许进行NRV优化，但不是必须。&nbsp;  </p><p>看下vc++8.0的NRV描述：<a rel="nofollow" href="http://msdn.microsoft.com/en-us/library/ms364057%28VS.80%29.aspx"  >http://msdn.microsoft.com/en-us/library/ms364057(VS.80).aspx</a>  </p><p>(里面说了在vc++ 8.0才加入了NRV优化，NRV优化的开关是有/O后面的级别开启。g++到底有没有，依上面的结果则是没有nrv优化)&nbsp;  </p><p>The Visual C++ 8.0 compiler makes use of the flexibility that the standard provides and adds a new feature: Named Return Value Optimization (NRVO). NRVO eliminates the copy constructor and destructor of a stack-based return value. This optimizes out the redundant copy constructor and destructor calls and thus improves overall performance. It is to be noted that this could lead to different behavior between optimized and non-optimized programs (see the Optimization Side Effects section).&nbsp;</p>
+</body></html>

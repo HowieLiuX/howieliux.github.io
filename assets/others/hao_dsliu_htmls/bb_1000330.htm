@@ -1,0 +1,37 @@
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=utf8"><title>163 blogs的博客：[转] 线程同步机制的区别与比较及进程通信方法</title>
+<style type="text/css">
+a{color: #000000;text-decoration : none;font-size: 10pt;}
+a:hover {color: red;text-decoration : underline;}
+.replyBox{padding:4px;border:1px solid #D8D8D8;}
+</style></head><body><h2>[转] 线程同步机制的区别与比较及进程通信方法</h2>
+<p align="right">发布时间：2010-2-11 16:12
+<br>分类名称：windows</p><br>
+有关多线程的一些技术问题：<br><br>1、&nbsp;&nbsp; 何时使用多线程？<br>2、&nbsp;&nbsp; 线程如何同步？<br>3、&nbsp;&nbsp; 
+线程之间如何通讯？<br>4、&nbsp;&nbsp; 
+进程之间如何通讯？<br><br><br>先来回答第一个问题，线程实际主要应用于四个主要领域，当然各个领域之间不是绝对孤立的，他们有可能是重叠的，但是每个程序应该都可以归于某个领域：<br><br>1、&nbsp;&nbsp; 
+offloading time-consuming 
+task。由辅助线程来执行耗时计算，而使GUI有更好的反应。我想这应该是我们考虑使用线程最多的一种情况吧。<br><br>2、&nbsp;&nbsp; 
+Scalability。服务器软件最常考虑的问题，在程序中产生多个线程，每个线程做一份小的工作，使每个CPU都忙碌，使CPU（一般是多个）有最佳的使用率，达到负载的均衡，这比较复杂，我想以后再讨论这个问题。<br><br>3、&nbsp;&nbsp; 
+Fair-share resource 
+allocation。当你向一个负荷沉重的服务器发出请求，多少时间才能获得服务。一个服务器不能同时为太多的请求服务，必须有一个请求的最大个数，而且有时候对某些请求要优先处理，这是线程优先级干的活了。<br><br>4、&nbsp;&nbsp; 
+Simulations。线程用于仿真测试。<br><br>我把主要的目光放在第一个领域，因为它正是我想要的。第二和第三个领域比较有意思，但是目前不在我的研究时间表中。<br><br><br>线程的同步机制：<br><br>1、&nbsp;&nbsp; 
+Event<br>用事件（Event）来同步线程是最具弹性的了。一个事件有两种状态：激发状态和未激发状态。也称有信号状态和无信号状态。事件又分两种类型：手动重置事件和自动重置事件。手动重置事件被设置为激发状态后，会唤醒所有等待的线程，而且一直保持为激发状态，直到程序重新把它设置为未激发状态。自动重置事件被设置为激发状态后，会唤醒“一个”等待中的线程，然后自动恢复为未激发状态。所以用自动重置事件来同步两个线程比较理想。MFC中对应的类为CEvent.。CEvent的构造函数默认创建一个自动重置的事件，而且处于未激发状态。共有三个函数来改变事件的状态:SetEvent,ResetEvent和PulseEvent。用事件来同步线程是一种比较理想的做法，但在实际的使用过程中要注意的是，对自动重置事件调用SetEvent和PulseEvent有可能会引起死锁，必须小心。<br><br>2、&nbsp;&nbsp; 
+Critical 
+Section<br>使用临界区域的第一个忠告就是不要长时间锁住一份资源。这里的长时间是相对的，视不同程序而定。对一些控制软件来说，可能是数毫秒，但是对另外一些程序来说，可以长达数分钟。但进入临界区后必须尽快地离开，释放资源。如果不释放的话，会如何？答案是不会怎样。如果是主线程（GUI线程）要进入一个没有被释放的临界区，呵呵，程序就会挂了！临界区域的一个缺点就是：Critical 
+Section不是一个核心对象，无法获知进入临界区的线程是生是死，如果进入临界区的线程挂了，没有释放临界资源，系统无法获知，而且没有办法释放该临界资源。这个缺点在互斥器(Mutex)中得到了弥补。Critical 
+Section在MFC中的相应实现类是CcriticalSection。CcriticalSection：：Lock()进入临界区，CcriticalSection：：UnLock()离开临界区。<br><br>3、&nbsp;&nbsp; 
+Mutex<br>互斥器的功能和临界区域很相似。区别是：Mutex所花费的时间比Critical 
+Section多的多，但是Mutex是核心对象(Event、Semaphore也是)，可以跨进程使用，而且等待一个被锁住的Mutex可以设定TIMEOUT，不会像Critical 
+Section那样无法得知临界区域的情况，而一直死等。MFC中的对应类为CMutex。Win32函数有：创建互斥体CreateMutex() 
+，打开互斥体OpenMutex()，释放互斥体ReleaseMutex()。Mutex的拥有权并非属于那个产生它的线程，而是最后那个对此Mutex进行等待操作（WaitForSingleObject等等）并且尚未进行ReleaseMutex()操作的线程。线程拥有Mutex就好像进入Critical 
+Section一样，一次只能有一个线程拥有该Mutex。如果一个拥有Mutex的线程在返回之前没有调用ReleaseMutex()，那么这个Mutex就被舍弃了，但是当其他线程等待(WaitForSingleObject等)这个Mutex时，仍能返回，并得到一个WAIT_ABANDONED_0返回值。能够知道一个Mutex被舍弃是Mutex特有的。<br><br>4、&nbsp;&nbsp; 
+Semaphore<br>信号量是最具历史的同步机制。信号量是解决producer/consumer问题的关键要素。对应的MFC类是Csemaphore。Win32函数CreateSemaphore（）用来产生信号量。ReleaseSemaphore（）用来解除锁定。Semaphore的现值代表的意义是目前可用的资源数，如果Semaphore的现值为1，表示还有一个锁定动作可以成功。如果现值为5，就表示还有五个锁定动作可以成功。当调用Wait…等函数要求锁定，如果Semaphore现值不为0，Wait…马上返回，资源数减1。当调用ReleaseSemaphore（）资源数加1，当时不会超过初始设定的资源总数。<br><br><br><br>线程之间的通讯：<br>线程常常要将数据传递给另外一个线程。Worker线程可能需要告诉别人说它的工作完成了，GUI线程则可能需要交给Worker线程一件新的工作。<br>通过PostThreadMessage（），可以将消息传递给目标线程，当然目标线程必须有消息队列。以消息当作通讯方式，比起标准技术如使用全局变量等，有很大的好处。如果对象是同一进程中的线程，可以发送自定义消息，传递数据给目标线程，如果是线程在不同的进程中，就涉及进程之间的通讯了。下面将会讲到。<br><br><br><br>进程之间的通讯：<br><br>当线程分属于不同进程，也就是分驻在不同的地址空间时，它们之间的通讯需要跨越地址空间的边界，便得采取一些与同一进程中不同线程间通讯不同的方法。<br><br>1、&nbsp;&nbsp; 
+Windows专门定义了一个消息：WM_COPYDATA,用来在线程之间搬移数据，――不管两个线程是否同属于一个进程。同时接受这个消息的线程必须有一个窗口，即必须是UI线程。WM_COPYDATA必须由SendMessage（）来发送，不能由PostMessage（）等来发送，这是由待发送数据缓冲区的生命期决定的，出于安全的需要。<br><br>2、&nbsp;&nbsp; 
+WM_COPYDATA效率上面不是太高，如果要求高效率，可以考虑使用共享内存（Shared 
+Memory）。使用共享内存要做的是：设定一块内存共享区域；使用共享内存；同步处理共享内存。<br>第一步：设定一块内存共享区域。首先，CreateFileMapping（）产生一个file-mapping核心对象，并指定共享区域的大小。MapViewOfFile（）获得一个指针指向可用的内存。如果是C/S模式，由Server端来产生file-mapping，那么Client端使用OpenFileMapping（），然后调用MapViewOfFile（）。<br>第二步：使用共享内存。共享内存指针的使用是一件比较麻烦的事，我们需要借助_based属性，允许指针被定义为从某一点开始起算的32位偏移值。<br>第三步：清理。UnmapViewOfFile（）交出由MapViewOfFile（）获得的指针，CloseHandle（）交出file-mapping核心对象的handle。<br>第四步：同步处理。可以借助Mutex来进行同步处理。<br><br>3、&nbsp;&nbsp; 
+IPC<br>1）Anonymous Pipes。Anonymous 
+Pipes只被使用于点对点通讯。当一个进程产生另一个进程时，这是最有用的一种通讯方式。<br>2）Named Pipes。Named 
+Pipes可以是单向，也可以是双向，并且可以跨越网络，步局限于单机。<br>3）Mailslots。Mailslots为广播式通讯。Server进程可以产生Mailslots,任何Client进程可以写数据进去，但是只有Server进程可以取数据。<br>4）OLE 
+Automation。OLE 
+Automation和UDP都是更高阶的机制，允许通讯发生于不同进程间，甚至不同机器间。<br>5）DDE。DDE动态数据交换，使用于16位Windows，目前这一方式应尽量避免使用。
+</body></html>

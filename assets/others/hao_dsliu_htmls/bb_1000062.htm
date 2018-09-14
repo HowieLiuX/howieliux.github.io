@@ -1,0 +1,41 @@
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=utf8"><title>163 blogs的博客：[原] WinDbg 搜索符号（Symbols） 顺序</title>
+<style type="text/css">
+a{color: #000000;text-decoration : none;font-size: 10pt;}
+a:hover {color: red;text-decoration : underline;}
+.replyBox{padding:4px;border:1px solid #D8D8D8;}
+</style></head><body><h2>[原] WinDbg 搜索符号（Symbols） 顺序</h2>
+<p align="right">发布时间：2014-3-20 11:46
+<br>分类名称：Debug_Crack</p><br>
+ 
+<P><FONT size="2"  >使用Windbg调试计算器，打开吵杂模式：<BR>0:004&gt; !sym noisy<BR>noisy mode - symbol prompts on </FONT></P>
+<P><FONT size="2"  >敲入lm，列出加载的模块，一般搜狗拼音或注入各个进程，由于搜狗的模块对应的PDB肯定找不到，敲入下列命令，<BR>吵杂模式下，会列出Windbg搜索的顺序： </FONT></P>
+<P><BR><FONT size="2"  >0:004&gt; ld PicFace64<BR>SYMSRV: e:\symbols\serversymbols\PicFace64.pdb\0BF59D5211E643CA967428FCC8C97BAA31\PicFace64.pdb not found<BR>DBGHELP: e:\symbols\mysymbols\PicFace64.pdb - file not found<BR>DBGHELP: e:\symbols\mysymbols\dll\PicFace64.pdb - file not found<BR>DBGHELP: e:\symbols\mysymbols\symbols\dll\PicFace64.pdb - file not found<BR>DBGHELP: e:\symbols\extsym\PicFace64.pdb - file not found<BR>DBGHELP: e:\symbols\extsym\dll\PicFace64.pdb - file not found<BR>DBGHELP: e:\symbols\extsym\symbols\dll\PicFace64.pdb - file not found<BR><BR>SYMSRV: 无法与服务器建立连接<BR><BR>SYMSRV: e:\symbols\serversymbols\PicFace64.pdb\0BF59D5211E643CA967428FCC8C97BAA31\PicFace64.pdb not found<BR>SYMSRV:http://msdl.microsoft.com/download/symbols/PicFace64.pdb/0BF59D5211E643CA967428FCC8C97BAA31/PicFace64.pdb not found<BR>DBGHELP: D:\x64\Program Files (x86)\SogouInput\Components\PicFace\1.0.0.925\PicFace64.pdb - file not found<BR>DBGHELP:e:\project\sogouime\branch\PinyinDev_R_7_1_Final\Bin\SogouPdb\Component\PicFace\PicFace64.pdb - file not found<BR>*** ERROR: Symbol file could not be found. Defaulted to export symbols for D:\x64\Program Files (x86)\SogouInput\Components\PicFace\1.0.0.925\PicFace64.dll - <BR>DBGHELP: PicFace64 - export symbols<BR>Symbols loaded for PicFace64<BR></FONT></P>
+<P><FONT size="2"  >我设置的Symbol path为：<BR>E:\symbols\Serversymbols;E:\symbols\mysymbols;E:\symbols\Extsym;srv*E:\symbols\Serversymbols*http://msdl.microsoft.com/download/symbols </FONT></P>
+<P><FONT size="2"  >可以看到Windbg先安装我们设置的Symbol Path顺序： </FONT></P>
+<OL>
+<LI>
+<DIV><FONT size="2"  >E:\symbols\Serversymbols </FONT></DIV>
+<OL>
+<LI><FONT size="2"  >*.pdb\signature\*.pdb </FONT></LI></OL>
+</LI><LI>
+<DIV><FONT size="2"  >e:\symbols\mysymbols </FONT></DIV>
+<OL>
+<LI><FONT size="2"  >*.pdb </FONT>
+</LI><LI><FONT size="2"  >dll\*.pdb </FONT>
+</LI><LI><FONT size="2"  >symbols\dll\*.pdp </FONT></LI></OL>
+</LI><LI>
+<DIV><FONT size="2"  >e:\symbols\extsym </FONT></DIV>
+<OL>
+<LI><FONT size="2"  >*.pdb </FONT>
+</LI><LI><FONT size="2"  >dll\*.pdb </FONT>
+</LI><LI><FONT size="2"  >symbols\dll\*.pdp </FONT></LI></OL>
+</LI><LI><FONT size="2"  >Server: </FONT><A rel="nofollow" href="http://msdl.microsoft.com/download/symbols"  ><FONT size="2"  >http://msdl.microsoft.com/download/symbols</FONT></A><FONT size="2"  > </FONT>
+</LI><LI><FONT size="2"  >模块所在的当前路径：D:\x64\Program Files (x86)\SogouInput\Components\PicFace\1.0.0.925\ </FONT>
+</LI><LI>
+<DIV><FONT size="2"  >dll内嵌的pdb路径信息：e:\project\sogouime\branch\PinyinDev_R_7_1_Final\Bin\SogouPdb\Component\PicFace\PicFace64.pdb </FONT></DIV>
+<P><FONT size="2"  >Debug Directories </FONT></P>
+<P><FONT size="2"  >Time Type Size RVA Pointer </FONT></P>
+<P><FONT size="2"  >-------- ------ -------- -------- -------- </FONT></P>
+<P><FONT size="2"  >53203291 cv 74 000D3B88 D2B88 Format: RSDS, {641F091E-5621-493B-A79C-2D2D1766A915}, 52, e:\project\sogouime\branch\PinyinDev_R_7_1_Final\Bin\SogouPdb\Component\PicFace\PicFace.pdb </FONT></P></LI></OL>
+<P><FONT size="2"  >所以，在调试驱动的时候，即便不拷贝pdb到我们指定的Symbol path下，Windbg也最终能找到对应的pdb，要付出的代价就是，如果网络不好，你会卡半天，等windbg从网上确定没有pdb的时候，才去找我们驱动内嵌的路径信息。例如我们公司的破网，每次都要等半分钟左右。</FONT></P>
+</body></html>

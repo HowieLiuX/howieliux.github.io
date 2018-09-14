@@ -1,0 +1,279 @@
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=utf8"><title>163 blogs的博客：分组密码算法（块密码算法）</title>
+<style type="text/css">
+a{color: #000000;text-decoration : none;font-size: 10pt;}
+a:hover {color: red;text-decoration : underline;}
+.replyBox{padding:4px;border:1px solid #D8D8D8;}
+</style></head><body><h2>分组密码算法（块密码算法）</h2>
+<p align="right">发布时间：2016-3-23 15:56
+<br>分类名称：PKI</p><br>
+<p>
+&nbsp;</p><p>下文，为汇总网络上各个博客文章。
+</p><p>这是一个加密算法的大致分类图：
+</p><p><img title="分组密码算法（块密码算法） - Howie - Dspace"     alt=""     src="pic/img2.ph.126.net_0tvGGjBTPm-7Y8YZbvtgUA==_4944107966023301168.jpg"     >
+</p><p>
+&nbsp;</p><p><span style="font-family:宋体; font-size:10pt;"     >对称加密又分为分组加密和序列密码。</span><span style="font-family:Arial;"     >
+</span></p><ul><li><span style="font-size:10pt;"     ><strong><span style="font-family:宋体;"     >分组密码，也叫块加密</span><span style="font-family:Arial;"     >(block cyphers)</span></strong><span style="font-family:宋体;"     >，一次加密明文中的一个块。是将明文按一定的位长分组，明文组经过加密运算得到密文组，密文组经过解密运算（加密运算的逆运算），还原成明文组。</span></span><span style="font-family:Arial;"     >
+</span></li><li><span style="font-size:10pt;"     ><strong><span style="font-family:宋体;"     >序列密码，也叫流加密</span><span style="font-family:Arial;"     >(stream cyphers)</span></strong><span style="font-family:宋体;"     >，一次加密明文中的一个位。是指利用少量的密钥（制乱元素）通过某种复杂的运算（密码算法）产生大量的伪随机位流，用于对明文位流的加密。</span></span><span style="font-family:Arial;"     >
+</span></li><li><span style="font-family:宋体; font-size:10pt;"     >解密是指用同样的密钥和密码算法及与加密相同的伪随机位流，用以还原明文位流。</span><span style="font-family:Arial;"     >
+</span></li></ul><p><span style="font-family:宋体;"     >本文介绍的是分组密码算法。</span><span style="font-family:Arial;"     >
+</span></p><p>
+&nbsp;</p><h1>定义
+</h1><p style="text-align: justify;"     >分组密码算法是提供数据安全的基本构件。它以固定的分组长度作为基本的处理单元，但要加密的消息的长度可能要长得多。
+</p><p style="text-align: justify;"     >为了将分组密码算法应用于实际，人们定义了很多工作模式。
+</p><p style="text-align: justify;"     >例如：DES只解决了如何对一个64比特的明文分组进行加密保护的问题，对于比特殊不等于64比特的明文如何加密，并不关心。这个问题，就由分组密码的工作模式来解决。&nbsp;
+</p><p style="text-align: justify;"     >分组密码的工作模式是：根据不同的数据格式和安全性要求,&nbsp;以一个具体的分组密码算法为基础构造一个分组密码系统的方法。分组密码的工作模式应当力求简单,&nbsp;有效和易于实现。
+</p><p style="text-align: justify;"     >&nbsp;
+&nbsp;</p><h1>详细模式介绍
+</h1><p style="background: white;"     ><span style="font-size:10pt;"     ><span style="font-family:宋体;"     >在分组加密算法中，有</span><span style="font-family:Arial;"     >ECB,CBC,CFB,OFB</span><span style="font-family:宋体;"     >这几种算法模式。</span><span style="font-family:Arial;"     >
+</span></span></p><h2>电子本模式（ECB）electronic&nbsp;codebook&nbsp;mode
+</h2><p style="text-align: justify;"     >电码本模式（ECB）electronic&nbsp;codebook&nbsp;mode是最简单的模式，它直接利用加密算法分别对每个64位明文分组使用相同的64位密钥进行加密。
+</p><p style="text-align: justify;"     >对于长于64位的报文，整个加密前需要把这个报文分成64位的分组，如果有必要的话对最后一个组做填充。
+</p><p style="text-align: justify;"     >定义:
+</p><p style="text-align: justify;"     >
+&nbsp;</p><p style="text-align: justify;"     >          Enc(X,Y)是加密函数
+</p><p style="text-align: justify;"     >          Dec(X,Y)是解密函数
+</p><p style="text-align: justify;"     >          Key是加密密钥；
+</p><p style="text-align: justify;"     >          Pi ( i = 0,1…n)是明文块，大小为64bit；
+</p><p style="text-align: justify;"     >          Ci ( i = 0,1…n)是密文块，大小为64bit;
+</p><p style="text-align: justify;"     >
+&nbsp;</p><p style="text-align: justify;"     >ECB加密算法可表示为：
+</p><p style="text-align: justify;"     >          Ci = Enc(Key, Pi)
+</p><p style="text-align: justify;"     >
+&nbsp;</p><p style="text-align: justify;"     >ECB解密算法可以表示为：
+</p><p style="text-align: justify;"     >          Pi = Dec(Key,Ci)
+</p><p style="text-align: justify;"     >
+&nbsp;</p><p style="text-align: justify;"     >使用&nbsp;"&nbsp;密码本&nbsp;"&nbsp;这个术语的原因是对每个64位的明文分组就有一个唯一的密文，因此可以想象一个巨大的密码本，其中对每一个可能的64位明文项就有一个密文项与之对应。
+</p><p style="text-align: justify;"     >
+&nbsp;</p><p style="text-align: justify;"     ><img title="分组密码算法（块密码算法） - Howie - Dspace"     alt=""     src="pic/img1.ph.126.net_nvPI2VgLRoKRAsaWmXlz7Q==_6598251741717072340.jpg"     >
+</p><p style="text-align: justify;"     >
+&nbsp;</p><p style="text-align: justify;"     >ECB加密
+</p><p style="background: white;"     ><img title="分组密码算法（块密码算法） - Howie - Dspace"     alt=""     src="pic/img2.ph.126.net_SnOswSAo9QXw9SEPmw7ZOQ==_6598120899833372153.jpg"     ><span style="font-family:Arial; font-size:10pt;"     >
+</span></p><p style="background: white;"     ><span style="font-size:10pt;"     ><span style="font-family:Arial;"     >ECB</span><span style="font-family:宋体;"     >解密</span><span style="font-family:Arial;"     >
+</span></span></p><p style="background: white;"     ><img title="分组密码算法（块密码算法） - Howie - Dspace"     alt=""     src="pic/img1.ph.126.net_-XRPhxANwJmZk8w6MJjeeQ==_6598293523158933094.jpg"     ><span style="font-family:Arial; font-size:10pt;"     >
+</span></p><p><span style="font-size:10pt;"     ><span style="font-family:宋体;"     >算法</span><span style="font-family:Arial;"     >
+</span><span style="font-family:宋体;"     >特点</span><span style="font-family:Arial;"     >:
+</span></span></p><ul><li><span style="font-size:10pt;"     ><span style="font-family:宋体;"     >每次</span><span style="font-family:Arial;"     >Key</span><span style="font-family:宋体;"     >、明文、密文的长度都必须是</span><span style="font-family:Arial;"     >64</span><span style="font-family:宋体;"     >位；</span><span style="font-family:Arial;"     >
+</span></span></li><li><span style="font-size:10pt;"     ><span style="font-family:宋体;"     >数据块重复排序不需要检测；</span><span style="font-family:Arial;"     >&nbsp;&nbsp;
+</span></span></li></ul><p><span style="font-size:10pt;"     ><strong><span style="font-family:Arial;"     >&nbsp; </span><span style="font-family:宋体;"     >优点</span></strong><span style="font-family:Arial;"     ><strong>:</strong>
+</span></span></p><p><span style="font-size:10pt;"     ><span style="font-family:Arial;"     >&nbsp; 1.</span><span style="font-family:宋体;"     >简单；</span><span style="font-family:Arial;"     >
+</span></span></p><p><span style="font-size:10pt;"     ><span style="font-family:Arial;"     >&nbsp;&nbsp;2.</span><span style="font-family:宋体;"     >有利于并行计算；</span><span style="font-family:Arial;"     >
+</span></span></p><p><span style="font-size:10pt;"     ><span style="font-family:Arial;"     >&nbsp;&nbsp;3.</span><span style="font-family:宋体;"     >误差不会被传送，一个错误仅仅会对一个密文块产生影响；</span><span style="font-family:Arial;"     >
+</span></span></p><p><span style="font-size:10pt;"     ><span style="font-family:宋体;"     ><strong>缺点</strong></span><span style="font-family:Arial;"     ><strong>:</strong>
+</span></span></p><p><span style="font-size:10pt;"     ><span style="font-family:Arial;"     >1.</span><span style="font-family:宋体;"     >不能隐藏明文的模式；</span><span style="font-family:Arial;"     >repetitions in message may show in cipher text/</span><span style="font-family:宋体;"     >在密文中出现明文消息的重复；</span><span style="font-family:Arial;"     >
+</span></span></p><p><span style="font-size:10pt;"     ><span style="font-family:Arial;"     >2.</span><span style="font-family:宋体;"     >可能对明文进行主动攻击，相同的明文块</span><span style="font-family:Arial;"     >(</span><span style="font-family:宋体;"     >使用相同的密钥</span><span style="font-family:Arial;"     >)</span><span style="font-family:宋体;"     >产生相同的密文块，容易遭受字典攻击；</span><span style="font-family:Arial;"     >
+</span></span></p><p><img title="分组密码算法（块密码算法） - Howie - Dspace"     alt=""     src="pic/img2.ph.126.net_NdUgU4FTfzGzgQwGxkef_Q==_200691658495353818.jpg"     ><span style="font-family:Arial; font-size:10pt;"     >
+</span></p><p style="text-align: justify;"     >在ECB模式下，加密算法的输入是明文，算法的输出将直接作为密文进行输出，不进行任何形式的反馈，每个明文分组的处理是相互独立的，这种方式也是分组密码工作的标准模式。
+</p><p style="text-align: justify;"     >ECB模式的缺点是：在给定密钥k&nbsp;下，同一明文组总是产生同一密文组，这会暴露明文组的数据格式。某些明文的数据格式会使得明文组有大量的重复或较长的零串，一些重要的数据常常会在同一位置出现，特别是格式化的报头、作业号、发报时间、地点等特征都将被泄露到密文之中，使攻击者可以利用这些特征。
+</p><p style="text-align: justify;"     >该模式好的一面就是用同个密钥加密的单独消息，其结果是没有错误传播。实际上，每一个分组可被看作是用同一个密钥加密的单独消息。密文中数据出了错，解密时，会使得相对应的整个明文分组解密错误，但它不会影响其他明文。然而，如果密文中偶尔丢失或添加一些数据位，那么整个密文序列将不能正确的解密。除非有某帧结构能够重新排列分组的边界。
+</p><p>
+&nbsp;</p><h2>密码分组链接模式（CBC）cipher&nbsp;block&nbsp;chaining&nbsp;mode
+</h2><p style="text-align: justify;"     >如上所述，ECB&nbsp;工作模式存在一些显见的缺陷。为了克服这些缺陷,&nbsp;我们应用分组密码链接技术来改变分组密码的工作模式。
+</p><p style="text-align: justify;"     >CBC&nbsp;工作模式是在密钥固定不变的情况下，改变每个明文组输入的链接技术。在CBC&nbsp;模式下，每个明文组mi&nbsp;在加密之前,&nbsp;先与反馈至输入端的前一组密文ci<span style="font-family:MS Mincho;"     >?</span>1逐比特异或后再加密。
+</p><p style="text-align: justify;"     >&nbsp;
+&nbsp;</p><p style="text-align: justify;"     >定义：
+</p><p style="text-align: justify;"     >          Enc(X,Y)是加密函数
+</p><p style="text-align: justify;"     >          Dec(X,Y)是解密函数
+</p><p style="text-align: justify;"     >          Key是加密密钥；
+</p><p style="text-align: justify;"     >          Pi ( i = 0,1…n)是明文块，大小为64bit；
+</p><p style="text-align: justify;"     >          Ci ( i = 0,1…n)是密文块，大小为64bit;
+</p><p style="text-align: justify;"     >          XOR(X,Y)是异或运算；
+</p><p style="text-align: justify;"     >          IV是初始向量（一般为64位）；
+</p><p style="text-align: justify;"     >   ECB加密算法可表示为：
+</p><p style="text-align: justify;"     >          C0 = Enc(Key, XOR(IV, P0)
+</p><p style="text-align: justify;"     >          Ci =  Enc(Key, XOR(Ci-1, Pi)
+</p><p style="text-align: justify;"     >   ECB解密算法可以表示为：
+</p><p style="text-align: justify;"     >          Pi  =  XOR(Ci-1, Dec(Key,Ci))
+</p><p style="text-align: justify;"     >          P0 = XOR(IV, Dec(Key, C0))
+</p><p style="text-align: justify;"     >
+&nbsp;</p><p style="text-align: justify;"     ><img title="分组密码算法（块密码算法） - Howie - Dspace"     alt=""     src="pic/img0.ph.126.net_wQsj0URm4wHL8Dgzx2FQag==_4852347123615660075.jpg"     >
+</p><p style="text-align: justify;"     >
+&nbsp;</p><p style="text-align: justify;"     >CBC加密
+</p><p style="text-align: justify;"     ><img title="分组密码算法（块密码算法） - Howie - Dspace"     alt=""     src="pic/img1.ph.126.net_AT6P0k9x66nfzJ6CPNHpnQ==_6631435002588530002.jpg"     >
+</p><p style="text-align: justify;"     >
+&nbsp;</p><p style="text-align: justify;"     ><img title="分组密码算法（块密码算法） - Howie - Dspace"     alt=""     src="pic/img2.ph.126.net_ZruG8w-c0fEgD38-lO5f8A==_6631277772425755121.jpg"     >
+</p><p style="text-align: justify;"     >这样,&nbsp;密文组ci&nbsp;不仅与当前的明文组有关,而且通过反馈的作用还与以前的明文组m1,&nbsp;m2,...mi.1&nbsp;有关。这从密码学的本质上来说是一种混淆操作。
+</p><p style="text-align: justify;"     >
+&nbsp;</p><p style="text-align: justify;"     >CBC解密
+</p><p style="text-align: justify;"     ><img title="分组密码算法（块密码算法） - Howie - Dspace"     alt=""     src="pic/img1.ph.126.net_1Dcc2udBn-9TzUhz2rLiLQ==_6598266035368237567.jpg"     >
+</p><p style="text-align: justify;"     >
+&nbsp;</p><p style="text-align: justify;"     ><img title="分组密码算法（块密码算法） - Howie - Dspace"     alt=""     src="pic/img0.ph.126.net_m9CSxYqTam6slulV1QBeVw==_6631406415286203639.jpg"     >
+</p><p style="text-align: justify;"     >
+&nbsp;</p><p style="text-align: justify;"     >算法特点:
+</p><ul><li><div style="text-align: justify;"     >每次加密的密文长度为64位(8个字节); 
+</div></li><li><div style="text-align: justify;"     >当相同的明文使用相同的密钥和初始向量的时候CBC模式总是产生相同的密文; 
+</div></li></ul><p style="text-align: justify;"     ><strong>优点：</strong>
+</p><p style="text-align: justify;"     >1.可以使用不同的初始化向量来避免相同的明文产生相同的密文,一定程度上抵抗字典攻击; 不容易主动攻击,安全性好于ECB,适合传输长度长的报文,是SSL、IPSec的标准。
+</p><p style="text-align: justify;"     ><strong>缺点：</strong>
+</p><p style="text-align: justify;"     >1.密文块要依赖以前的操作结果，所以，密文块不能进行重新排列，无法并行计算；<span style="font-size:10pt;"     ><span style="font-family:Arial;"     > (</span><span style="font-family:宋体;"     >在解密时，从两个邻接的密文块中即可得到一个平文块。因此，解密过程可以被并行化</span><span style="font-family:Arial;"     >)</span></span> 。
+</p><p style="text-align: justify;"     >2. 需要初始化向量IV 
+</p><p style="text-align: justify;"     >3. 会出现错误传播(errorpropagation).&nbsp;密文中任一位发生变化会涉及后面一些密文组.&nbsp;但CBC&nbsp;模式的错误传播不大,&nbsp;一个传输错误至多影响两个消息组的接收结果&nbsp;(思考).
+</p><p style="text-align: justify;"     >关于错误传播的问题，我的理解是这样的。因为分组密码模式的分组特性导致了这一现象。每个组之间是独立的。所以如果在传输中即使有某一位发生了错误，也仅仅可以理解为某一组发生了错误，对其他组没有影响。
+</p><p>比如A组发生了位错乱，它最多影响到当前A这组明文和下一组B明文。而再下一组C就不受影响了，因为C组是根据B的密文作为输入的，但是B分组的位并没有发生错误，所以在CBC模式下错误传播最多持续2个分组
+</p><h2>密码反馈模式（CFB）cipher&nbsp;feedback&nbsp;mode
+</h2><p style="text-align: justify;"     >分组密码算法也可以用于同步序列密码，就是所谓的密码反馈（Cipher-FeedBack,&nbsp;CFB）模式。在CBC&nbsp;模式下，整个数据分组在接收完之后才能进行加密。对许多网络应用来说，这是个问题。例如，在一个安全的网络环境中，当从某个终端输入时，它必须把每一个字符马上传输给主机。当数据在字节大小的分组里进行处理时，CBC&nbsp;模式就不能做到了。若待加密的消息必须按字符比特处理时，可采用CFB&nbsp;模式。
+</p><p style="text-align: justify;"     >
+&nbsp;</p><p style="text-align: justify;"     >加密反馈模式克服了需要等待8个字节才能加密的缺点，它采用了分组密码作为流密码的密钥流生成器；
+</p><p style="text-align: justify;"     >定义：
+</p><p style="text-align: justify;"     >       Enc(X,Y)是加密函数
+</p><p style="text-align: justify;"     >       Dec(X,Y)是解密函数
+</p><p style="text-align: justify;"     >       Key是加密密钥；
+</p><p style="text-align: justify;"     >       Pi ( i = 0,1…n)是明文块，大小为64bit；
+</p><p style="text-align: justify;"     >       Ci ( i = 0,1…n)是密文块，大小为64bit;
+</p><p style="text-align: justify;"     >       Si ( i = 0,1…n)，大小为8bit，n个连续的Si组成加密位移寄存器，一般n=8;
+</p><p style="text-align: justify;"     >       Oi = Enc(Key, Si);
+</p><p style="text-align: justify;"     >       Lef(x) 为取数据x的最左8个bit位；
+</p><p style="text-align: justify;"     >       A(x,y)为合并x左移8位，空位用y填充
+</p><p style="text-align: justify;"     > CFB加密算法可表示为：
+</p><p style="text-align: justify;"     >       S0 = IV；
+</p><p style="text-align: justify;"     >       Oi = Enc(Key, Si);
+</p><p style="text-align: justify;"     >       Ci = XOR( Ci, Lef(Oi));
+</p><p style="text-align: justify;"     >       Si = A(Si-1, Ci);
+</p><p style="text-align: justify;"     > CFB解密算法可表示为：
+</p><p style="text-align: justify;"     >       S0 = IV；
+</p><p style="text-align: justify;"     >       Oi = Enc(Key, Si);
+</p><p style="text-align: justify;"     >       Ci = XOR( Ci, Lef(Oi));
+</p><p style="text-align: justify;"     >       Si = A(Si-1, Ci);
+</p><p style="text-align: justify;"     >
+&nbsp;</p><p style="text-align: justify;"     ><img title="分组密码算法（块密码算法） - Howie - Dspace"     alt=""     src="pic/img1.ph.126.net_SwX1SmPRUgT0KOKohOWSdw==_4900479344632896100.jpg"     >
+</p><p style="text-align: justify;"     >
+&nbsp;</p><p style="text-align: justify;"     >在CFB&nbsp;模式下，每次加密s&nbsp;bit&nbsp;明文。（1&lt;=&nbsp;s&lt;=&nbsp;原来的固有长度）：
+</p><p style="text-align: justify;"     >s&nbsp;=&nbsp;8,&nbsp;L&nbsp;=&nbsp;64/s
+</p><p style="text-align: justify;"     >
+&nbsp;</p><p><img title="分组密码算法（块密码算法） - Howie - Dspace"     alt=""     src="pic/img1.ph.126.net_hR0DTpVgPgMKmMnI-3k6Aw==_6631200806611816573.jpg"     ><span style="font-size:10pt;"     ><span style="font-family:Arial;"     ><br></span><span style="font-family:宋体;"     >密文反馈（</span><span style="font-family:Arial;"     >CFB</span><span style="font-family:宋体;"     >，</span><span style="font-family:Arial;"     >Cipher feedback</span><span style="font-family:宋体;"     >）模式类似于</span><span style="font-family:Arial;"     >CBC</span><span style="font-family:宋体;"     >，可以将块密码变为自同步的流密码；工作过程亦非常相似，</span><span style="font-family:Arial;"     >CFB</span><span style="font-family:宋体;"     >的解密过程几乎就是颠倒的</span><span style="font-family:Arial;"     >CBC</span><span style="font-family:宋体;"     >的加密过程：</span><span style="font-family:Arial;"     >
+</span></span></p><p><span style="font-size:10pt;"     ><span style="font-family:宋体;"     >需要使用一个与块的大小相同的移位寄存器，并用</span><span style="font-family:Arial;"     >IV</span><span style="font-family:宋体;"     >将寄存器初始化。然后，将寄存器内容使用块密码加密，然后将结果的最高</span><span style="font-family:Arial;"     >x</span><span style="font-family:宋体;"     >位与明文的</span><span style="font-family:Arial;"     >x</span><span style="font-family:宋体;"     >进行异或，以产生密文的</span><span style="font-family:Arial;"     >x</span><span style="font-family:宋体;"     >位。下一步将生成的</span><span style="font-family:Arial;"     >x</span><span style="font-family:宋体;"     >位密文移入寄存器中，并对下面的</span><span style="font-family:Arial;"     >x</span><span style="font-family:宋体;"     >位平文重复这一过程。解密过程与加密过程相似，以</span><span style="font-family:Arial;"     >IV</span><span style="font-family:宋体;"     >开始，对寄存器加密，将结果的高</span><span style="font-family:Arial;"     >x</span><span style="font-family:宋体;"     >与密文异或，产生</span><span style="font-family:Arial;"     >x</span><span style="font-family:宋体;"     >位平文，再将密文的下面</span><span style="font-family:Arial;"     >x</span><span style="font-family:宋体;"     >位移入寄存器。</span><span style="font-family:Arial;"     ><br></span></span>
+</p><p style="text-align: justify;"     >这个流程描述有些不清楚，下面贴了一段AES CFB8加解密的流程：
+</p><p style="text-align: justify;"     >int mbedtls_aes_crypt_cfb8( mbedtls_aes_context *ctx,
+</p><p style="text-align: justify;"     >                       int mode,
+</p><p style="text-align: justify;"     >                       size_t length,
+</p><p style="text-align: justify;"     >                       unsigned char iv[16],
+</p><p style="text-align: justify;"     >                       const unsigned char *input,
+</p><p style="text-align: justify;"     >                       unsigned char *output )
+</p><p style="text-align: justify;"     >{
+</p><p style="text-align: justify;"     >    unsigned char c;
+</p><p style="text-align: justify;"     >    unsigned char ov[17];
+</p><p style="text-align: justify;"     >
+&nbsp;</p><p style="text-align: justify;"     >    while( length-- )
+</p><p style="text-align: justify;"     >    {
+</p><p style="text-align: justify;"     >        memcpy( ov, iv, 16 );
+</p><p style="text-align: justify;"     >        mbedtls_aes_crypt_ecb( ctx, MBEDTLS_AES_ENCRYPT, iv, iv );
+</p><p style="text-align: justify;"     >
+&nbsp;</p><p style="text-align: justify;"     >        
+</p><p style="text-align: justify;"     >            ov[16] = *input;
+</p><p style="text-align: justify;"     >
+&nbsp;</p><p style="text-align: justify;"     >        c = *output++ = (unsigned char)( iv[0] ^ *input++ );
+</p><p style="text-align: justify;"     >
+&nbsp;</p><p style="text-align: justify;"     >        
+</p><p style="text-align: justify;"     >            ov[16] = c;
+</p><p style="text-align: justify;"     >
+&nbsp;</p><p style="text-align: justify;"     >        memcpy( iv, ov + 1, 16 );
+</p><p style="text-align: justify;"     >    }
+</p><p style="text-align: justify;"     >
+&nbsp;</p><p style="text-align: justify;"     >    return( 0 );
+</p><p style="text-align: justify;"     >}
+</p><p style="text-align: justify;"     >
+&nbsp;</p><p style="text-align: justify;"     ><strong>特点:
+</strong></p><ul><li><div style="text-align: justify;"     >每次加密的Pi和Ci不大于64位; 
+</div></li><li><div style="text-align: justify;"     >加密算法和解密算法相同，不能适用于公钥算法； 
+</div></li><li><div style="text-align: justify;"     >使用相同的密钥和初始向量的时候，相同明文使用CFB模式加密输出相同的密文; 
+</div></li><li><div style="text-align: justify;"     >可以使用不同的初始化变量使相同的明文产生不同的密文，防止字典攻击; 
+</div></li><li><div style="text-align: justify;"     >加密强度依赖于密钥长度; 
+</div></li><li><div style="text-align: justify;"     >加密块长度过小时,会增加循环的数量,导致开销增加; 
+</div></li><li><div style="text-align: justify;"     >加密块长度应时8位的整数倍(即字节为单位); 
+</div></li><li><div style="text-align: justify;"     >一旦某位数据出错,会影响目前和其后8个块的数据; 
+</div></li></ul><p style="text-align: justify;"     ><strong>优点：</strong>
+</p><p style="text-align: justify;"     >1.隐藏了明文模式;
+</p><p style="text-align: justify;"     >2.分组密码转化为流模式;
+</p><p style="text-align: justify;"     >3.可以及时加密传送小于分组的数据;
+</p><p style="text-align: justify;"     ><strong>缺点:</strong>
+</p><p style="text-align: justify;"     >1.不利于并行计算;<span style="font-size:10pt;"     ><span style="font-family:Arial;"     >
+</span><span style="font-family:宋体;"     >与</span><span style="font-family:Arial;"     >CBC</span><span style="font-family:宋体;"     >类似，解密过程是可以并行化的</span></span>
+</p><p style="text-align: justify;"     >2.误差传送：一个明文单元损坏影响多个单元;
+</p><p style="text-align: justify;"     >3.唯一的IV;
+</p><p style="text-align: justify;"     >
+&nbsp;</p><h2>输出反馈模式（OFB）output&nbsp;feedback&nbsp;mode
+</h2><p style="text-align: justify;"     >在CFB模式中，1位密文的传输错误会影响至少b+1位的明文，这种错误传播的影响对于有些应用来讲还是太大了。与CFB模式不同之处在于, 加密位移寄存器与密文无关了,仅与加密key和加密算法有关。做法是不再把密文输入到加密移位寄存器，而是把输出的分组密文（Oi）输入到一位寄存器；
+</p><p style="text-align: justify;"     >从而克服了CBC和CFB模式带来的错误传播问题
+</p><p style="text-align: justify;"     >
+&nbsp;</p><p style="text-align: justify;"     >定义：
+</p><p style="text-align: justify;"     >       Enc(X,Y)是加密函数
+</p><p style="text-align: justify;"     >       Dec(X,Y)是解密函数
+</p><p style="text-align: justify;"     >       Key是加密密钥；
+</p><p style="text-align: justify;"     >       Pi ( i = 0,1…n)是明文块，大小为64bit；
+</p><p style="text-align: justify;"     >       Ci ( i = 0,1…n)是密文块，大小为64bit;
+</p><p style="text-align: justify;"     >       Si ( i = 0,1…n)，大小为8bit，n个连续的Si组成加密位移寄存器，一般n=8;
+</p><p style="text-align: justify;"     >       Oi = Enc(Key, Si);
+</p><p style="text-align: justify;"     >       Lef(x) 为取数据x的最左8个bit位；
+</p><p style="text-align: justify;"     >       A(x,y)为合并x左移8位，空位用y填充
+</p><p style="text-align: justify;"     >CFB加密算法可表示为：
+</p><p style="text-align: justify;"     >       S0 = IV；
+</p><p style="text-align: justify;"     >       Oi = Enc(Key, Si);
+</p><p style="text-align: justify;"     >       Ci = XOR( Ci, Lef(Oi));
+</p><p style="text-align: justify;"     >       Si = A(Si-1, Oi);         注意这里与CFB模式的不同
+</p><p style="text-align: justify;"     >CFB解密算法可表示为：
+</p><p style="text-align: justify;"     >       S0 = IV；
+</p><p style="text-align: justify;"     >       Oi = Enc(Key, Si);
+</p><p style="text-align: justify;"     >       Ci = XOR( Ci, Lef(Oi));
+</p><p style="text-align: justify;"     >       Si = A(Si-1, Oi);
+</p><p style="text-align: justify;"     >
+&nbsp;</p><p style="text-align: justify;"     ><img title="分组密码算法（块密码算法） - Howie - Dspace"     alt=""     src="pic/img0.ph.126.net_moG9QJ2J-Wc5WgSmkFOj6g==_2876392787106947178.jpg"     >
+</p><p style="text-align: justify;"     >
+&nbsp;</p><p style="background: white;"     ><img title="分组密码算法（块密码算法） - Howie - Dspace"     alt=""     src="pic/img1.ph.126.net_CXclp8vNHiJ5VrL3sL04Kg==_6631405315774575877.jpg"     ><span style="color:black; font-family:Arial; font-size:10pt;"     >
+</span></p><p style="text-align: justify;"     >OFB模式实质上就是一个同步流密码，通过反复加密一个初始向量IV来得到密钥流。这种方法有时也叫"内部反馈"，因为反馈机制独立于明文和密文而存在的。
+</p><p style="text-align: justify;"     >OFB&nbsp;模式克服了CBC&nbsp;模式和CFB&nbsp;模式的错误传播带来的问题,&nbsp;但同时也带来了序列密码具有的缺点,对密文被篡改难于进行检测。
+</p><p style="text-align: justify;"     >（关于难于检测错误的问题我的理解是：防止错误传播和错误检测本来就是矛盾的，因为之所以能检测到错误，就是因为发生了错误传播，然后通过hash机制检测出错误。但是OFB能防止错误传播，即无法检测到错误传播，也就自然无法检测密文篡改等错误了）
+</p><p style="text-align: justify;"     >由于&nbsp;OFB&nbsp;模式多在同步信道中运行,&nbsp;对手难于知道消息的起始点而使这类主动攻击不易奏效。
+</p><p style="background: white;"     >OFB&nbsp;模式不具有自同步能力,&nbsp;要求系统保持严格的同步,&nbsp;否则难于解密。OFB&nbsp;模式的初始向量IV&nbsp;无需保密,&nbsp;但各条消息必须选用不同的IV。<span style="color:black; font-family:Arial; font-size:10pt;"     >
+</span></p><p style="background: white;"     ><span style="color:black; font-size:10pt;"     ><span style="font-family:宋体;"     >每个使用</span><span style="font-family:Arial;"     >OFB</span><span style="font-family:宋体;"     >的输出块与其前面所有的输出块相关，因此不能并行化处理。然而，由于明文和密文只在最终的异或过程中使用，因此可以事先对</span><span style="font-family:Arial;"     >IV</span><span style="font-family:宋体;"     >进行加密，最后并行的将平文或密文进行并行的异或处理。</span><span style="font-family:Arial;"     ><br></span><span style="font-family:宋体;"     >可以利用输入全</span><span style="font-family:Arial;"     >0</span><span style="font-family:宋体;"     >的</span><span style="font-family:Arial;"     >CBC</span><span style="font-family:宋体;"     >模式产生</span><span style="font-family:Arial;"     >OFB</span><span style="font-family:宋体;"     >模式的密钥流。这种方法十分实用，因为可以利用快速的</span><span style="font-family:Arial;"     >CBC</span><span style="font-family:宋体;"     >硬件实现来加速</span><span style="font-family:Arial;"     >OFB</span><span style="font-family:宋体;"     >模式的加密过程。</span></span>
+</p><p style="text-align: justify;"     >&nbsp;特点:
+</p><ul><li><div style="text-align: justify;"     >与CFB类似,以下都是不同之处; 
+</div></li><li><div style="text-align: justify;"     >因为密文没有参与链操作，所以使得OFB模式更容易受到攻击； 
+</div></li><li><div style="text-align: justify;"     >不会进行错误传播，某位密文发生错误，只会影响该位对应的明文，而不会影响别的位； 
+</div></li><li><div style="text-align: justify;"     >不是自同步的，如果加密和解密两个操作失去同步，那么系统需要重新初始化； 
+</div></li><li><div style="text-align: justify;"     >每次重新同步时，应使用不同的初始向量。可以避免产生相同的比特流，避免"已知明文"攻击 ； 
+</div></li></ul><p style="text-align: justify;"     >&nbsp;<strong>优点:</strong>
+</p><p style="text-align: justify;"     >1.隐藏了明文模式;
+</p><p style="text-align: justify;"     >2.分组密码转化为流模式;
+</p><p style="text-align: justify;"     >3.可以及时加密传送小于分组的数据;
+</p><p style="text-align: justify;"     ><strong>缺点:</strong>
+</p><p style="text-align: justify;"     >1.不利于并行计算;
+</p><p style="text-align: justify;"     >2.对明文的主动攻击是可能的;
+</p><p style="text-align: justify;"     >3.误差传送：一个明文单元损坏影响多个单元;
+</p><p style="text-align: justify;"     >
+&nbsp;</p><h2>计数器模式（CTR）counter&nbsp;mode
+</h2><p style="text-align: justify;"     >CBC模式和和CFB模式都存在这样一个问题：不能以随机顺序来访问加密的数据，因为当前密文数据块的解密依赖于前面的密文块。而这个问题对于很多应用来说，特别是数据库的应用，是很难接收的。为此，又出现了另一种操作模式，即CRT模式。
+</p><p style="text-align: justify;"     >与OFB相似，CTR将<a target="_blank" href="http://blog.163.com/w/index.php?title=%E5%9D%97%E5%AF%86%E7%A0%81&amp;action=edit&amp;redlink=1"     >块密码</a>变为<a target="_blank" href="http://blog.163.com/w/index.php?title=%E6%B5%81%E5%AF%86%E7%A0%81&amp;action=edit&amp;redlink=1"     >流密码</a>。它通过递增一个加密计数器以产生连续的密钥流，其中，计数器可以是任意保证不产生长时间重复输出的函数，但使用一个普通的计数器是最简单和最常见的做法。
+</p><p style="text-align: justify;"     >CTR本质上和OFB很类似，只不过差别在与OFB中的密钥流是逐级反馈的。但是在CTR中，密钥流的产生之间是没有关联的，而是由计数器CTR来提供。
+</p><p style="text-align: justify;"     >注意图中的"nonce（<a target="_blank" href="http://blog.163.com/wiki/%E9%9A%8F%E6%9C%BA%E6%95%B0"     >随机数</a>）"与其它图中的IV（初始化向量）相同。IV、随机数和计数器均可以通过连接，相加或异或使得相同平文产生不同的密文。
+</p><p style="text-align: justify;"     ><img title="分组密码算法（块密码算法） - Howie - Dspace"     alt=""     src="pic/img1.ph.126.net_qPxc_ZOqENmGAfqCfObQMQ==_2876392787106947179.jpg"     >
+</p><p style="text-align: justify;"     ><img title="分组密码算法（块密码算法） - Howie - Dspace"     alt=""     src="pic/img1.ph.126.net_AxP5-zBtQHcuaaAO49Fc3A==_6598252841228700118.jpg"     >
+</p><p style="text-align: justify;"     >CTR模式的特征类似于OFB，但它允许在解密时进行<a target="_blank" href="http://blog.163.com/wiki/%E9%9A%8F%E6%9C%BA%E5%AD%98%E5%8F%96"     >随机存取</a>。由于加密和解密过程均可以进行并行处理，CTR适合运用于多处理器的硬件上。
+</p><p style="text-align: justify;"     >CTR模式的主要有点如下：
+</p><p style="text-align: justify;"     >1）随机访问性。可以随机地对任意一个密文分组进行解密，对该密文分组的处理与其他密文无关。
+</p><p style="text-align: justify;"     >2）高效率
+</p><p style="text-align: justify;"     >3）CTR可以处理任意长度的数据，只要相应调整CTR产生的密钥长度即可。而且加解密过程是对称的XOR。&nbsp;
+</p><p style="text-align: justify;"     >&nbsp;
+&nbsp;</p><p style="text-align: justify;"     >3.&nbsp;不同模式的特点和用途
+</p><p style="text-align: justify;"     >ECB&nbsp;模式适用于对字符加密,&nbsp;例如,&nbsp;密钥加密。
+</p><p style="text-align: justify;"     >OFB&nbsp;模式常用于卫星通信中的加密。
+</p><p style="text-align: justify;"     >由于对&nbsp;CBC&nbsp;和CFB&nbsp;模式当改变一个明文分组xi则yi&nbsp;与其后所有密文分组都会受到影响,&nbsp;这一性质说明这两种模式都可用于认证系统。更明确的说,&nbsp;这些模
+</p><p style="text-align: justify;"     >式能被用来产生一个消息认证码,&nbsp;即MAC。它能使消息接收方相信给定的明文序列的确来自合法发送者,而没有被篡改。这再次说明技术的两面性。
+</p><p style="text-align: justify;"     >&nbsp;
+&nbsp;</p><p style="text-align: justify;"     >&nbsp;
+&nbsp;</p><p style="text-align: justify;"     >4.&nbsp;其它模式和密码学概念
+</p><p style="text-align: justify;"     >除了上文中提到的模式以外，还有很多其它的块密码工作模式。有的被公众所接受，有其详细描述了，甚至被标准化了，并在使用中；而有的则被认为是不安全的，而从未使用过；另外一些则并没有被分类为保密，认证或签名加密，例如密钥反馈模式（KFM，Key&nbsp;Feedback&nbsp;Mode）和AES-hash。<a target="_blank" href="http://blog.163.com/w/index.php?title=NIST&amp;action=edit&amp;redlink=1"     >NIST</a>维护着一张块密码工作模式列表<a target="_blank" href="http://blog.163.com/kevinlee_2010/blog/static/16982082020113853451308/"     >[23]</a><a target="_blank" href="http://blog.163.com/kevinlee_2010/blog/static/16982082020113853451308/"     >[24]</a>。
+</p><p style="text-align: justify;"     >磁盘加密通常使用特殊目的、专门设计的模式。可以调节的小数据块加密模式（<a target="_blank" href="http://blog.163.com/w/index.php?title=LRW&amp;action=edit&amp;redlink=1"     >LRW</a>，<a target="_blank" href="http://blog.163.com/w/index.php?title=XEX&amp;action=edit&amp;redlink=1"     >XEX</a>和<a target="_blank" href="http://blog.163.com/w/index.php?title=XTS&amp;action=edit&amp;redlink=1"     >XTS</a>）和大数据块的模式（<a target="_blank" href="http://blog.163.com/wiki/CMC"     >CMC</a>和<a target="_blank" href="http://blog.163.com/wiki/EME"     >EME</a>）是设计用于加密磁盘区块的。
+</p><p style="text-align: justify;"     >块密码也可以用于其它<a target="_blank" href="http://blog.163.com/w/index.php?title=%E5%8A%A0%E5%AF%86%E5%8D%8F%E8%AE%AE&amp;action=edit&amp;redlink=1"     >加密协议</a>中，在这些协议中，块密码的使用方式与前述工作模式相似。在一切协议中，为了保证其安全性，必须在构建工作模式时特别注意。
+</p><p style="text-align: justify;"     >有数种方法可以用块密码构建<a target="_blank" href="http://blog.163.com/w/index.php?title=%E5%AF%86%E7%A0%81%E6%95%A3%E5%88%97%E5%87%BD%E6%95%B0&amp;action=edit&amp;redlink=1"     >密码散列函数</a>，参见<a target="_blank" href="http://blog.163.com/w/index.php?title=%E5%8D%95%E5%90%91%E5%8E%8B%E7%BC%A9%E5%87%BD%E6%95%B0&amp;action=edit&amp;redlink=1"     >单向压缩函数</a>。
+</p><p style="text-align: justify;"     ><a target="_blank" href="http://blog.163.com/w/index.php?title=%E6%B6%88%E6%81%AF%E8%AE%A4%E8%AF%81%E7%A0%81&amp;action=edit&amp;redlink=1"     >消息认证码</a>（MAC）通常由块密码得到，例如<a target="_blank" href="http://blog.163.com/w/index.php?title=CBC-MAC&amp;action=edit&amp;redlink=1"     >CBC-MAC</a>，<a target="_blank" href="http://blog.163.com/w/index.php?title=OMAC&amp;action=edit&amp;redlink=1"     >OMAC</a>和<a target="_blank" href="http://blog.163.com/w/index.php?title=PMAC&amp;action=edit&amp;redlink=1"     >PMAC</a>。
+</p><p style="text-align: justify;"     ><a target="_blank" href="http://blog.163.com/w/index.php?title=%E8%AE%A4%E8%AF%81%E5%8A%A0%E5%AF%86&amp;action=edit&amp;redlink=1"     >认证加密</a>也采用块密码作为其中的一部，其同时使用加密和MAC以提供保密性和数据完整性，例如<a target="_blank" href="http://blog.163.com/w/index.php?title=IAPM&amp;action=edit&amp;redlink=1"     >IAPM</a>，<a target="_blank" href="http://blog.163.com/wiki/CCM"     >CCM</a>，<a target="_blank" href="http://blog.163.com/w/index.php?title=CWC&amp;action=edit&amp;redlink=1"     >CWC</a>，<a target="_blank" href="http://blog.163.com/w/index.php?title=EAX&amp;action=edit&amp;redlink=1"     >EAX</a>，<a target="_blank" href="http://blog.163.com/w/index.php?title=GCM&amp;action=edit&amp;redlink=1"     >GCM</a>和<a target="_blank" href="http://blog.163.com/w/index.php?title=OCB&amp;action=edit&amp;redlink=1"     >OCB</a>。
+</p><p style="text-align: justify;"     >&nbsp;
+&nbsp;</p><p style="text-align: justify;"     >&nbsp;
+&nbsp;</p><p style="text-align: justify;"     ><strong>5.&nbsp;总评：</strong>
+</p><p style="text-align: justify;"     >&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;（1）ECB模式简单、高速，但最弱，易受重发和替换攻击，一般不采用。
+</p><p style="text-align: justify;"     >&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;（2）CBC，CFC，OFB模式的选用取决于实际的特殊需求。
+</p><p style="text-align: justify;"     >&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;（3）明文不易丢信号，对明文的格式没有特殊要求的环境可选用CBC模式。需要完整性认证功能时也可选用该模式。
+</p><p style="text-align: justify;"     >&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;（4）容易丢信号的环境，或对明文格式有特殊要求的环境，可选用CFB模式。
+</p><p style="text-align: justify;"     >&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;（2）不易丢信号，但信号特别容易错，但明文冗余特别多，可选用OFB模式
+</p><p>
+&nbsp;</p>
+</body></html>

@@ -1,0 +1,112 @@
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=utf8"><title>163 blogs的博客：COM笔记 - 可连接对象</title>
+<style type="text/css">
+a{color: #000000;text-decoration : none;font-size: 10pt;}
+a:hover {color: red;text-decoration : underline;}
+.replyBox{padding:4px;border:1px solid #D8D8D8;}
+</style></head><body><h2>COM笔记 - 可连接对象</h2>
+<p align="right">发布时间：2012-12-30 18:19
+<br>分类名称：COM</p><br>
+
+<H2>概念 </H2>
+<P><STRONG>入接口（incoming interface）</STRONG>&nbsp;&nbsp;&nbsp;&nbsp;接口由COM组件定义，由客户发动调用，提供方是COM组件。 </P>
+<P><STRONG>出接口（outgoing interface）</STRONG>&nbsp;&nbsp;&nbsp;&nbsp;接口由COM组件定义，由COM组件发动调用，提供方是客户。 </P>
+<P><STRONG>接收器（sink）&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</STRONG>实现COM组件的出接口的COM对象，此对象在客户端实现。 </P>
+<P>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;此COM对象不需要CLSID和类厂，其他特征和普通COM对象类似。<STRONG> </STRONG></P>
+<P>&nbsp;</P>
+<P><STRONG>可连接对象（connectable object）/ 源对象（Source）</STRONG>&nbsp;&nbsp;&nbsp;&nbsp;支持一个或者多个出接口的COM对象。 </P>
+<P>&nbsp;</P>
+<P>&nbsp;</P>
+<P style="TEXT-ALIGN: center;"   ><IMG title="COM笔记 - 可连接对象 - Howie - Dspace"   alt=""   src="pic/img5.ph.126.net_UVl948ZMjdYvR_ZC4BXa_g==_6598204462656467715.jpg"   > </P>
+<P style="TEXT-ALIGN: center;"   >客户和可连接对象的关系图 </P>
+<P>&nbsp;</P>
+<P>从图中可以看出来，客户是发起方，1. 客户先和COM建立联系，2. 然后将接收器对象的接口指针传给COM对象。 </P>
+<P>&nbsp;</P>
+<P style="TEXT-ALIGN: center;"   ><IMG title="COM笔记 - 可连接对象 - Howie - Dspace"   alt=""   src="pic/img7.ph.126.net_XcOlesVM7N9CugXAvex0bQ==_6598108805144851197.jpg"   > </P>
+<P style="TEXT-ALIGN: center;"   >COM对象和客户俩种对应关系（一对多，多对一） </P>
+<H2>规范'可连接对象'，实现通用 </H2>
+<P>如何管理可连接对象和接收器的对应关系，以达到通用的目的？ </P>
+<P>那肯定就是定义一些必要的接口，定义一些必要的功能，双方都依赖接口，实现通用。 </P>
+<P>&nbsp;</P>
+<P>可连接对象定义了俩个接口，来管理连接： </P>
+<OL>
+<LI>
+<DIV style="TEXT-ALIGN: justify;"   >一个可连接对象可以有多个出接口。 </DIV>
+<P>IConnectionPointContainer 来管理多个出接口（IConnectionPoint）。 </P>
+</LI><LI>
+<DIV style="TEXT-ALIGN: justify;"   >每个出接口又可以对应多个客户的接收器，对应多个接收器，相当于对应的是多个'连接'。 </DIV>
+<P>一个IConnectionPoint对应一个接口，IConnectionPoint来管理多个连接。 </P></LI></OL>
+<P>&nbsp;</P>
+<P style="TEXT-ALIGN: center;"   ><IMG title="COM笔记 - 可连接对象 - Howie - Dspace"   alt=""   src="pic/img2.ph.126.net_rWQyqboOlpnztWdGlhYWeA==_6597209404634852882.jpg"   > </P>
+<P style="TEXT-ALIGN: center;"   >可连接对象基本结构 </P>
+<P>&nbsp;</P>
+<P><STRONG>IConnectionPointContainer</STRONG> : public IUnknown<BR>{<BR>public:<BR>virtual HRESULT STDMETHODCALLTYPE <STRONG>EnumConnectionPoints</STRONG>( <BR>/* [out] */ <STRONG>IEnumConnectionPoints</STRONG> **ppEnum) = 0;<BR><BR>virtual HRESULT STDMETHODCALLTYPE <STRONG>FindConnectionPoint</STRONG>( <BR>/* [in] */ REFIID riid,<BR>/* [out] */ IConnectionPoint **ppCP) = 0;<BR><BR>};<BR><BR><STRONG>IConnectionPoint</STRONG> : public IUnknown<BR>{<BR>public:<BR>virtual HRESULT STDMETHODCALLTYPE <STRONG>GetConnectionInterface</STRONG>( <BR>/* [out] */ IID *pIID) = 0;<BR><BR>virtual HRESULT STDMETHODCALLTYPE <STRONG>GetConnectionPointContainer</STRONG>( <BR>/* [out] */ IConnectionPointContainer **ppCPC) = 0;<BR><BR>virtual HRESULT STDMETHODCALLTYPE <STRONG>Advise</STRONG>( <BR>/* [in] */ IUnknown *pUnkSink,<BR>/* [out] */ DWORD *pdwCookie) = 0;<BR><BR>virtual HRESULT STDMETHODCALLTYPE <STRONG>Unadvise</STRONG>( <BR>/* [in] */ DWORD dwCookie) = 0;<BR><BR>virtual HRESULT STDMETHODCALLTYPE <STRONG>EnumConnections</STRONG>( <BR>/* [out] */ <STRONG>IEnumConnections</STRONG> **ppEnum) = 0;<BR><BR>};<BR></P>
+<P>可连接对象需要实现这两个接口，然后客户就能使用它们来和COM进行连接通讯。 </P>
+<P>&nbsp;</P>
+<P><STRONG>枚举器 </STRONG></P>
+<P>从上面俩个接口中可以看到获取到俩个枚举器：<STRONG>IEnumConnectionPoints</STRONG> , <STRONG>IEnumConnections</STRONG>。而且接口成员基本上是一样的（Out 参数有些区别）。 </P>
+<P>typedef IConnectionPoint *LPCONNECTIONPOINT; </P>
+<P><STRONG>IEnumConnectionPoints</STRONG> : public IUnknown<BR>{<BR>public:<BR>virtual /* [local] */ HRESULT STDMETHODCALLTYPE Next( <BR>/* [in] */ ULONG cConnections,<BR>/* [length_is][size_is][out] */ LPCONNECTIONPOINT *ppCP,<BR>/* [out] */ ULONG *pcFetched) = 0;<BR><BR>virtual HRESULT STDMETHODCALLTYPE Skip( <BR>/* [in] */ ULONG cConnections) = 0;<BR><BR>virtual HRESULT STDMETHODCALLTYPE Reset( void) = 0;<BR><BR>virtual HRESULT STDMETHODCALLTYPE Clone( <BR>/* [out] */ IEnumConnectionPoints **ppEnum) = 0;<BR><BR>}; </P>
+<P>&nbsp;</P>
+<P>typedef struct tagCONNECTDATA </P>
+<P>{ </P>
+<P>IUnknown *pUnk; </P>
+<P>DWORD dwCookie; </P>
+<P>} &nbsp;&nbsp;&nbsp;&nbsp;CONNECTDATA; </P>
+<P>&nbsp;</P>
+<P>typedef struct tagCONNECTDATA *PCONNECTDATA; </P>
+<P>typedef struct tagCONNECTDATA *<STRONG>LPCONNECTDATA</STRONG>; </P>
+<P><STRONG>IEnumConnections</STRONG> : public IUnknown<BR>{<BR>public:<BR>virtual /* [local] */ HRESULT STDMETHODCALLTYPE Next( <BR>/* [in] */ ULONG cConnections,<BR>/* [length_is][size_is][out] */ <STRONG>LPCONNECTDATA</STRONG> rgcd,<BR>/* [out] */ ULONG *pcFetched) = 0;<BR><BR>virtual HRESULT STDMETHODCALLTYPE Skip( <BR>/* [in] */ ULONG cConnections) = 0;<BR><BR>virtual HRESULT STDMETHODCALLTYPE Reset( void) = 0;<BR><BR>virtual HRESULT STDMETHODCALLTYPE Clone( <BR>/* [out] */ IEnumConnections **ppEnum) = 0;<BR><BR>};<BR><BR>COM中枚举器的模板为： </P>
+<P>class IEnum&lt;ELT_T&gt; : public IUnknown </P>
+<P>{ </P>
+<P>public: </P>
+<P style="MARGIN-LEFT: 21pt;"   >virtual HRESULT Next( <BR>ULONG celt,<BR>ELT_T rgcd,<BR>ULONG *pcFetched) = 0;<BR>virtual HRESULT Skip(ULONG celt) = 0;<BR>virtual HRESULT Reset(void) = 0; </P>
+<P style="MARGIN-LEFT: 21pt;"   >virtual HRESULT Clone(IEnum&lt;ELT_T&gt; **ppenum) = 0; </P>
+<P>}; </P>
+<P>&nbsp;</P>
+<P><STRONG>建立连接过程 </STRONG></P>
+<P>发起方（操作驱动源）：客户。 </P>
+<P>加上源对象支持出接口ISomeEventSet，客户实现了出接口（ISomeEventSet），指针：pSomeEventSet。 </P>
+<P>&nbsp;</P>
+<OL>
+<LI>客户调用pUnk-&gt;QueryInterface(IID_IConnectionPointContainer, &amp;pConnectionPointContainer)，调用成功说明COM对象为可连接对象。失败则为不可连接。 
+</LI><LI>pConnectionPointContainer-&gt;FindConnectionPoint(IID_ISomeEvnetSet, pConnectionPoint)，若调用失败，则说明对象不支持出接口（ISomeEventSet）。无论成功否，都应该调用pConnectionPointContainer-&gt;Release。 
+</LI><LI>pConnectionPoint-&gt;Advise(pSomeEventSet, &amp;dwCookie)。pSomeEventSet为接收器，将接收器指针传递给COM对象的<STRONG>连接点对象</STRONG>（实现IConnetionPoint接口的对象），建立了一个连接。 
+</LI><LI>客户取消连接时，调用pConnectionPoint-&gt;Unadvise(dwCookie)，并调用pConnectionPoint-&gt;Release，释放连接点对象。 </LI></OL>
+<P>上面的过程出现了三个对象：一个接收器对象，由客户端实现。一个实现了IConnectionPointContainer接口的对象和实现了IConnectionPoint接口对象，由COM对象实现。（实际开发中，使用MFC/ATL开发，框架已经实现好了这俩个对象，我们不用做处理，这就是定义这俩个接口的好处）。 </P>
+<P>&nbsp;</P>
+<P>可以看到，整个过程并没有需要提供CLSID和类厂。原因就在于接收器对象是由客户端实现的，并且传给了COM。发起方一直是客户。COM不需要调用诸如CoCreateInstance去和客户通讯创建对象。代码实现： </P>
+<P>&nbsp;</P>
+<P>ISomeEventSet *gpSomeEventSet; </P>
+<P>… … </P>
+<P>// Initialize </P>
+<P>CSomeEventSet *pSink = new CSomeEventSet; </P>
+<P>pSink-&gt;QueryInterface(IID_ISomeEventSet, pSomeEventSet); </P>
+<P>… … </P>
+<P>// connect the sink object to the connectable object we have </P>
+<P>hr = pConnectionPoint-&gt;Advise(pSomeEvent, &amp;pSomeEvent-&gt;m_dwCookie); </P>
+<P>… … </P>
+<P>// disconnect the sink object from the connectable object we have </P>
+<P>hr = pConnectionPoint-&gt;Unadvise(pSomeEvent-&gt;m_dwCookie); </P>
+<P>… … </P>
+<P>pSink-&gt;Release(); </P>
+<P>&nbsp;</P>
+<P><STRONG>事件激发和处理 </STRONG></P>
+<P>通常，事件激发有"源对象（可连接对象）"的<STRONG>入接口</STRONG>激发。 </P>
+<P>&nbsp;</P>
+<P><STRONG>问题：以上都是客户和COM预先约定好出接口。如果客户和COM是分开开发的，客户并不知道COM支持什么出接口，如何处理？ </STRONG></P>
+<P>可以通过IConnectionPointContainer和IConnectionPoint俩个接口，只能得到COM出接口的IID。并得不到出接口的声明信息。即便可能得到接口信息，还需要根据接口信息动态创建出对象，然后建立连接，这些操作并不简单。现在难点有俩个： </P>
+<OL>
+<LI>
+<DIV>获取接口信息。 </DIV>
+<OL>
+<LI>使用<STRONG>IProvideClassInfo，ITypeInfo</STRONG> </LI></OL>
+</LI><LI>
+<DIV>动态创建对象。 </DIV>
+<OL>
+<LI>自己实现 
+</LI><LI>使用IDispatch作为出接口 </LI></OL></LI></OL>
+<P>&nbsp;</P>
+<P>获取接口信息，客户首先向源对象请求<STRONG>IProvideClassInfo</STRONG>接口，获得接口指针，调用GetClassInfo，获得ITypeInfo接口指针。 </P>
+<P>&nbsp;</P>
+<P><STRONG>IProvideClassInfo</STRONG> : public IUnknown<BR>{<BR>public:<BR>virtual HRESULT STDMETHODCALLTYPE GetClassInfo( <BR>/* [out] */ ITypeInfo **ppTI) = 0;<BR><BR>};<BR><BR><STRONG>ITypeInfo</STRONG> : public IUnknown<BR>{<BR>public:<BR>virtual /* [local] */ HRESULT STDMETHODCALLTYPE GetTypeAttr( <BR>/* [out] */ TYPEATTR **ppTypeAttr) = 0;<BR><BR>virtual HRESULT STDMETHODCALLTYPE GetTypeComp( <BR>/* [out] */ ITypeComp **ppTComp) = 0;<BR><BR>virtual /* [local] */ HRESULT STDMETHODCALLTYPE GetFuncDesc( <BR>/* [in] */ UINT index,<BR>/* [out] */ FUNCDESC **ppFuncDesc) = 0;<BR><BR>virtual /* [local] */ HRESULT STDMETHODCALLTYPE GetVarDesc( <BR>/* [in] */ UINT index,<BR>/* [out] */ VARDESC **ppVarDesc) = 0;<BR><BR>virtual /* [local] */ HRESULT STDMETHODCALLTYPE GetNames( <BR>/* [in] */ MEMBERID memid,<BR>/* [length_is][size_is][out] */ BSTR *rgBstrNames,<BR>/* [in] */ UINT cMaxNames,<BR>/* [out] */ UINT *pcNames) = 0;<BR><BR>virtual HRESULT STDMETHODCALLTYPE GetRefTypeOfImplType( <BR>/* [in] */ UINT index,<BR>/* [out] */ HREFTYPE *pRefType) = 0;<BR><BR>virtual HRESULT STDMETHODCALLTYPE GetImplTypeFlags( <BR>/* [in] */ UINT index,<BR>/* [out] */ INT *pImplTypeFlags) = 0;<BR><BR>virtual /* [local] */ HRESULT STDMETHODCALLTYPE GetIDsOfNames( <BR>/* [size_is][in] */ LPOLESTR *rgszNames,<BR>/* [in] */ UINT cNames,<BR>/* [size_is][out] */ MEMBERID *pMemId) = 0;<BR><BR>virtual /* [local] */ HRESULT STDMETHODCALLTYPE Invoke( <BR>/* [in] */ PVOID pvInstance,<BR>/* [in] */ MEMBERID memid,<BR>/* [in] */ WORD wFlags,<BR>/* [out][in] */ DISPPARAMS *pDispParams,<BR>/* [out] */ VARIANT *pVarResult,<BR>/* [out] */ EXCEPINFO *pExcepInfo,<BR>/* [out] */ UINT *puArgErr) = 0;<BR><BR>virtual /* [local] */ HRESULT STDMETHODCALLTYPE GetDocumentation( <BR>/* [in] */ MEMBERID memid,<BR>/* [out] */ BSTR *pBstrName,<BR>/* [out] */ BSTR *pBstrDocString,<BR>/* [out] */ DWORD *pdwHelpContext,<BR>/* [out] */ BSTR *pBstrHelpFile) = 0;<BR><BR>virtual /* [local] */ HRESULT STDMETHODCALLTYPE GetDllEntry( <BR>/* [in] */ MEMBERID memid,<BR>/* [in] */ INVOKEKIND invKind,<BR>/* [out] */ BSTR *pBstrDllName,<BR>/* [out] */ BSTR *pBstrName,<BR>/* [out] */ WORD *pwOrdinal) = 0;<BR><BR>virtual HRESULT STDMETHODCALLTYPE GetRefTypeInfo( <BR>/* [in] */ HREFTYPE hRefType,<BR>/* [out] */ ITypeInfo **ppTInfo) = 0;<BR><BR>virtual /* [local] */ HRESULT STDMETHODCALLTYPE AddressOfMember( <BR>/* [in] */ MEMBERID memid,<BR>/* [in] */ INVOKEKIND invKind,<BR>/* [out] */ PVOID *ppv) = 0;<BR><BR>virtual /* [local] */ HRESULT STDMETHODCALLTYPE CreateInstance( <BR>/* [in] */ IUnknown *pUnkOuter,<BR>/* [in] */ REFIID riid,<BR>/* [iid_is][out] */ PVOID *ppvObj) = 0;<BR><BR>virtual HRESULT STDMETHODCALLTYPE GetMops( <BR>/* [in] */ MEMBERID memid,<BR>/* [out] */ BSTR *pBstrMops) = 0;<BR><BR>virtual /* [local] */ HRESULT STDMETHODCALLTYPE GetContainingTypeLib( <BR>/* [out] */ ITypeLib **ppTLib,<BR>/* [out] */ UINT *pIndex) = 0;<BR><BR>virtual /* [local] */ void STDMETHODCALLTYPE ReleaseTypeAttr( <BR>/* [in] */ TYPEATTR *pTypeAttr) = 0;<BR><BR>virtual /* [local] */ void STDMETHODCALLTYPE ReleaseFuncDesc( <BR>/* [in] */ FUNCDESC *pFuncDesc) = 0;<BR><BR>virtual /* [local] */ void STDMETHODCALLTYPE ReleaseVarDesc( <BR>/* [in] */ VARDESC *pVarDesc) = 0;<BR><BR>};<BR><BR><IMG title="COM笔记 - 可连接对象 - Howie - Dspace"   alt=""   src="pic/img0.ph.126.net_jK2bjWYyIig9QLuBKz5Cbg==_6597167623193008030.jpg"   ><BR>使用IDispath作为出接口的模型<BR><BR></P>
+</body></html>
